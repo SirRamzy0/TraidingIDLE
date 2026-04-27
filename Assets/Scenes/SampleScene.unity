@@ -5481,6 +5481,9 @@ MonoBehaviour:
   coins:
   - id: 0
     tickIntervalSeconds: 0.6
+    normalTickSpeedMultiplier: 1
+    pumpTickSpeedMultiplier: 1.35
+    crashTickSpeedMultiplier: 1.6
     plannedStatesCount: 3
     initialPrice: 50
     stateDurationMinSeconds: 30
@@ -5493,6 +5496,9 @@ MonoBehaviour:
     noiseStrength: 0.35
     trendStrength: 0.25
     meanReversionStrength: 0.35
+    normalMaxPriceChangePerTick01: 0.12
+    pumpMaxPriceChangePerTick01: 0.35
+    crashMaxPriceChangePerTick01: 0.45
     crashFirstTriggerPrice: 500
     crashThresholdRandomMin: 10000
     crashThresholdRandomMax: 1000000
@@ -5502,6 +5508,9 @@ MonoBehaviour:
       step: 5
   - id: 1
     tickIntervalSeconds: 1
+    normalTickSpeedMultiplier: 1
+    pumpTickSpeedMultiplier: 1.25
+    crashTickSpeedMultiplier: 1.45
     plannedStatesCount: 3
     initialPrice: 2500
     stateDurationMinSeconds: 30
@@ -5514,6 +5523,9 @@ MonoBehaviour:
     noiseStrength: 0.35
     trendStrength: 0.25
     meanReversionStrength: 0.35
+    normalMaxPriceChangePerTick01: 0.07
+    pumpMaxPriceChangePerTick01: 0.25
+    crashMaxPriceChangePerTick01: 0.35
     crashFirstTriggerPrice: 8000
     crashThresholdRandomMin: 10000
     crashThresholdRandomMax: 1000000
@@ -5529,6 +5541,9 @@ MonoBehaviour:
       step: 50
   - id: 2
     tickIntervalSeconds: 1.4
+    normalTickSpeedMultiplier: 1
+    pumpTickSpeedMultiplier: 1.15
+    crashTickSpeedMultiplier: 1.3
     plannedStatesCount: 3
     initialPrice: 65000
     stateDurationMinSeconds: 30
@@ -5541,6 +5556,9 @@ MonoBehaviour:
     noiseStrength: 0.35
     trendStrength: 0.25
     meanReversionStrength: 0.35
+    normalMaxPriceChangePerTick01: 0.04
+    pumpMaxPriceChangePerTick01: 0.12
+    crashMaxPriceChangePerTick01: 0.18
     crashFirstTriggerPrice: 120000
     crashThresholdRandomMin: 10000
     crashThresholdRandomMax: 1000000
@@ -5564,6 +5582,8 @@ MonoBehaviour:
   hugeChangeMinMultiplier: 1
   hugeChangeMaxMultiplier: 3
   writeToCurrencyMarket: 1
+  logMarketStatesOnStart: 1
+  logMarketStatesOnStateChange: 1
 --- !u!114 &1136403799
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -5576,10 +5596,11 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 2b81b85229f8bb14caf1f198e6975bae, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::TraidingIDLE.Currencies.CurrencyMarket
-  activeCurrency: 0
+  activeCurrency: 2
+  notifyWhenPriceUnchanged: 1
   prices:
   - id: 0
-    price: 1
+    price: 1000
   - id: 1
     price: 2500
   - id: 2
@@ -7376,6 +7397,8 @@ MonoBehaviour:
   candleWickNoise01: 0.04
   candleBodyNoise01: 0.02
   candleVariety01: 0.1
+  minCandleRangeFromPrice01: 0.02
+  minCandleBody01: 0.18
 --- !u!114 &1512680292
 MonoBehaviour:
   m_ObjectHideFlags: 0

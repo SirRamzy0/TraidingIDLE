@@ -8,6 +8,13 @@ namespace TraidingIDLE.Currencies.Simulation
     public sealed class MarketSimulation : MonoBehaviour
     {
         [Serializable]
+        private struct StartPrice
+        {
+            public CurrencyId id;
+            [Min(0.000001f)] public float price;
+        }
+
+        [Serializable]
         private struct PlannedState
         {
             public MarketStateType type;
@@ -40,6 +47,17 @@ namespace TraidingIDLE.Currencies.Simulation
 
         [Header("Target market")]
         [SerializeField] private CurrencyMarket market = null!;
+        [SerializeField] private bool useCurrencyMarketPricesOnStart = false;
+
+        [Header("Game start")]
+        [SerializeField] private bool applyGameStartSettings = true;
+        [SerializeField] private CurrencyId startActiveCurrency = CurrencyId.SHT;
+        [SerializeField] private StartPrice[] startPrices =
+        {
+            new() { id = CurrencyId.SHT, price = 50f },
+            new() { id = CurrencyId.ETH, price = 2500f },
+            new() { id = CurrencyId.BTC, price = 65000f },
+        };
 
         [Header("Coins (3 configs)")]
         [SerializeField] private CoinSimulationConfig[] coins =
@@ -146,6 +164,9 @@ namespace TraidingIDLE.Currencies.Simulation
         {
             _runtime.Clear();
 
+            if (applyGameStartSettings)
+                ApplyGameStartSettings();
+
             for (var i = 0; i < coins.Length; i++)
             {
                 var cfg = coins[i];
@@ -154,12 +175,16 @@ namespace TraidingIDLE.Currencies.Simulation
 
                 NormalizeConfig(cfg);
 
+                var startPrice = cfg.initialPrice;
+                if (useCurrencyMarketPricesOnStart && market != null)
+                    startPrice = market.GetPrice(cfg.id);
+
                 var r = new CoinRuntime
                 {
                     config = cfg,
-                    rawPrice = cfg.initialPrice,
-                    visiblePrice = RoundPrice(cfg, cfg.initialPrice),
-                    corridorAnchor = cfg.initialPrice,
+                    rawPrice = startPrice,
+                    visiblePrice = RoundPrice(cfg, startPrice),
+                    corridorAnchor = startPrice,
                     seed = UnityEngine.Random.Range(1, int.MaxValue),
                 };
 
@@ -175,6 +200,37 @@ namespace TraidingIDLE.Currencies.Simulation
 
             if (logMarketStatesOnStart)
                 LogActiveMarketStates("Market simulation started");
+        }
+
+        private void ApplyGameStartSettings()
+        {
+            if (market != null)
+                market.SetActiveCurrency(startActiveCurrency);
+
+            for (var i = 0; i < coins.Length; i++)
+            {
+                var cfg = coins[i];
+                if (cfg == null)
+                    continue;
+
+                if (TryGetStartPrice(cfg.id, out var price))
+                    cfg.initialPrice = price;
+            }
+        }
+
+        private bool TryGetStartPrice(CurrencyId id, out float price)
+        {
+            for (var i = 0; i < startPrices.Length; i++)
+            {
+                if (startPrices[i].id != id)
+                    continue;
+
+                price = Mathf.Max(0.000001f, startPrices[i].price);
+                return true;
+            }
+
+            price = 0f;
+            return false;
         }
 
         private void Update()
