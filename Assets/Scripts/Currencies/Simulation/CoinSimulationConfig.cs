@@ -14,6 +14,14 @@ namespace TraidingIDLE.Currencies.Simulation
         [Min(0.05f)]
         public float tickIntervalSeconds = 1f;
 
+        [Header("State tick speed")]
+        [Min(0.01f)]
+        public float normalTickSpeedMultiplier = 1f;
+        [Min(0.01f)]
+        public float pumpTickSpeedMultiplier = 1.25f;
+        [Min(0.01f)]
+        public float crashTickSpeedMultiplier = 1.5f;
+
         [Min(1)]
         public int plannedStatesCount = 3;
 
@@ -48,6 +56,14 @@ namespace TraidingIDLE.Currencies.Simulation
         public float trendStrength = 0.25f;
         [Min(0f)]
         public float meanReversionStrength = 0.35f;
+
+        [Header("Max price change per tick")]
+        [Range(0f, 1f)]
+        public float normalMaxPriceChangePerTick01 = 0.10f;
+        [Range(0f, 1f)]
+        public float pumpMaxPriceChangePerTick01 = 0.25f;
+        [Range(0f, 1f)]
+        public float crashMaxPriceChangePerTick01 = 0.35f;
 
         [Header("Crash logic")]
         [Min(0.000001f)]

@@ -15,6 +15,9 @@ namespace TraidingIDLE.Currencies
         [Header("Initial state")]
         [SerializeField] private CurrencyId activeCurrency = CurrencyId.SHT;
 
+        [Header("Events")]
+        [SerializeField] private bool notifyWhenPriceUnchanged = true;
+
         [Header("Prices")]
         [SerializeField] private CurrencyPrice[] prices =
         {
@@ -59,7 +62,11 @@ namespace TraidingIDLE.Currencies
                     continue;
 
                 if (Mathf.Approximately(prices[i].price, price))
+                {
+                    if (notifyWhenPriceUnchanged)
+                        PriceChanged?.Invoke(id, prices[i].price);
                     return;
+                }
 
                 prices[i].price = price;
                 PriceChanged?.Invoke(id, price);

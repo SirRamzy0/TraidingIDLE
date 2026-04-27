@@ -40,6 +40,10 @@ namespace TraidingIDLE.UI.Charts
         [SerializeField] private float candleBodyNoise01 = 0.03f;
         [Range(0f, 0.25f)]
         [SerializeField] private float candleVariety01 = 0.10f;
+        [Range(0f, 0.10f)]
+        [SerializeField] private float minCandleRangeFromPrice01 = 0.02f;
+        [Range(0f, 1f)]
+        [SerializeField] private float minCandleBody01 = 0.18f;
 
         private readonly PriceHistoryBuffer _history = new();
         private readonly CandleHistoryBuffer _candles = new();
@@ -267,19 +271,19 @@ namespace TraidingIDLE.UI.Charts
             var absClose = Mathf.Max(0.000001f, close);
 
             var baseRange = Mathf.Abs(absClose - absOpen);
-            var minRange = Mathf.Min(absOpen, absClose) * 0.0015f; // always some life
+            var minRange = Mathf.Min(absOpen, absClose) * minCandleRangeFromPrice01;
             var range = Mathf.Max(baseRange, minRange);
 
             var r1 = Hash01(_seed, index);
             var r2 = Hash01(_seed ^ 0x6C8E9CF5, index);
             var r3 = Hash01(_seed ^ 0x3C6EF372, index);
 
-            // Variety: sometimes long wick, sometimes bigger body
-            var wickK = (0.35f + r1) * (1f + (r3 * 2f - 1f) * candleVariety01);
-            var bodyK = (0.35f + r2) * (1f - (r3 * 2f - 1f) * candleVariety01 * 0.5f);
+            // Variety: some candles get a long wick, some get a visible body.
+            var wickK = Mathf.Lerp(0.15f, 1.25f + candleVariety01 * 4f, r1);
+            var bodyK = Mathf.Lerp(minCandleBody01, Mathf.Min(0.95f, minCandleBody01 + candleBodyNoise01 + candleVariety01 * 2f), r2);
 
             var wickAmp = range * candleWickNoise01 * wickK;
-            var bodyAmp = range * candleBodyNoise01 * bodyK;
+            var bodyAmp = range * bodyK;
 
             var high = Mathf.Max(absOpen, absClose);
             var low = Mathf.Min(absOpen, absClose);

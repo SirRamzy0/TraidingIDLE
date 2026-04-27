@@ -48,10 +48,16 @@ namespace TraidingIDLE.Currencies.Simulation
             {
                 id = CurrencyId.SHT,
                 tickIntervalSeconds = 0.6f,
+                normalTickSpeedMultiplier = 1f,
+                pumpTickSpeedMultiplier = 1.35f,
+                crashTickSpeedMultiplier = 1.6f,
                 initialPrice = 50f,
                 corridorWidthAtLowPrice = 2.8f,
                 corridorWidthAtHighPrice = 1.5f,
                 highPriceReference = 3000f,
+                normalMaxPriceChangePerTick01 = 0.12f,
+                pumpMaxPriceChangePerTick01 = 0.35f,
+                crashMaxPriceChangePerTick01 = 0.45f,
                 roundingRules = new[] { new PriceRoundingRule { minPrice = 0f, step = 5f } },
                 crashFirstTriggerPrice = 500f,
             },
@@ -59,10 +65,16 @@ namespace TraidingIDLE.Currencies.Simulation
             {
                 id = CurrencyId.ETH,
                 tickIntervalSeconds = 1.0f,
+                normalTickSpeedMultiplier = 1f,
+                pumpTickSpeedMultiplier = 1.25f,
+                crashTickSpeedMultiplier = 1.45f,
                 initialPrice = 2500f,
                 corridorWidthAtLowPrice = 1.8f,
                 corridorWidthAtHighPrice = 1.25f,
                 highPriceReference = 50000f,
+                normalMaxPriceChangePerTick01 = 0.07f,
+                pumpMaxPriceChangePerTick01 = 0.25f,
+                crashMaxPriceChangePerTick01 = 0.35f,
                 roundingRules = new[]
                 {
                     new PriceRoundingRule { minPrice = 0f, step = 1f },
@@ -76,10 +88,16 @@ namespace TraidingIDLE.Currencies.Simulation
             {
                 id = CurrencyId.BTC,
                 tickIntervalSeconds = 1.4f,
+                normalTickSpeedMultiplier = 1f,
+                pumpTickSpeedMultiplier = 1.15f,
+                crashTickSpeedMultiplier = 1.3f,
                 initialPrice = 65000f,
                 corridorWidthAtLowPrice = 1.45f,
                 corridorWidthAtHighPrice = 1.18f,
                 highPriceReference = 800000f,
+                normalMaxPriceChangePerTick01 = 0.04f,
+                pumpMaxPriceChangePerTick01 = 0.12f,
+                crashMaxPriceChangePerTick01 = 0.18f,
                 roundingRules = new[]
                 {
                     new PriceRoundingRule { minPrice = 0f, step = 10f },
@@ -113,6 +131,8 @@ namespace TraidingIDLE.Currencies.Simulation
 
         [Header("Debug")]
         [SerializeField] private bool writeToCurrencyMarket = true;
+        [SerializeField] private bool logMarketStatesOnStart = true;
+        [SerializeField] private bool logMarketStatesOnStateChange = true;
 
         private readonly Dictionary<CurrencyId, CoinRuntime> _runtime = new();
 
@@ -152,6 +172,9 @@ namespace TraidingIDLE.Currencies.Simulation
                 if (writeToCurrencyMarket && market != null)
                     market.SetPrice(cfg.id, r.visiblePrice);
             }
+
+            if (logMarketStatesOnStart)
+                LogActiveMarketStates("Market simulation started");
         }
 
         private void Update()
@@ -163,10 +186,12 @@ namespace TraidingIDLE.Currencies.Simulation
                 r.tickTimer += dt;
                 r.time += dt;
 
-                while (r.tickTimer >= r.config.tickIntervalSeconds)
+                var interval = GetEffectiveTickInterval(r);
+                while (r.tickTimer >= interval)
                 {
-                    r.tickTimer -= r.config.tickIntervalSeconds;
-                    Tick(r, r.config.tickIntervalSeconds);
+                    r.tickTimer -= interval;
+                    Tick(r, interval);
+                    interval = GetEffectiveTickInterval(r);
                 }
             }
         }
@@ -178,6 +203,9 @@ namespace TraidingIDLE.Currencies.Simulation
             {
                 ApplyNextPlannedState(r);
                 EnsurePlannedStates(r);
+
+                if (logMarketStatesOnStateChange)
+                    LogActiveMarketStates($"{r.config.id} changed market state");
             }
 
             ArmCrashIfNeeded(r);
@@ -185,6 +213,7 @@ namespace TraidingIDLE.Currencies.Simulation
 
             var nextRaw = SimulateNextRawPrice(r, dt);
             nextRaw = Mathf.Max(0f, nextRaw);
+            nextRaw = LimitPriceChangePerTick(r, nextRaw);
 
             r.rawPrice = nextRaw;
             r.visiblePrice = RoundPrice(r.config, r.rawPrice);
@@ -289,6 +318,81 @@ namespace TraidingIDLE.Currencies.Simulation
             }
 
             return next;
+        }
+
+        private static float LimitPriceChangePerTick(CoinRuntime r, float desiredPrice)
+        {
+            var current = Mathf.Max(0f, r.rawPrice);
+            if (current <= 0.000001f)
+                return desiredPrice;
+
+            var maxChange01 = GetMaxPriceChangePerTick01(r);
+            if (maxChange01 <= 0f)
+                return desiredPrice;
+
+            var maxDelta = current * maxChange01;
+
+            // If rounding step is larger than the percent limit, allow at least one visible step.
+            var step = GetRoundingStep(r.config, current);
+            if (step > 0f)
+                maxDelta = Mathf.Max(maxDelta, step);
+
+            return Mathf.MoveTowards(current, desiredPrice, maxDelta);
+        }
+
+        private static float GetMaxPriceChangePerTick01(CoinRuntime r)
+        {
+            var cfg = r.config;
+            return r.currentState switch
+            {
+                MarketStateType.MarketCrash => cfg.crashMaxPriceChangePerTick01,
+                MarketStateType.SlowUpThenPumpAndDump => cfg.pumpMaxPriceChangePerTick01,
+                MarketStateType.SlowUpThenDump => cfg.pumpMaxPriceChangePerTick01,
+                _ => cfg.normalMaxPriceChangePerTick01,
+            };
+        }
+
+        private static float GetEffectiveTickInterval(CoinRuntime r)
+        {
+            var multiplier = GetTickSpeedMultiplier(r);
+            return r.config.tickIntervalSeconds / Mathf.Max(0.01f, multiplier);
+        }
+
+        private static float GetTickSpeedMultiplier(CoinRuntime r)
+        {
+            var cfg = r.config;
+            return r.currentState switch
+            {
+                MarketStateType.MarketCrash => cfg.crashTickSpeedMultiplier,
+                MarketStateType.SlowUpThenPumpAndDump => cfg.pumpTickSpeedMultiplier,
+                MarketStateType.SlowUpThenDump => cfg.pumpTickSpeedMultiplier,
+                _ => cfg.normalTickSpeedMultiplier,
+            };
+        }
+
+        [ContextMenu("Debug/Log Active Market States")]
+        private void LogActiveMarketStatesFromContextMenu()
+        {
+            LogActiveMarketStates("Manual market states log");
+        }
+
+        private void LogActiveMarketStates(string reason)
+        {
+            if (_runtime.Count == 0)
+            {
+                Debug.Log($"[{nameof(MarketSimulation)}] {reason}: no runtime data yet.", this);
+                return;
+            }
+
+            var message = $"[{nameof(MarketSimulation)}] {reason}\n";
+            foreach (var kv in _runtime)
+            {
+                var r = kv.Value;
+                var next = r.plan.Count > 0 ? r.plan.Peek().type.ToString() : "none";
+                message += $"{r.config.id}: current={r.currentState}, timeLeft={r.stateTimeLeft:0}s, next={next}, price={r.visiblePrice:0.##}\n";
+            }
+
+            Debug.Log(message, this);
         }
 
         private static void RebuildCorridor(CoinRuntime r, float aroundPrice, bool force)
@@ -551,6 +655,9 @@ namespace TraidingIDLE.Currencies.Simulation
         private static void NormalizeConfig(CoinSimulationConfig cfg)
         {
             cfg.tickIntervalSeconds = Mathf.Max(0.05f, cfg.tickIntervalSeconds);
+            cfg.normalTickSpeedMultiplier = Mathf.Max(0.01f, cfg.normalTickSpeedMultiplier);
+            cfg.pumpTickSpeedMultiplier = Mathf.Max(0.01f, cfg.pumpTickSpeedMultiplier);
+            cfg.crashTickSpeedMultiplier = Mathf.Max(0.01f, cfg.crashTickSpeedMultiplier);
             cfg.plannedStatesCount = Mathf.Max(1, cfg.plannedStatesCount);
 
             cfg.stateDurationMinSeconds = Mathf.Max(1f, cfg.stateDurationMinSeconds);
@@ -562,6 +669,10 @@ namespace TraidingIDLE.Currencies.Simulation
             cfg.corridorWidthAtLowPrice = Mathf.Max(1.01f, cfg.corridorWidthAtLowPrice);
             cfg.corridorWidthAtHighPrice = Mathf.Max(1.01f, cfg.corridorWidthAtHighPrice);
             cfg.minCorridorLowFromInitial = Mathf.Max(0.01f, cfg.minCorridorLowFromInitial);
+
+            cfg.normalMaxPriceChangePerTick01 = Mathf.Clamp01(cfg.normalMaxPriceChangePerTick01);
+            cfg.pumpMaxPriceChangePerTick01 = Mathf.Clamp01(cfg.pumpMaxPriceChangePerTick01);
+            cfg.crashMaxPriceChangePerTick01 = Mathf.Clamp01(cfg.crashMaxPriceChangePerTick01);
 
             cfg.crashThresholdRandomMin = Mathf.Max(0f, cfg.crashThresholdRandomMin);
             cfg.crashThresholdRandomMax = Mathf.Max(0f, cfg.crashThresholdRandomMax);
