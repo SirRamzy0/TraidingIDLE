@@ -5478,6 +5478,16 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::TraidingIDLE.Currencies.Simulation.MarketSimulation
   market: {fileID: 1136403799}
+  useCurrencyMarketPricesOnStart: 0
+  applyGameStartSettings: 1
+  startActiveCurrency: 0
+  startPrices:
+  - id: 0
+    price: 50
+  - id: 1
+    price: 2500
+  - id: 2
+    price: 65000
   coins:
   - id: 0
     tickIntervalSeconds: 0.6
@@ -5496,6 +5506,8 @@ MonoBehaviour:
     noiseStrength: 0.35
     trendStrength: 0.25
     meanReversionStrength: 0.35
+    chopPhaseDurationMinSeconds: 10
+    chopPhaseDurationMaxSeconds: 35
     normalMaxPriceChangePerTick01: 0.12
     pumpMaxPriceChangePerTick01: 0.35
     crashMaxPriceChangePerTick01: 0.45
@@ -5507,7 +5519,7 @@ MonoBehaviour:
     - minPrice: 0
       step: 5
   - id: 1
-    tickIntervalSeconds: 1
+    tickIntervalSeconds: 0.5
     normalTickSpeedMultiplier: 1
     pumpTickSpeedMultiplier: 1.25
     crashTickSpeedMultiplier: 1.45
@@ -5523,6 +5535,8 @@ MonoBehaviour:
     noiseStrength: 0.35
     trendStrength: 0.25
     meanReversionStrength: 0.35
+    chopPhaseDurationMinSeconds: 10
+    chopPhaseDurationMaxSeconds: 35
     normalMaxPriceChangePerTick01: 0.07
     pumpMaxPriceChangePerTick01: 0.25
     crashMaxPriceChangePerTick01: 0.35
@@ -5556,6 +5570,8 @@ MonoBehaviour:
     noiseStrength: 0.35
     trendStrength: 0.25
     meanReversionStrength: 0.35
+    chopPhaseDurationMinSeconds: 10
+    chopPhaseDurationMaxSeconds: 35
     normalMaxPriceChangePerTick01: 0.04
     pumpMaxPriceChangePerTick01: 0.12
     crashMaxPriceChangePerTick01: 0.18
@@ -5584,6 +5600,7 @@ MonoBehaviour:
   writeToCurrencyMarket: 1
   logMarketStatesOnStart: 1
   logMarketStatesOnStateChange: 1
+  logActiveCurrencyChopDebug: 1
 --- !u!114 &1136403799
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -5596,7 +5613,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 2b81b85229f8bb14caf1f198e6975bae, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::TraidingIDLE.Currencies.CurrencyMarket
-  activeCurrency: 2
+  activeCurrency: 1
   notifyWhenPriceUnchanged: 1
   prices:
   - id: 0
@@ -6518,7 +6535,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 6e970f700811858489d8ba6519736859, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::TraidingIDLE.UI.Charts.PriceChartAxisLabels
-  board: {fileID: 1512680291}
+  board: {fileID: 1523195675}
   labelsRoot: {fileID: 1355173339}
   labelsCount: 5
   color: {r: 1, g: 1, b: 1, a: 0.85}
@@ -7109,6 +7126,79 @@ MonoBehaviour:
   m_ChildScaleWidth: 0
   m_ChildScaleHeight: 0
   m_ReverseArrangement: 0
+--- !u!1 &1446783055
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1446783056}
+  - component: {fileID: 1446783058}
+  - component: {fileID: 1446783057}
+  m_Layer: 5
+  m_Name: Lines
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!224 &1446783056
+RectTransform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1446783055}
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 1512680290}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+  m_AnchorMin: {x: 0, y: 0}
+  m_AnchorMax: {x: 1, y: 1}
+  m_AnchoredPosition: {x: 0, y: 0}
+  m_SizeDelta: {x: 0, y: 0}
+  m_Pivot: {x: 0.5, y: 0.5}
+--- !u!114 &1446783057
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1446783055}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 8c189ebd94c6bec4b868cf15b2a3ba0d, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::TraidingIDLE.UI.Charts.UIChartGridGraphic
+  m_Material: {fileID: 0}
+  m_Color: {r: 1, g: 1, b: 1, a: 1}
+  m_RaycastTarget: 1
+  m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
+  board: {fileID: 1523195675}
+  horizontalLines: 5
+  gridThickness: 1.5
+  gridColor: {r: 1, g: 1, b: 1, a: 0.019607844}
+  showCurrentPriceLine: 1
+  currentPriceLineThickness: 1.5
+  currentPriceLineColor: {r: 0.2, g: 0.95, b: 0.55, a: 0.85}
+  dashedCurrentPriceLine: 1
+  dashLength: 10
+  dashGap: 6
+  snapLinesToPixels: 1
+  minVisibleThickness: 1.25
+--- !u!222 &1446783058
+CanvasRenderer:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1446783055}
+  m_CullTransparentMesh: 1
 --- !u!1 &1462535912
 GameObject:
   m_ObjectHideFlags: 0
@@ -7344,10 +7434,8 @@ GameObject:
   - component: {fileID: 1512680290}
   - component: {fileID: 1512680294}
   - component: {fileID: 1512680293}
-  - component: {fileID: 1512680292}
-  - component: {fileID: 1512680291}
   m_Layer: 5
-  m_Name: Chart_board
+  m_Name: Chart_board_Conteiner
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -7364,7 +7452,9 @@ RectTransform:
   m_LocalPosition: {x: 0, y: 0, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
-  m_Children: []
+  m_Children:
+  - {fileID: 1446783056}
+  - {fileID: 1523195674}
   m_Father: {fileID: 2100134229}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 0}
@@ -7372,53 +7462,6 @@ RectTransform:
   m_AnchoredPosition: {x: 0, y: 0}
   m_SizeDelta: {x: 0, y: 0}
   m_Pivot: {x: 0.5, y: 0.5}
---- !u!114 &1512680291
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1512680289}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: c589f79bd11b23f43891b914323dc0b1, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::TraidingIDLE.UI.Charts.PriceChartBoard
-  market: {fileID: 1136403799}
-  followActiveCurrency: 1
-  currency: 0
-  historySize: 50
-  initialFillNoise01: 0.03
-  edgePadding01: 0.1
-  minViewportRange: 1
-  maxViewportRange: 0
-  smoothViewport: 0.25
-  candlestickChart: {fileID: 1512680292}
-  candleWickNoise01: 0.04
-  candleBodyNoise01: 0.02
-  candleVariety01: 0.1
-  minCandleRangeFromPrice01: 0.02
-  minCandleBody01: 0.18
---- !u!114 &1512680292
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1512680289}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 58eee68f0359ab84dad7598db299875a, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::TraidingIDLE.UI.Charts.UICandlestickChartGraphic
-  m_Material: {fileID: 0}
-  m_Color: {r: 1, g: 1, b: 1, a: 1}
-  m_RaycastTarget: 1
-  m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
-  wickThickness: 2
-  bodyWidth01: 0.65
-  upColor: {r: 0.25, g: 0.95, b: 0.55, a: 1}
-  downColor: {r: 0.95, g: 0.35, b: 0.35, a: 1}
 --- !u!114 &1512680293
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -7446,6 +7489,99 @@ CanvasRenderer:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1512680289}
+  m_CullTransparentMesh: 1
+--- !u!1 &1523195673
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1523195674}
+  - component: {fileID: 1523195677}
+  - component: {fileID: 1523195676}
+  - component: {fileID: 1523195675}
+  m_Layer: 5
+  m_Name: Chart_board
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!224 &1523195674
+RectTransform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1523195673}
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 1512680290}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+  m_AnchorMin: {x: 0, y: 0}
+  m_AnchorMax: {x: 1, y: 1}
+  m_AnchoredPosition: {x: 0, y: 0}
+  m_SizeDelta: {x: 0, y: 0}
+  m_Pivot: {x: 0.5, y: 0.5}
+--- !u!114 &1523195675
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1523195673}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: c589f79bd11b23f43891b914323dc0b1, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::TraidingIDLE.UI.Charts.PriceChartBoard
+  market: {fileID: 1136403799}
+  followActiveCurrency: 1
+  currency: 0
+  historySize: 50
+  initialFillNoise01: 0.03
+  edgePadding01: 0.1
+  minViewportRange: 1
+  maxViewportRange: 0
+  smoothViewport: 0.25
+  candlestickChart: {fileID: 1523195676}
+  candleWickNoise01: 0.06
+  candleBodyNoise01: 0.03
+  candleVariety01: 0.1
+  minCandleRangeFromPrice01: 0.02
+  minCandleBody01: 0.18
+--- !u!114 &1523195676
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1523195673}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 58eee68f0359ab84dad7598db299875a, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::TraidingIDLE.UI.Charts.UICandlestickChartGraphic
+  m_Material: {fileID: 0}
+  m_Color: {r: 1, g: 1, b: 1, a: 1}
+  m_RaycastTarget: 1
+  m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
+  wickThickness: 2
+  bodyWidth01: 0.65
+  upColor: {r: 0.25, g: 0.95, b: 0.55, a: 1}
+  downColor: {r: 0.95, g: 0.35, b: 0.35, a: 1}
+--- !u!222 &1523195677
+CanvasRenderer:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1523195673}
   m_CullTransparentMesh: 1
 --- !u!1 &1534382132
 GameObject:

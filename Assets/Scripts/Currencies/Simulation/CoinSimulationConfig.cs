@@ -57,6 +57,12 @@ namespace TraidingIDLE.Currencies.Simulation
         [Min(0f)]
         public float meanReversionStrength = 0.35f;
 
+        [Header("Chop in corridor")]
+        [Min(1f)]
+        public float chopPhaseDurationMinSeconds = 10f;
+        [Min(1f)]
+        public float chopPhaseDurationMaxSeconds = 35f;
+
         [Header("Max price change per tick")]
         [Range(0f, 1f)]
         public float normalMaxPriceChangePerTick01 = 0.10f;

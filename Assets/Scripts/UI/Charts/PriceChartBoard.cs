@@ -50,14 +50,17 @@ namespace TraidingIDLE.UI.Charts
         private UICandlestickChartGraphic.Candle01[] _candles01 = new UICandlestickChartGraphic.Candle01[50];
         private float _viewMin;
         private float _viewMax;
+        private float _currentPrice;
         private bool _hasViewport;
         private bool _receivedLivePrice;
         private int _seed;
 
         public event System.Action<float, float>? ViewportChanged;
+        public event System.Action<float>? CurrentPriceChanged;
 
         public float ViewMin => _viewMin;
         public float ViewMax => _viewMax;
+        public float CurrentPrice => _currentPrice;
         public bool HasViewport => _hasViewport;
         public CurrencyId Currency => currency;
 
@@ -121,6 +124,9 @@ namespace TraidingIDLE.UI.Charts
             if (id != currency)
                 return;
 
+            _currentPrice = price;
+            CurrentPriceChanged?.Invoke(_currentPrice);
+
             if (_history.Capacity != historySize + 1)
                 _history.SetCapacity(historySize + 1);
             if (_candles.Capacity != historySize)
@@ -156,6 +162,9 @@ namespace TraidingIDLE.UI.Charts
 
         private void SeedAroundPrice(float price)
         {
+            _currentPrice = price;
+            CurrentPriceChanged?.Invoke(_currentPrice);
+
             _history.Clear();
             _candles.Clear();
             if (_history.Capacity != historySize + 1)
@@ -270,17 +279,20 @@ namespace TraidingIDLE.UI.Charts
             var absOpen = Mathf.Max(0.000001f, open);
             var absClose = Mathf.Max(0.000001f, close);
 
-            var baseRange = Mathf.Abs(absClose - absOpen);
-            var minRange = Mathf.Min(absOpen, absClose) * minCandleRangeFromPrice01;
-            var range = Mathf.Max(baseRange, minRange);
-
             var r1 = Hash01(_seed, index);
             var r2 = Hash01(_seed ^ 0x6C8E9CF5, index);
             var r3 = Hash01(_seed ^ 0x3C6EF372, index);
+            var r4 = Hash01(_seed ^ unchecked((int)0xB5297A4D), index);
+            var r5 = Hash01(_seed ^ unchecked((int)0x68E31DA4), index);
+
+            var baseRange = Mathf.Abs(absClose - absOpen);
+            var minRange = Mathf.Min(absOpen, absClose) * minCandleRangeFromPrice01;
+            var variedMinRange = minRange * Mathf.Lerp(0.35f, 2.80f + candleVariety01 * 5f, r4);
+            var range = Mathf.Max(baseRange, variedMinRange);
 
             // Variety: some candles get a long wick, some get a visible body.
-            var wickK = Mathf.Lerp(0.15f, 1.25f + candleVariety01 * 4f, r1);
-            var bodyK = Mathf.Lerp(minCandleBody01, Mathf.Min(0.95f, minCandleBody01 + candleBodyNoise01 + candleVariety01 * 2f), r2);
+            var wickK = Mathf.Lerp(0.05f, 1.75f + candleVariety01 * 6f, r1);
+            var bodyK = Mathf.Lerp(minCandleBody01 * 0.35f, Mathf.Min(0.95f, minCandleBody01 + candleBodyNoise01 + candleVariety01 * 3f), r2);
 
             var wickAmp = range * candleWickNoise01 * wickK;
             var bodyAmp = range * bodyK;
@@ -292,15 +304,16 @@ namespace TraidingIDLE.UI.Charts
             if (Mathf.Abs(absClose - absOpen) < bodyAmp)
             {
                 var mid = (absOpen + absClose) * 0.5f;
-                absOpen = Mathf.Max(0f, mid - bodyAmp * 0.5f);
-                absClose = Mathf.Max(0f, mid + bodyAmp * 0.5f);
+                var bodyDirection = r5 >= 0.5f ? 1f : -1f;
+                absOpen = Mathf.Max(0f, mid - bodyAmp * 0.5f * bodyDirection);
+                absClose = Mathf.Max(0f, mid + bodyAmp * 0.5f * bodyDirection);
                 high = Mathf.Max(absOpen, absClose);
                 low = Mathf.Min(absOpen, absClose);
             }
 
             // Asymmetric wicks (more "real" look)
-            var upWick = wickAmp * (0.6f + r1);
-            var downWick = wickAmp * (0.6f + r2);
+            var upWick = wickAmp * Mathf.Lerp(0.15f, 2.2f, r1);
+            var downWick = wickAmp * Mathf.Lerp(0.15f, 2.2f, r2);
 
             high += upWick;
             low = Mathf.Max(0f, low - downWick);

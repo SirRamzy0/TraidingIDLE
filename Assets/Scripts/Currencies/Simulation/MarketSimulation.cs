@@ -41,6 +41,15 @@ namespace TraidingIDLE.Currencies.Simulation
             public float stateTimeLeft;
             public readonly Queue<PlannedState> plan = new();
 
+            public float chopTargetPrice;
+            public float chopPhaseDuration;
+            public float chopPhaseTimeLeft;
+            public int chopDirection = 1;
+            public bool chopFakeoutUsed;
+            public float chopFakeoutStartTime;
+            public int chopFakeoutTicksLeft;
+            public int chopReturnBoostTicksLeft;
+
             public int seed;
             public float time;
         }
@@ -73,6 +82,8 @@ namespace TraidingIDLE.Currencies.Simulation
                 corridorWidthAtLowPrice = 2.8f,
                 corridorWidthAtHighPrice = 1.5f,
                 highPriceReference = 3000f,
+                chopPhaseDurationMinSeconds = 10f,
+                chopPhaseDurationMaxSeconds = 35f,
                 normalMaxPriceChangePerTick01 = 0.12f,
                 pumpMaxPriceChangePerTick01 = 0.35f,
                 crashMaxPriceChangePerTick01 = 0.45f,
@@ -90,6 +101,8 @@ namespace TraidingIDLE.Currencies.Simulation
                 corridorWidthAtLowPrice = 1.8f,
                 corridorWidthAtHighPrice = 1.25f,
                 highPriceReference = 50000f,
+                chopPhaseDurationMinSeconds = 10f,
+                chopPhaseDurationMaxSeconds = 35f,
                 normalMaxPriceChangePerTick01 = 0.07f,
                 pumpMaxPriceChangePerTick01 = 0.25f,
                 crashMaxPriceChangePerTick01 = 0.35f,
@@ -113,6 +126,8 @@ namespace TraidingIDLE.Currencies.Simulation
                 corridorWidthAtLowPrice = 1.45f,
                 corridorWidthAtHighPrice = 1.18f,
                 highPriceReference = 800000f,
+                chopPhaseDurationMinSeconds = 10f,
+                chopPhaseDurationMaxSeconds = 35f,
                 normalMaxPriceChangePerTick01 = 0.04f,
                 pumpMaxPriceChangePerTick01 = 0.12f,
                 crashMaxPriceChangePerTick01 = 0.18f,
@@ -151,6 +166,7 @@ namespace TraidingIDLE.Currencies.Simulation
         [SerializeField] private bool writeToCurrencyMarket = true;
         [SerializeField] private bool logMarketStatesOnStart = true;
         [SerializeField] private bool logMarketStatesOnStateChange = true;
+        [SerializeField] private bool logActiveCurrencyChopDebug = true;
 
         private readonly Dictionary<CurrencyId, CoinRuntime> _runtime = new();
 
@@ -278,7 +294,7 @@ namespace TraidingIDLE.Currencies.Simulation
                 market.SetPrice(r.config.id, r.visiblePrice);
         }
 
-        private static float SimulateNextRawPrice(CoinRuntime r, float dt)
+        private float SimulateNextRawPrice(CoinRuntime r, float dt)
         {
             var cfg = r.config;
 
@@ -300,9 +316,7 @@ namespace TraidingIDLE.Currencies.Simulation
             switch (r.currentState)
             {
                 case MarketStateType.ChopInCorridor:
-                    desiredPos = 0.5f + noise * 0.15f;
-                    impulse = 0.0f;
-                    break;
+                    return SimulateChopInCorridor(r, dt, noise, range);
                 case MarketStateType.Flat:
                     desiredPos = Mathf.Clamp01(0.5f + noise * 0.05f);
                     impulse = -0.05f;
@@ -374,6 +388,132 @@ namespace TraidingIDLE.Currencies.Simulation
             }
 
             return next;
+        }
+
+        private float SimulateChopInCorridor(CoinRuntime r, float dt, float noise, float range)
+        {
+            if (r.chopPhaseTimeLeft <= 0f || r.chopTargetPrice <= 0f)
+            {
+                var pos = Mathf.InverseLerp(r.corridorLow, r.corridorHigh, r.rawPrice);
+                var firstDirection = pos <= 0.5f ? 1 : -1;
+                StartNewChopPhase(r, firstDirection);
+            }
+
+            var elapsed = r.chopPhaseDuration - r.chopPhaseTimeLeft;
+            if (!r.chopFakeoutUsed && r.chopPhaseDuration > 10f && elapsed >= r.chopFakeoutStartTime)
+            {
+                r.chopFakeoutUsed = true;
+                r.chopFakeoutTicksLeft = UnityEngine.Random.Range(2, 5);
+                r.chopReturnBoostTicksLeft = UnityEngine.Random.Range(2, 4);
+
+                if (ShouldLogActiveCurrency(r))
+                {
+                    Debug.Log(
+                        $"[ChopInCorridor] {r.config.id}: fakeout started. " +
+                        $"Main direction={FormatChopDirection(r.chopDirection)}, " +
+                        $"fakeout ticks={r.chopFakeoutTicksLeft}, return boost ticks={r.chopReturnBoostTicksLeft}.",
+                        this);
+                }
+            }
+
+            var effectiveDirection = r.chopDirection;
+            var fakeoutActive = r.chopFakeoutTicksLeft > 0;
+            if (fakeoutActive)
+            {
+                effectiveDirection *= -1;
+                r.chopFakeoutTicksLeft--;
+            }
+
+            var boost = 1f;
+            if (!fakeoutActive && r.chopReturnBoostTicksLeft > 0)
+            {
+                boost = 1.65f;
+                r.chopReturnBoostTicksLeft--;
+            }
+
+            var remaining = Mathf.Max(dt, r.chopPhaseTimeLeft);
+            var guidedDelta = (r.chopTargetPrice - r.rawPrice) / remaining * dt * 0.45f;
+
+            // Random step: biased toward the target, but still often moves against it.
+            var targetDirection = r.chopTargetPrice >= r.rawPrice ? 1 : -1;
+            var chanceTowardTarget = fakeoutActive ? 0.18f : 0.68f;
+            var randomDirection = UnityEngine.Random.value <= chanceTowardTarget ? targetDirection : -targetDirection;
+            var randomMagnitude = UnityEngine.Random.Range(0.45f, 1.35f);
+            var noisyDelta = randomDirection * range * r.config.noiseStrength * 0.30f * dt * randomMagnitude;
+
+            // Smooth noise prevents the random walk from looking like pure coin flips.
+            noisyDelta += noise * range * r.config.noiseStrength * 0.12f * dt;
+
+            if (fakeoutActive)
+            {
+                // Fakeout: several ticks against the target, then the boost above pulls it back.
+                guidedDelta = 0f;
+                noisyDelta = effectiveDirection * range * r.config.trendStrength * 0.42f * dt;
+                noisyDelta += noise * range * r.config.noiseStrength * 0.08f * dt;
+            }
+
+            var outsidePull = 0f;
+            if (r.rawPrice > r.corridorHigh) outsidePull = (r.corridorHigh - r.rawPrice);
+            else if (r.rawPrice < r.corridorLow) outsidePull = (r.corridorLow - r.rawPrice);
+
+            var next = r.rawPrice + (guidedDelta + noisyDelta) * boost + outsidePull * 0.35f;
+
+            var corridorCenter = (r.corridorLow + r.corridorHigh) * 0.5f;
+            r.corridorAnchor = Mathf.Lerp(r.corridorAnchor, corridorCenter, 0.025f);
+            RebuildCorridor(r, next, force: false);
+
+            r.chopPhaseTimeLeft -= dt;
+            if (r.chopPhaseTimeLeft <= 0f)
+                StartNewChopPhase(r, -r.chopDirection);
+
+            return next;
+        }
+
+        private void StartNewChopPhase(CoinRuntime r, int direction)
+        {
+            r.chopDirection = direction >= 0 ? 1 : -1;
+            r.chopPhaseDuration = UnityEngine.Random.Range(
+                r.config.chopPhaseDurationMinSeconds,
+                r.config.chopPhaseDurationMaxSeconds);
+            r.chopPhaseTimeLeft = r.chopPhaseDuration;
+            r.chopFakeoutUsed = false;
+            r.chopFakeoutTicksLeft = 0;
+            r.chopReturnBoostTicksLeft = 0;
+
+            var targetPos = r.chopDirection > 0
+                ? UnityEngine.Random.Range(0.62f, 0.88f)
+                : UnityEngine.Random.Range(0.12f, 0.38f);
+
+            r.chopTargetPrice = Mathf.Lerp(r.corridorLow, r.corridorHigh, targetPos);
+            r.chopFakeoutStartTime = r.chopPhaseDuration > 10f
+                ? UnityEngine.Random.Range(r.chopPhaseDuration * 0.35f, r.chopPhaseDuration * 0.70f)
+                : float.PositiveInfinity;
+
+            if (ShouldLogActiveCurrency(r))
+            {
+                Debug.Log(
+                    $"[ChopInCorridor] {r.config.id}: new phase. " +
+                    $"Direction={FormatChopDirection(r.chopDirection)}, " +
+                    $"duration={r.chopPhaseDuration:0.0}s, " +
+                    $"target={r.chopTargetPrice:0.##}, " +
+                    $"targetPos={targetPos:0.00}, " +
+                    $"current={r.rawPrice:0.##}, " +
+                    $"corridor=[{r.corridorLow:0.##}..{r.corridorHigh:0.##}], " +
+                    $"fakeout={(r.chopPhaseDuration > 10f ? $"at {r.chopFakeoutStartTime:0.0}s" : "none")}.",
+                    this);
+            }
+        }
+
+        private bool ShouldLogActiveCurrency(CoinRuntime r)
+        {
+            return logActiveCurrencyChopDebug
+                && market != null
+                && market.ActiveCurrency == r.config.id;
+        }
+
+        private static string FormatChopDirection(int direction)
+        {
+            return direction >= 0 ? "UP (above corridor center)" : "DOWN (below corridor center)";
         }
 
         private static float LimitPriceChangePerTick(CoinRuntime r, float desiredPrice)
@@ -501,6 +641,9 @@ namespace TraidingIDLE.Currencies.Simulation
             r.currentState = next.type;
             r.stateTimeLeft = next.durationSeconds;
 
+            if (r.currentState == MarketStateType.ChopInCorridor)
+                ResetChopInCorridor(r);
+
             // On state change, sometimes change corridor level up/down (with your minor/major/huge rules).
             if (UnityEngine.Random.value <= corridorChangeChanceOnStateChange)
                 ApplyCorridorLevelChange(r);
@@ -523,6 +666,17 @@ namespace TraidingIDLE.Currencies.Simulation
             EnsurePlannedStates(r);
         }
 
+        private static void ResetChopInCorridor(CoinRuntime r)
+        {
+            r.chopTargetPrice = 0f;
+            r.chopPhaseDuration = 0f;
+            r.chopPhaseTimeLeft = 0f;
+            r.chopFakeoutUsed = false;
+            r.chopFakeoutStartTime = float.PositiveInfinity;
+            r.chopFakeoutTicksLeft = 0;
+            r.chopReturnBoostTicksLeft = 0;
+        }
+
         private PlannedState GeneratePlannedState(CoinRuntime r)
         {
             var cfg = r.config;
@@ -530,39 +684,11 @@ namespace TraidingIDLE.Currencies.Simulation
             var duration = UnityEngine.Random.Range(cfg.stateDurationMinSeconds, cfg.stateDurationMaxSeconds);
             duration = Mathf.Max(1f, duration);
 
-            var type = PickWeightedState(cfg.id);
-            return new PlannedState { type = type, durationSeconds = duration };
-        }
-
-        private static MarketStateType PickWeightedState(CurrencyId id)
-        {
-            // Simple first version: per-coin "character" via weights.
-            // Later можно вынести веса в публичные настройки, если понадобится.
-            float chop, flat, slowUpDump, slowUpPumpDump, up, down;
-            switch (id)
+            return new PlannedState
             {
-                case CurrencyId.SHT:
-                    chop = 0.28f; flat = 0.10f; slowUpDump = 0.20f; slowUpPumpDump = 0.22f; up = 0.10f; down = 0.10f;
-                    break;
-                case CurrencyId.ETH:
-                    chop = 0.22f; flat = 0.18f; slowUpDump = 0.18f; slowUpPumpDump = 0.14f; up = 0.16f; down = 0.12f;
-                    break;
-                case CurrencyId.BTC:
-                    chop = 0.16f; flat = 0.22f; slowUpDump = 0.14f; slowUpPumpDump = 0.08f; up = 0.22f; down = 0.18f;
-                    break;
-                default:
-                    chop = 0.2f; flat = 0.2f; slowUpDump = 0.2f; slowUpPumpDump = 0.1f; up = 0.15f; down = 0.15f;
-                    break;
-            }
-
-            var r = UnityEngine.Random.value;
-            var s = 0f;
-            s += chop; if (r <= s) return MarketStateType.ChopInCorridor;
-            s += flat; if (r <= s) return MarketStateType.Flat;
-            s += slowUpDump; if (r <= s) return MarketStateType.SlowUpThenDump;
-            s += slowUpPumpDump; if (r <= s) return MarketStateType.SlowUpThenPumpAndDump;
-            s += up; if (r <= s) return MarketStateType.LongUptrend;
-            return MarketStateType.LongDowntrend;
+                type = MarketStateType.ChopInCorridor,
+                durationSeconds = duration,
+            };
         }
 
         private void ApplyCorridorLevelChange(CoinRuntime r)
@@ -725,6 +851,9 @@ namespace TraidingIDLE.Currencies.Simulation
             cfg.corridorWidthAtLowPrice = Mathf.Max(1.01f, cfg.corridorWidthAtLowPrice);
             cfg.corridorWidthAtHighPrice = Mathf.Max(1.01f, cfg.corridorWidthAtHighPrice);
             cfg.minCorridorLowFromInitial = Mathf.Max(0.01f, cfg.minCorridorLowFromInitial);
+
+            cfg.chopPhaseDurationMinSeconds = Mathf.Max(1f, cfg.chopPhaseDurationMinSeconds);
+            cfg.chopPhaseDurationMaxSeconds = Mathf.Max(cfg.chopPhaseDurationMinSeconds, cfg.chopPhaseDurationMaxSeconds);
 
             cfg.normalMaxPriceChangePerTick01 = Mathf.Clamp01(cfg.normalMaxPriceChangePerTick01);
             cfg.pumpMaxPriceChangePerTick01 = Mathf.Clamp01(cfg.pumpMaxPriceChangePerTick01);
