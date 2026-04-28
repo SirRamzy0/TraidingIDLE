@@ -51,6 +51,10 @@ namespace TraidingIDLE.Currencies.Simulation
             new() { type = MarketStateType.ChopInCorridor, weight = 1f },
             new() { type = MarketStateType.LongUptrend, weight = 0.35f },
             new() { type = MarketStateType.LongDowntrend, weight = 0.25f },
+            new() { type = MarketStateType.SlowUpThenDump, weight = 0.25f },
+            new() { type = MarketStateType.SlowUpThenPumpAndDump, weight = 0.25f },
+            new() { type = MarketStateType.DeadFlatThenRocketPump, weight = 0.18f },
+            new() { type = MarketStateType.DeadFlatThenRocketDump, weight = 0.18f },
         };
 
         [Header("Corridor (volatility shrinks with price)")]
@@ -66,6 +70,39 @@ namespace TraidingIDLE.Currencies.Simulation
         [Header("Corridor limits")]
         [Min(0.01f)]
         public float minCorridorLowFromInitial = 0.5f;
+
+        [Header("State corridors")]
+        [Min(1.01f)]
+        public float calmCorridorWidth = 1.08f;
+        [Range(0f, 1f)]
+        public float calmCorridorPullStrength = 0.45f;
+
+        [Min(1.01f)]
+        public float chopCorridorWidthMin = 2f;
+        [Min(1.01f)]
+        public float chopCorridorWidthMax = 4f;
+        [Range(0f, 1f)]
+        public float chopCorridorPullStrength = 0.35f;
+
+        [Min(1.01f)]
+        public float trendCorridorWidth = 1.65f;
+        [Range(0f, 1f)]
+        public float trendCorridorPullStrength = 0.08f;
+
+        [Min(1.01f)]
+        public float scenarioCorridorWidth = 1.35f;
+        [Range(0f, 1f)]
+        public float scenarioCorridorPullStrength = 0.08f;
+
+        [Min(1.01f)]
+        public float deadFlatCorridorWidth = 1.03f;
+        [Range(0f, 1f)]
+        public float deadFlatCorridorPullStrength = 0.02f;
+
+        [Min(1.01f)]
+        public float crashCorridorWidth = 1.50f;
+        [Range(0f, 1f)]
+        public float crashCorridorPullStrength = 0.12f;
 
         [Header("Movement & noise")]
         [Min(0f)]
@@ -142,19 +179,28 @@ namespace TraidingIDLE.Currencies.Simulation
         public float longUptrendApproachStrength = 0.35f;
         [Min(0f)]
         public float longUptrendNoiseStrength = 0.08f;
+        [Tooltip("Small market wiggle around the upward path. Down wiggles are intentionally stronger than up wiggles.")]
+        [Min(0f)]
+        public float longUptrendWobbleStrength = 0.35f;
+        [Range(0f, 1f)]
+        public float longUptrendDownWobbleChance = 0.45f;
+        [Range(0.1f, 5f)]
+        public float longUptrendDownWobbleMultiplier = 0.9f;
+        [Range(0.1f, 5f)]
+        public float longUptrendUpWobbleMultiplier = 0.35f;
         [Tooltip("Chance per simulation tick to start a multi-tick pullback phase during LongUptrend.")]
         [Range(0f, 0.5f)]
-        public float longUptrendPullbackChancePerTick = 0.16f;
+        public float longUptrendPullbackChancePerTick = 0.20f;
         [Range(0f, 0.5f)]
-        public float longUptrendPullbackStrength = 0.10f;
+        public float longUptrendPullbackStrength = 0.08f;
         [Min(0.5f)]
-        public float longUptrendPullbackDurationMinSeconds = 2f;
+        public float longUptrendPullbackDurationMinSeconds = 0.7f;
         [Min(0.5f)]
-        public float longUptrendPullbackDurationMaxSeconds = 6f;
+        public float longUptrendPullbackDurationMaxSeconds = 1.5f;
         [Min(0f)]
-        public float longUptrendPullbackCooldownSeconds = 8f;
+        public float longUptrendPullbackCooldownSeconds = 2.5f;
         [Min(0.5f)]
-        public float longUptrendRecoveryDurationSeconds = 4f;
+        public float longUptrendRecoveryDurationSeconds = 2f;
         [Range(1f, 4f)]
         public float longUptrendRecoveryCatchupMultiplier = 2f;
         [Range(0f, 1f)]
@@ -192,6 +238,122 @@ namespace TraidingIDLE.Currencies.Simulation
         public float longDowntrendRecoveryCatchupMultiplier = 2f;
         [Range(0f, 1f)]
         public float longDowntrendMaxPriceChangePerTick01 = 0.06f;
+
+        [Header("Spike then dump")]
+        [Range(0.01f, 2f)]
+        public float spikeDumpGrowPercentMin = 0.35f;
+        [Range(0.01f, 2f)]
+        public float spikeDumpGrowPercentMax = 0.75f;
+        [Min(1f)]
+        public float spikeDumpGrowDurationMinSeconds = 8f;
+        [Min(1f)]
+        public float spikeDumpGrowDurationMaxSeconds = 24f;
+        [Tooltip("Dump percent = grow percent * Random(min..max), capped by spikeDumpMaxDropPercent.")]
+        [Min(1f)]
+        public float spikeDumpDropOverGrowMin = 1.15f;
+        [Min(1f)]
+        public float spikeDumpDropOverGrowMax = 1.60f;
+        [Range(0.01f, 0.95f)]
+        public float spikeDumpMaxDropPercent = 0.90f;
+        [Min(0.25f)]
+        public float spikeDumpDumpDurationMinSeconds = 1.5f;
+        [Min(0.25f)]
+        public float spikeDumpDumpDurationMaxSeconds = 5f;
+        [Min(1)]
+        public int spikeDumpShakeMovesMin = 2;
+        [Min(1)]
+        public int spikeDumpShakeMovesMax = 5;
+        [Min(0.5f)]
+        public float spikeDumpShakeDurationMinSeconds = 3f;
+        [Min(0.5f)]
+        public float spikeDumpShakeDurationMaxSeconds = 10f;
+        [Range(0.01f, 1f)]
+        public float spikeDumpShakeMovePercentMin = 0.06f;
+        [Range(0.01f, 1f)]
+        public float spikeDumpShakeMovePercentMax = 0.20f;
+        [Min(0f)]
+        public float spikeDumpNoiseStrength = 0.06f;
+        [Range(0f, 1f)]
+        public float spikeDumpMaxPriceChangePerTick01 = 0.22f;
+
+        [Header("Dip then pump")]
+        [Range(0.01f, 0.95f)]
+        public float dipPumpDipPercentMin = 0.20f;
+        [Range(0.01f, 0.95f)]
+        public float dipPumpDipPercentMax = 0.45f;
+        [Min(1f)]
+        public float dipPumpDipDurationMinSeconds = 8f;
+        [Min(1f)]
+        public float dipPumpDipDurationMaxSeconds = 24f;
+        [Tooltip("Pump percent = dip percent * Random(min..max).")]
+        [Min(1f)]
+        public float dipPumpPumpOverDipMin = 1.15f;
+        [Min(1f)]
+        public float dipPumpPumpOverDipMax = 1.60f;
+        [Range(0.01f, 2f)]
+        public float dipPumpMaxPumpPercent = 0.90f;
+        [Min(0.25f)]
+        public float dipPumpPumpDurationMinSeconds = 1.5f;
+        [Min(0.25f)]
+        public float dipPumpPumpDurationMaxSeconds = 5f;
+        [Min(1)]
+        public int dipPumpShakeMovesMin = 2;
+        [Min(1)]
+        public int dipPumpShakeMovesMax = 5;
+        [Min(0.5f)]
+        public float dipPumpShakeDurationMinSeconds = 3f;
+        [Min(0.5f)]
+        public float dipPumpShakeDurationMaxSeconds = 10f;
+        [Range(0.01f, 1f)]
+        public float dipPumpShakeMovePercentMin = 0.06f;
+        [Range(0.01f, 1f)]
+        public float dipPumpShakeMovePercentMax = 0.20f;
+        [Min(0f)]
+        public float dipPumpNoiseStrength = 0.06f;
+        [Range(0f, 1f)]
+        public float dipPumpMaxPriceChangePerTick01 = 0.22f;
+
+        [Header("Dead flat then rocket pump")]
+        [Min(1f)]
+        public float deadFlatRocketFlatDurationMinSeconds = 12f;
+        [Min(1f)]
+        public float deadFlatRocketFlatDurationMaxSeconds = 35f;
+        [Tooltip("How far the dead-flat part may drift around the entry price.")]
+        [Range(0f, 0.08f)]
+        public float deadFlatRocketFlatRange01 = 0.012f;
+        [Min(0f)]
+        public float deadFlatRocketNoiseStrength = 0.01f;
+        [Range(0.01f, 2f)]
+        public float deadFlatRocketPumpPercentMin = 0.35f;
+        [Range(0.01f, 2f)]
+        public float deadFlatRocketPumpPercentMax = 0.90f;
+        [Min(0.25f)]
+        public float deadFlatRocketPumpDurationMinSeconds = 0.8f;
+        [Min(0.25f)]
+        public float deadFlatRocketPumpDurationMaxSeconds = 2.5f;
+        [Range(0f, 1f)]
+        public float deadFlatRocketMaxPriceChangePerTick01 = 0.35f;
+
+        [Header("Dead flat then rocket dump")]
+        [Min(1f)]
+        public float deadFlatDumpFlatDurationMinSeconds = 12f;
+        [Min(1f)]
+        public float deadFlatDumpFlatDurationMaxSeconds = 35f;
+        [Tooltip("How far the dead-flat part may drift around the entry price.")]
+        [Range(0f, 0.08f)]
+        public float deadFlatDumpFlatRange01 = 0.012f;
+        [Min(0f)]
+        public float deadFlatDumpNoiseStrength = 0.01f;
+        [Range(0.01f, 0.95f)]
+        public float deadFlatDumpDropPercentMin = 0.25f;
+        [Range(0.01f, 0.95f)]
+        public float deadFlatDumpDropPercentMax = 0.65f;
+        [Min(0.25f)]
+        public float deadFlatDumpDurationMinSeconds = 0.8f;
+        [Min(0.25f)]
+        public float deadFlatDumpDurationMaxSeconds = 2.5f;
+        [Range(0f, 1f)]
+        public float deadFlatDumpMaxPriceChangePerTick01 = 0.35f;
 
         [Header("Max price change per tick")]
         [Range(0f, 1f)]

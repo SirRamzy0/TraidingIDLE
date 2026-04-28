@@ -11,6 +11,10 @@ namespace TraidingIDLE.Currencies.Simulation
         MarketCrash = 6,
         /// <summary>Плавное движение с малым шумом в середине коридора (цели ±10–30% от центра).</summary>
         Calm = 7,
+        /// <summary>Почти мертвый рынок, затем сверхбыстрый памп и переход к следующему состоянию.</summary>
+        DeadFlatThenRocketPump = 8,
+        /// <summary>Почти мертвый рынок, затем сверхбыстрый пролив и переход к следующему состоянию.</summary>
+        DeadFlatThenRocketDump = 9,
     }
 }
 
