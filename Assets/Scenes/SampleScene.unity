@@ -5498,6 +5498,13 @@ MonoBehaviour:
     initialPrice: 50
     stateDurationMinSeconds: 30
     stateDurationMaxSeconds: 300
+    plannedStateWeights:
+    - type: 7
+      weight: 0.1
+    - type: 0
+      weight: 0.1
+    - type: 4
+      weight: 0.8
     corridorWidthAtLowPrice: 2.8
     corridorWidthAtHighPrice: 1.5
     highPriceReference: 3000
@@ -5508,15 +5515,54 @@ MonoBehaviour:
     meanReversionStrength: 0.35
     chopPhaseDurationMinSeconds: 10
     chopPhaseDurationMaxSeconds: 35
-    calmOffsetFromHalfMin01: 0.1
-    calmOffsetFromHalfMax01: 0.3
+    chopFakeoutChancePerPhase: 0.75
+    chopFakeoutDurationMinSeconds: 2
+    chopFakeoutDurationMaxSeconds: 6
+    chopFakeoutStrength: 0.42
+    chopRecoveryDurationSeconds: 3
+    chopRecoveryBoost: 1.8
+    calmOffsetFromHalfMin01: 0.03
+    calmOffsetFromHalfMax01: 0.15
     calmLegDurationMinSeconds: 10
     calmLegDurationMaxSeconds: 60
     calmShortLegMaxSeconds: 20
-    calmSmallMoveRelativeThreshold: 0.2
+    calmSmallMoveRelativeThreshold: 0.1
     calmMaxPriceChangePerTick01: 0.045
-    calmNoiseStrength: 0.08
+    calmNoiseStrength: 0.05
     calmApproachStrength: 0.22
+    longUptrendDurationMinSeconds: 20
+    longUptrendDurationMaxSeconds: 90
+    longUptrendTargetMultiplierMin: 2
+    longUptrendTargetMultiplierMax: 4
+    longUptrendSoftCapAtHighReference01: 0.35
+    longUptrendMinBoostAfterSoftCap01: 0.25
+    longUptrendMaxEffectiveMultiplier: 2.25
+    longUptrendTargetCorridorPos: 0.62
+    longUptrendApproachStrength: 0.35
+    longUptrendNoiseStrength: 0.1
+    longUptrendPullbackChancePerTick: 0.16
+    longUptrendPullbackStrength: 0.1
+    longUptrendPullbackDurationMinSeconds: 2
+    longUptrendPullbackDurationMaxSeconds: 6
+    longUptrendPullbackCooldownSeconds: 8
+    longUptrendRecoveryDurationSeconds: 4
+    longUptrendRecoveryCatchupMultiplier: 2
+    longUptrendMaxPriceChangePerTick01: 0.06
+    longDowntrendDurationMinSeconds: 20
+    longDowntrendDurationMaxSeconds: 90
+    longDowntrendTargetDividerMin: 1.35
+    longDowntrendTargetDividerMax: 2.6
+    longDowntrendTargetCorridorPos: 0.35
+    longDowntrendApproachStrength: 0.35
+    longDowntrendNoiseStrength: 0.08
+    longDowntrendRallyChancePerTick: 0.16
+    longDowntrendRallyStrength: 0.1
+    longDowntrendRallyDurationMinSeconds: 2
+    longDowntrendRallyDurationMaxSeconds: 6
+    longDowntrendRallyCooldownSeconds: 8
+    longDowntrendRecoveryDurationSeconds: 4
+    longDowntrendRecoveryCatchupMultiplier: 2
+    longDowntrendMaxPriceChangePerTick01: 0.06
     normalMaxPriceChangePerTick01: 0.12
     pumpMaxPriceChangePerTick01: 0.35
     crashMaxPriceChangePerTick01: 0.45
@@ -5536,6 +5582,11 @@ MonoBehaviour:
     initialPrice: 2500
     stateDurationMinSeconds: 30
     stateDurationMaxSeconds: 300
+    plannedStateWeights:
+    - type: 7
+      weight: 1
+    - type: 0
+      weight: 1
     corridorWidthAtLowPrice: 1.8
     corridorWidthAtHighPrice: 1.25
     highPriceReference: 50000
@@ -5546,6 +5597,12 @@ MonoBehaviour:
     meanReversionStrength: 0.35
     chopPhaseDurationMinSeconds: 10
     chopPhaseDurationMaxSeconds: 35
+    chopFakeoutChancePerPhase: 0.75
+    chopFakeoutDurationMinSeconds: 2
+    chopFakeoutDurationMaxSeconds: 6
+    chopFakeoutStrength: 0.42
+    chopRecoveryDurationSeconds: 3
+    chopRecoveryBoost: 1.8
     calmOffsetFromHalfMin01: 0.1
     calmOffsetFromHalfMax01: 0.3
     calmLegDurationMinSeconds: 10
@@ -5555,6 +5612,39 @@ MonoBehaviour:
     calmMaxPriceChangePerTick01: 0.045
     calmNoiseStrength: 0.08
     calmApproachStrength: 0.22
+    longUptrendDurationMinSeconds: 20
+    longUptrendDurationMaxSeconds: 90
+    longUptrendTargetMultiplierMin: 2
+    longUptrendTargetMultiplierMax: 4
+    longUptrendSoftCapAtHighReference01: 0.35
+    longUptrendMinBoostAfterSoftCap01: 0.25
+    longUptrendMaxEffectiveMultiplier: 2.25
+    longUptrendTargetCorridorPos: 0.62
+    longUptrendApproachStrength: 0.35
+    longUptrendNoiseStrength: 0.08
+    longUptrendPullbackChancePerTick: 0.16
+    longUptrendPullbackStrength: 0.1
+    longUptrendPullbackDurationMinSeconds: 2
+    longUptrendPullbackDurationMaxSeconds: 6
+    longUptrendPullbackCooldownSeconds: 8
+    longUptrendRecoveryDurationSeconds: 4
+    longUptrendRecoveryCatchupMultiplier: 2
+    longUptrendMaxPriceChangePerTick01: 0.06
+    longDowntrendDurationMinSeconds: 20
+    longDowntrendDurationMaxSeconds: 90
+    longDowntrendTargetDividerMin: 1.35
+    longDowntrendTargetDividerMax: 2.6
+    longDowntrendTargetCorridorPos: 0.35
+    longDowntrendApproachStrength: 0.35
+    longDowntrendNoiseStrength: 0.08
+    longDowntrendRallyChancePerTick: 0.16
+    longDowntrendRallyStrength: 0.1
+    longDowntrendRallyDurationMinSeconds: 2
+    longDowntrendRallyDurationMaxSeconds: 6
+    longDowntrendRallyCooldownSeconds: 8
+    longDowntrendRecoveryDurationSeconds: 4
+    longDowntrendRecoveryCatchupMultiplier: 2
+    longDowntrendMaxPriceChangePerTick01: 0.06
     normalMaxPriceChangePerTick01: 0.07
     pumpMaxPriceChangePerTick01: 0.25
     crashMaxPriceChangePerTick01: 0.35
@@ -5580,6 +5670,11 @@ MonoBehaviour:
     initialPrice: 65000
     stateDurationMinSeconds: 30
     stateDurationMaxSeconds: 300
+    plannedStateWeights:
+    - type: 7
+      weight: 1
+    - type: 0
+      weight: 1
     corridorWidthAtLowPrice: 1.45
     corridorWidthAtHighPrice: 1.18
     highPriceReference: 800000
@@ -5590,6 +5685,12 @@ MonoBehaviour:
     meanReversionStrength: 0.35
     chopPhaseDurationMinSeconds: 10
     chopPhaseDurationMaxSeconds: 35
+    chopFakeoutChancePerPhase: 0.75
+    chopFakeoutDurationMinSeconds: 2
+    chopFakeoutDurationMaxSeconds: 6
+    chopFakeoutStrength: 0.42
+    chopRecoveryDurationSeconds: 3
+    chopRecoveryBoost: 1.8
     calmOffsetFromHalfMin01: 0.1
     calmOffsetFromHalfMax01: 0.3
     calmLegDurationMinSeconds: 10
@@ -5599,6 +5700,39 @@ MonoBehaviour:
     calmMaxPriceChangePerTick01: 0.045
     calmNoiseStrength: 0.08
     calmApproachStrength: 0.22
+    longUptrendDurationMinSeconds: 20
+    longUptrendDurationMaxSeconds: 90
+    longUptrendTargetMultiplierMin: 2
+    longUptrendTargetMultiplierMax: 4
+    longUptrendSoftCapAtHighReference01: 0.35
+    longUptrendMinBoostAfterSoftCap01: 0.25
+    longUptrendMaxEffectiveMultiplier: 2.25
+    longUptrendTargetCorridorPos: 0.62
+    longUptrendApproachStrength: 0.35
+    longUptrendNoiseStrength: 0.08
+    longUptrendPullbackChancePerTick: 0.16
+    longUptrendPullbackStrength: 0.1
+    longUptrendPullbackDurationMinSeconds: 2
+    longUptrendPullbackDurationMaxSeconds: 6
+    longUptrendPullbackCooldownSeconds: 8
+    longUptrendRecoveryDurationSeconds: 4
+    longUptrendRecoveryCatchupMultiplier: 2
+    longUptrendMaxPriceChangePerTick01: 0.06
+    longDowntrendDurationMinSeconds: 20
+    longDowntrendDurationMaxSeconds: 90
+    longDowntrendTargetDividerMin: 1.35
+    longDowntrendTargetDividerMax: 2.6
+    longDowntrendTargetCorridorPos: 0.35
+    longDowntrendApproachStrength: 0.35
+    longDowntrendNoiseStrength: 0.08
+    longDowntrendRallyChancePerTick: 0.16
+    longDowntrendRallyStrength: 0.1
+    longDowntrendRallyDurationMinSeconds: 2
+    longDowntrendRallyDurationMaxSeconds: 6
+    longDowntrendRallyCooldownSeconds: 8
+    longDowntrendRecoveryDurationSeconds: 4
+    longDowntrendRecoveryCatchupMultiplier: 2
+    longDowntrendMaxPriceChangePerTick01: 0.06
     normalMaxPriceChangePerTick01: 0.04
     pumpMaxPriceChangePerTick01: 0.12
     crashMaxPriceChangePerTick01: 0.18
@@ -5628,6 +5762,11 @@ MonoBehaviour:
   logMarketStatesOnStart: 1
   logMarketStatesOnStateChange: 1
   logActiveCurrencyChopDebug: 1
+  debugOverrideState: 1
+  debugOverrideActiveCurrencyOnly: 1
+  debugOverrideCurrency: 0
+  debugOverrideStateType: 4
+  debugStateDurationSeconds: 100
 --- !u!114 &1136403799
 MonoBehaviour:
   m_ObjectHideFlags: 0

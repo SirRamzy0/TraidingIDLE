@@ -5,6 +5,14 @@ using TraidingIDLE.Currencies;
 namespace TraidingIDLE.Currencies.Simulation
 {
     [Serializable]
+    public sealed class MarketStateWeight
+    {
+        public MarketStateType type = MarketStateType.Calm;
+        [Min(0f)]
+        public float weight = 1f;
+    }
+
+    [Serializable]
     public sealed class CoinSimulationConfig
     {
         [Header("Identity")]
@@ -35,6 +43,16 @@ namespace TraidingIDLE.Currencies.Simulation
         [Min(1f)]
         public float stateDurationMaxSeconds = 300f;
 
+        [Header("State weights")]
+        [Tooltip("Random planned state weights. Weight 0 disables the state. MarketCrash can still be forced by crash logic.")]
+        public MarketStateWeight[] plannedStateWeights =
+        {
+            new() { type = MarketStateType.Calm, weight = 1f },
+            new() { type = MarketStateType.ChopInCorridor, weight = 1f },
+            new() { type = MarketStateType.LongUptrend, weight = 0.35f },
+            new() { type = MarketStateType.LongDowntrend, weight = 0.25f },
+        };
+
         [Header("Corridor (volatility shrinks with price)")]
         [Min(1.01f)]
         public float corridorWidthAtLowPrice = 2.5f;   // high/low when "cheap"
@@ -62,6 +80,19 @@ namespace TraidingIDLE.Currencies.Simulation
         public float chopPhaseDurationMinSeconds = 10f;
         [Min(1f)]
         public float chopPhaseDurationMaxSeconds = 35f;
+        [Tooltip("Chance that a chop leg gets a multi-second fakeout against the main target.")]
+        [Range(0f, 1f)]
+        public float chopFakeoutChancePerPhase = 0.75f;
+        [Min(0.5f)]
+        public float chopFakeoutDurationMinSeconds = 2f;
+        [Min(0.5f)]
+        public float chopFakeoutDurationMaxSeconds = 6f;
+        [Range(0f, 1f)]
+        public float chopFakeoutStrength = 0.42f;
+        [Min(0.5f)]
+        public float chopRecoveryDurationSeconds = 3f;
+        [Range(1f, 4f)]
+        public float chopRecoveryBoost = 1.8f;
 
         [Header("Calm (Спокойствие)")]
         [Tooltip("Доля от ПОЛОВИНЫ ширины коридора: цель = центр ± Random(min..max) * (high-low)/2.")]
@@ -85,6 +116,82 @@ namespace TraidingIDLE.Currencies.Simulation
         [Tooltip("Насколько агрессивно тянем к цели за оставшееся время фазы (меньше — плавнее).")]
         [Range(0.05f, 0.6f)]
         public float calmApproachStrength = 0.22f;
+
+        [Header("Long uptrend")]
+        [Min(1f)]
+        public float longUptrendDurationMinSeconds = 20f;
+        [Min(1f)]
+        public float longUptrendDurationMaxSeconds = 90f;
+        [Tooltip("Raw desired corridor-anchor multiplier before soft cap. Cheap coins can feel very punchy.")]
+        [Min(1.01f)]
+        public float longUptrendTargetMultiplierMin = 2f;
+        [Min(1.01f)]
+        public float longUptrendTargetMultiplierMax = 4f;
+        [Tooltip("At or above this part of highPriceReference, big multipliers are compressed.")]
+        [Range(0.01f, 1f)]
+        public float longUptrendSoftCapAtHighReference01 = 0.35f;
+        [Tooltip("Minimum part of the rolled x2/x4 boost that remains after soft cap, so growth is still noticeable.")]
+        [Range(0.05f, 1f)]
+        public float longUptrendMinBoostAfterSoftCap01 = 0.25f;
+        [Tooltip("Final target price is capped to current * this value after the soft cap.")]
+        [Min(1.01f)]
+        public float longUptrendMaxEffectiveMultiplier = 2.25f;
+        [Range(0.45f, 0.90f)]
+        public float longUptrendTargetCorridorPos = 0.62f;
+        [Range(0.05f, 0.8f)]
+        public float longUptrendApproachStrength = 0.35f;
+        [Min(0f)]
+        public float longUptrendNoiseStrength = 0.08f;
+        [Tooltip("Chance per simulation tick to start a multi-tick pullback phase during LongUptrend.")]
+        [Range(0f, 0.5f)]
+        public float longUptrendPullbackChancePerTick = 0.16f;
+        [Range(0f, 0.5f)]
+        public float longUptrendPullbackStrength = 0.10f;
+        [Min(0.5f)]
+        public float longUptrendPullbackDurationMinSeconds = 2f;
+        [Min(0.5f)]
+        public float longUptrendPullbackDurationMaxSeconds = 6f;
+        [Min(0f)]
+        public float longUptrendPullbackCooldownSeconds = 8f;
+        [Min(0.5f)]
+        public float longUptrendRecoveryDurationSeconds = 4f;
+        [Range(1f, 4f)]
+        public float longUptrendRecoveryCatchupMultiplier = 2f;
+        [Range(0f, 1f)]
+        public float longUptrendMaxPriceChangePerTick01 = 0.06f;
+
+        [Header("Long downtrend")]
+        [Min(1f)]
+        public float longDowntrendDurationMinSeconds = 20f;
+        [Min(1f)]
+        public float longDowntrendDurationMaxSeconds = 90f;
+        [Min(1.01f)]
+        public float longDowntrendTargetDividerMin = 1.35f;
+        [Min(1.01f)]
+        public float longDowntrendTargetDividerMax = 2.6f;
+        [Range(0.10f, 0.55f)]
+        public float longDowntrendTargetCorridorPos = 0.35f;
+        [Range(0.05f, 0.8f)]
+        public float longDowntrendApproachStrength = 0.35f;
+        [Min(0f)]
+        public float longDowntrendNoiseStrength = 0.08f;
+        [Tooltip("Chance per simulation tick to start a multi-tick fake rally during LongDowntrend.")]
+        [Range(0f, 0.5f)]
+        public float longDowntrendRallyChancePerTick = 0.16f;
+        [Range(0f, 0.5f)]
+        public float longDowntrendRallyStrength = 0.10f;
+        [Min(0.5f)]
+        public float longDowntrendRallyDurationMinSeconds = 2f;
+        [Min(0.5f)]
+        public float longDowntrendRallyDurationMaxSeconds = 6f;
+        [Min(0f)]
+        public float longDowntrendRallyCooldownSeconds = 8f;
+        [Min(0.5f)]
+        public float longDowntrendRecoveryDurationSeconds = 4f;
+        [Range(1f, 4f)]
+        public float longDowntrendRecoveryCatchupMultiplier = 2f;
+        [Range(0f, 1f)]
+        public float longDowntrendMaxPriceChangePerTick01 = 0.06f;
 
         [Header("Max price change per tick")]
         [Range(0f, 1f)]

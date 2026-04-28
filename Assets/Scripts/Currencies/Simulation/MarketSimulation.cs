@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using UnityEngine;
 using TraidingIDLE.Currencies;
 
@@ -47,19 +48,38 @@ namespace TraidingIDLE.Currencies.Simulation
             public int chopDirection = 1;
             public bool chopFakeoutUsed;
             public float chopFakeoutStartTime;
-            public int chopFakeoutTicksLeft;
-            public int chopReturnBoostTicksLeft;
+            public float chopFakeoutTimeLeft;
+            public float chopRecoveryTimeLeft;
 
             public float calmTargetPrice;
             public float calmLegDuration;
             public float calmLegTimeLeft;
             public bool calmLegInitialized;
 
+            public float longUptrendStartPrice;
+            public float longUptrendTargetPrice;
+            public float longUptrendTargetAnchor;
+            public float longUptrendDuration;
+            public float longUptrendTimeLeft;
+            public bool longUptrendInitialized;
+            public float longUptrendPullbackTimeLeft;
+            public float longUptrendPullbackCooldown;
+            public float longUptrendPullbackPower;
+            public float longUptrendRecoveryTimeLeft;
+
+            public float longDowntrendStartPrice;
+            public float longDowntrendTargetPrice;
+            public float longDowntrendTargetAnchor;
+            public float longDowntrendDuration;
+            public float longDowntrendTimeLeft;
+            public bool longDowntrendInitialized;
+            public float longDowntrendRallyTimeLeft;
+            public float longDowntrendRallyCooldown;
+            public float longDowntrendRallyPower;
+            public float longDowntrendRecoveryTimeLeft;
+
             public int seed;
             public float time;
-
-            /// <summary>Следующий запланированный тип между Chop и Calm (чередование, без длинных полос RNG).</summary>
-            public bool planNextPreferChop;
         }
 
         [Header("Target market")]
@@ -176,6 +196,14 @@ namespace TraidingIDLE.Currencies.Simulation
         [SerializeField] private bool logMarketStatesOnStateChange = true;
         [SerializeField] private bool logActiveCurrencyChopDebug = true;
 
+        [Header("Debug state override")]
+        [SerializeField] private bool debugOverrideState = false;
+        [SerializeField] private bool debugOverrideActiveCurrencyOnly = true;
+        [SerializeField] private CurrencyId debugOverrideCurrency = CurrencyId.SHT;
+        [SerializeField] private MarketStateType debugOverrideStateType = MarketStateType.Calm;
+        [Min(1f)]
+        [SerializeField] private float debugStateDurationSeconds = 120f;
+
         private readonly Dictionary<CurrencyId, CoinRuntime> _runtime = new();
 
         private void Awake()
@@ -210,7 +238,6 @@ namespace TraidingIDLE.Currencies.Simulation
                     visiblePrice = RoundPrice(cfg, startPrice),
                     corridorAnchor = startPrice,
                     seed = UnityEngine.Random.Range(1, int.MaxValue),
-                    planNextPreferChop = UnityEngine.Random.value < 0.5f,
                 };
 
                 RebuildCorridor(r, r.rawPrice, force: true);
@@ -279,14 +306,24 @@ namespace TraidingIDLE.Currencies.Simulation
 
         private void Tick(CoinRuntime r, float dt)
         {
-            r.stateTimeLeft -= dt;
-            if (r.stateTimeLeft <= 0f)
+            if (IsDebugStateOverrideTarget(r))
             {
-                ApplyNextPlannedState(r);
-                EnsurePlannedStates(r);
+                if (r.currentState != debugOverrideStateType)
+                    EnterState(r, debugOverrideStateType, debugStateDurationSeconds, changeCorridor: false);
 
-                if (logMarketStatesOnStateChange)
-                    LogActiveMarketStates($"{r.config.id} changed market state");
+                r.stateTimeLeft = Mathf.Max(r.stateTimeLeft, dt + 0.01f);
+            }
+            else
+            {
+                r.stateTimeLeft -= dt;
+                if (r.stateTimeLeft <= 0f)
+                {
+                    ApplyNextPlannedState(r);
+                    EnsurePlannedStates(r);
+
+                    if (logMarketStatesOnStateChange)
+                        LogActiveMarketStates($"{r.config.id} changed market state");
+                }
             }
 
             ArmCrashIfNeeded(r);
@@ -328,6 +365,10 @@ namespace TraidingIDLE.Currencies.Simulation
                     return SimulateChopInCorridor(r, dt, noise, range);
                 case MarketStateType.Calm:
                     return SimulateCalm(r, dt, noise, range);
+                case MarketStateType.LongUptrend:
+                    return SimulateLongUptrend(r, dt, noise, range);
+                case MarketStateType.LongDowntrend:
+                    return SimulateLongDowntrend(r, dt, noise, range);
                 case MarketStateType.Flat:
                     desiredPos = Mathf.Clamp01(0.5f + noise * 0.05f);
                     impulse = -0.05f;
@@ -342,14 +383,6 @@ namespace TraidingIDLE.Currencies.Simulation
                     if (pos < 0.80f) { desiredPos = 0.88f; impulse = 0.30f; }
                     else if (pos < 0.93f) { desiredPos = 0.99f; impulse = 1.2f; }
                     else { desiredPos = 0.30f; impulse = -1.5f; }
-                    break;
-                case MarketStateType.LongUptrend:
-                    desiredPos = 0.75f;
-                    impulse = 0.20f;
-                    break;
-                case MarketStateType.LongDowntrend:
-                    desiredPos = 0.25f;
-                    impulse = -0.20f;
                     break;
                 case MarketStateType.MarketCrash:
                     desiredPos = 0.08f;
@@ -414,32 +447,36 @@ namespace TraidingIDLE.Currencies.Simulation
             if (!r.chopFakeoutUsed && r.chopPhaseDuration > 10f && elapsed >= r.chopFakeoutStartTime)
             {
                 r.chopFakeoutUsed = true;
-                r.chopFakeoutTicksLeft = UnityEngine.Random.Range(2, 5);
-                r.chopReturnBoostTicksLeft = UnityEngine.Random.Range(2, 4);
+                r.chopFakeoutTimeLeft = UnityEngine.Random.Range(
+                    r.config.chopFakeoutDurationMinSeconds,
+                    r.config.chopFakeoutDurationMaxSeconds);
+                r.chopRecoveryTimeLeft = 0f;
 
                 if (ShouldLogActiveCurrency(r))
                 {
                     Debug.Log(
                         $"[ChopInCorridor] {r.config.id}: fakeout started. " +
                         $"Main direction={FormatChopDirection(r.chopDirection)}, " +
-                        $"fakeout ticks={r.chopFakeoutTicksLeft}, return boost ticks={r.chopReturnBoostTicksLeft}.",
+                        $"fakeout duration={r.chopFakeoutTimeLeft:0.0}s, recovery={r.config.chopRecoveryDurationSeconds:0.0}s.",
                         this);
                 }
             }
 
             var effectiveDirection = r.chopDirection;
-            var fakeoutActive = r.chopFakeoutTicksLeft > 0;
+            var fakeoutActive = r.chopFakeoutTimeLeft > 0f;
             if (fakeoutActive)
             {
                 effectiveDirection *= -1;
-                r.chopFakeoutTicksLeft--;
+                r.chopFakeoutTimeLeft -= dt;
+                if (r.chopFakeoutTimeLeft <= 0f)
+                    r.chopRecoveryTimeLeft = r.config.chopRecoveryDurationSeconds;
             }
 
             var boost = 1f;
-            if (!fakeoutActive && r.chopReturnBoostTicksLeft > 0)
+            if (!fakeoutActive && r.chopRecoveryTimeLeft > 0f)
             {
-                boost = 1.65f;
-                r.chopReturnBoostTicksLeft--;
+                boost = r.config.chopRecoveryBoost;
+                r.chopRecoveryTimeLeft -= dt;
             }
 
             var remaining = Mathf.Max(dt, r.chopPhaseTimeLeft);
@@ -459,7 +496,7 @@ namespace TraidingIDLE.Currencies.Simulation
             {
                 // Fakeout: several ticks against the target, then the boost above pulls it back.
                 guidedDelta = 0f;
-                noisyDelta = effectiveDirection * range * r.config.trendStrength * 0.42f * dt;
+                noisyDelta = effectiveDirection * range * r.config.trendStrength * r.config.chopFakeoutStrength * dt;
                 noisyDelta += noise * range * r.config.noiseStrength * 0.08f * dt;
             }
 
@@ -553,6 +590,315 @@ namespace TraidingIDLE.Currencies.Simulation
             r.calmLegInitialized = false;
         }
 
+        private float SimulateLongUptrend(CoinRuntime r, float dt, float noise, float range)
+        {
+            if (!r.longUptrendInitialized)
+                StartLongUptrend(r);
+
+            var cfg = r.config;
+            var elapsed = Mathf.Clamp(r.longUptrendDuration - r.longUptrendTimeLeft, 0f, r.longUptrendDuration);
+            var progress = Mathf.Clamp01(elapsed / Mathf.Max(0.0001f, r.longUptrendDuration));
+            var nextProgress = Mathf.Clamp01((elapsed + dt) / Mathf.Max(0.0001f, r.longUptrendDuration));
+            var targetProgress = SmoothStep01(nextProgress);
+            var scheduledPrice = Mathf.Lerp(r.longUptrendStartPrice, r.longUptrendTargetPrice, targetProgress);
+
+            // Follow the scheduled curve instead of the final target, so the state spends all its duration growing.
+            var maxCatchupDelta = Mathf.Abs(r.longUptrendTargetPrice - r.longUptrendStartPrice)
+                / Mathf.Max(1f, r.longUptrendDuration)
+                * dt
+                * Mathf.Lerp(1.25f, 2.0f, progress);
+            if (r.longUptrendRecoveryTimeLeft > 0f)
+                maxCatchupDelta *= cfg.longUptrendRecoveryCatchupMultiplier;
+
+            var guidedDelta = Mathf.Clamp(
+                scheduledPrice - r.rawPrice,
+                -maxCatchupDelta * 0.45f,
+                maxCatchupDelta);
+
+            var smoothNoise = noise * range * cfg.longUptrendNoiseStrength * dt;
+            var microNoise = (Mathf.PerlinNoise((r.seed * 0.0043f) + r.time * 1.35f, 0.55f) * 2f - 1f)
+                * range
+                * cfg.longUptrendNoiseStrength
+                * 0.35f
+                * dt;
+            var maxNoise = Mathf.Max(0.000001f, maxCatchupDelta) * 0.35f;
+            smoothNoise = Mathf.Clamp(smoothNoise, -maxNoise, maxNoise * 0.45f);
+            microNoise = Mathf.Clamp(microNoise, -maxNoise * 0.5f, maxNoise * 0.25f);
+
+            UpdateLongUptrendPullbackPhase(r, dt, progress);
+
+            var pullback = 0f;
+            if (r.longUptrendPullbackTimeLeft > 0f)
+            {
+                // Suppress upward guidance during the scare phase so several red candles can happen in a row.
+                guidedDelta = Mathf.Min(guidedDelta, maxCatchupDelta * 0.12f);
+                pullback = -Mathf.Min(
+                    range * cfg.longUptrendPullbackStrength * r.longUptrendPullbackPower * dt,
+                    maxCatchupDelta * 1.35f);
+            }
+
+            var outsidePull = 0f;
+            if (r.rawPrice > r.corridorHigh) outsidePull = (r.corridorHigh - r.rawPrice);
+            else if (r.rawPrice < r.corridorLow) outsidePull = (r.corridorLow - r.rawPrice);
+
+            var next = r.rawPrice + guidedDelta + smoothNoise + microNoise + pullback + outsidePull * 0.20f;
+
+            // The uptrend owns its target anchor for the whole state. This prevents exponential corridor creep.
+            r.corridorAnchor = Mathf.Lerp(r.corridorAnchor, r.longUptrendTargetAnchor, 0.035f);
+            RebuildCorridor(r, next, force: false);
+
+            r.longUptrendTimeLeft -= dt;
+            if (r.longUptrendRecoveryTimeLeft > 0f)
+                r.longUptrendRecoveryTimeLeft -= dt;
+
+            return next;
+        }
+
+        private void UpdateLongUptrendPullbackPhase(CoinRuntime r, float dt, float progress)
+        {
+            var cfg = r.config;
+
+            if (r.longUptrendPullbackCooldown > 0f)
+                r.longUptrendPullbackCooldown -= dt;
+
+            if (r.longUptrendPullbackTimeLeft > 0f)
+            {
+                r.longUptrendPullbackTimeLeft -= dt;
+                if (r.longUptrendPullbackTimeLeft <= 0f)
+                {
+                    r.longUptrendRecoveryTimeLeft = cfg.longUptrendRecoveryDurationSeconds;
+                    r.longUptrendPullbackCooldown = cfg.longUptrendPullbackCooldownSeconds;
+                }
+                return;
+            }
+
+            // Keep the very beginning and the final push mostly clean.
+            if (progress < 0.12f || progress > 0.82f)
+                return;
+
+            if (r.longUptrendPullbackCooldown > 0f)
+                return;
+
+            if (UnityEngine.Random.value >= cfg.longUptrendPullbackChancePerTick)
+                return;
+
+            var minDuration = Mathf.Min(cfg.longUptrendPullbackDurationMinSeconds, cfg.longUptrendPullbackDurationMaxSeconds);
+            var maxDuration = Mathf.Max(cfg.longUptrendPullbackDurationMinSeconds, cfg.longUptrendPullbackDurationMaxSeconds);
+            r.longUptrendPullbackTimeLeft = UnityEngine.Random.Range(minDuration, maxDuration);
+            r.longUptrendPullbackPower = UnityEngine.Random.Range(0.75f, 1.35f);
+            r.longUptrendRecoveryTimeLeft = 0f;
+        }
+
+        private static float SmoothStep01(float t)
+        {
+            t = Mathf.Clamp01(t);
+            return t * t * (3f - 2f * t);
+        }
+
+        private void StartLongUptrend(CoinRuntime r)
+        {
+            var cfg = r.config;
+            var minMultiplier = Mathf.Min(cfg.longUptrendTargetMultiplierMin, cfg.longUptrendTargetMultiplierMax);
+            var maxMultiplier = Mathf.Max(cfg.longUptrendTargetMultiplierMin, cfg.longUptrendTargetMultiplierMax);
+            var rolledMultiplier = UnityEngine.Random.Range(minMultiplier, maxMultiplier);
+
+            // Cheap coins get the full dopamine x2/x4 feel. Expensive coins get a compressed boost
+            // so one uptrend doesn't permanently break the economy near highPriceReference.
+            var pricePressure = Mathf.Clamp01(r.rawPrice / Mathf.Max(0.000001f, cfg.highPriceReference * cfg.longUptrendSoftCapAtHighReference01));
+            var boostKeep = Mathf.Lerp(1f, cfg.longUptrendMinBoostAfterSoftCap01, pricePressure);
+            var effectiveMultiplier = 1f + (rolledMultiplier - 1f) * boostKeep;
+            effectiveMultiplier = Mathf.Min(effectiveMultiplier, cfg.longUptrendMaxEffectiveMultiplier);
+
+            r.longUptrendStartPrice = r.rawPrice;
+            r.longUptrendTargetAnchor = Mathf.Max(0.000001f, r.corridorAnchor * effectiveMultiplier);
+
+            var previousAnchor = r.corridorAnchor;
+            r.corridorAnchor = r.longUptrendTargetAnchor;
+            RebuildCorridor(r, r.rawPrice, force: false);
+            r.longUptrendTargetPrice = Mathf.Lerp(
+                r.corridorLow,
+                r.corridorHigh,
+                cfg.longUptrendTargetCorridorPos);
+            r.corridorAnchor = previousAnchor;
+
+            var maxTarget = r.rawPrice * cfg.longUptrendMaxEffectiveMultiplier;
+            r.longUptrendTargetPrice = Mathf.Min(r.longUptrendTargetPrice, maxTarget);
+
+            r.longUptrendDuration = Mathf.Max(1f, r.stateTimeLeft);
+            r.longUptrendTimeLeft = r.longUptrendDuration;
+            r.longUptrendInitialized = true;
+
+            if (ShouldLogActiveCurrency(r))
+            {
+                Debug.Log(
+                    $"[LongUptrend] {r.config.id}: started. " +
+                    $"rolledX={rolledMultiplier:0.00}, effectiveX={effectiveMultiplier:0.00}, " +
+                    $"target={r.longUptrendTargetPrice:0.##}, duration={r.longUptrendDuration:0.0}s.",
+                    this);
+            }
+        }
+
+        private static void ResetLongUptrend(CoinRuntime r)
+        {
+            r.longUptrendStartPrice = 0f;
+            r.longUptrendTargetPrice = 0f;
+            r.longUptrendTargetAnchor = 0f;
+            r.longUptrendDuration = 0f;
+            r.longUptrendTimeLeft = 0f;
+            r.longUptrendInitialized = false;
+            r.longUptrendPullbackTimeLeft = 0f;
+            r.longUptrendPullbackCooldown = 0f;
+            r.longUptrendPullbackPower = 0f;
+            r.longUptrendRecoveryTimeLeft = 0f;
+        }
+
+        private float SimulateLongDowntrend(CoinRuntime r, float dt, float noise, float range)
+        {
+            if (!r.longDowntrendInitialized)
+                StartLongDowntrend(r);
+
+            var cfg = r.config;
+            var elapsed = Mathf.Clamp(r.longDowntrendDuration - r.longDowntrendTimeLeft, 0f, r.longDowntrendDuration);
+            var progress = Mathf.Clamp01(elapsed / Mathf.Max(0.0001f, r.longDowntrendDuration));
+            var nextProgress = Mathf.Clamp01((elapsed + dt) / Mathf.Max(0.0001f, r.longDowntrendDuration));
+            var targetProgress = SmoothStep01(nextProgress);
+            var scheduledPrice = Mathf.Lerp(r.longDowntrendStartPrice, r.longDowntrendTargetPrice, targetProgress);
+
+            var maxCatchupDelta = Mathf.Abs(r.longDowntrendStartPrice - r.longDowntrendTargetPrice)
+                / Mathf.Max(1f, r.longDowntrendDuration)
+                * dt
+                * Mathf.Lerp(1.25f, 2.0f, progress);
+            if (r.longDowntrendRecoveryTimeLeft > 0f)
+                maxCatchupDelta *= cfg.longDowntrendRecoveryCatchupMultiplier;
+
+            var guidedDelta = Mathf.Clamp(
+                scheduledPrice - r.rawPrice,
+                -maxCatchupDelta,
+                maxCatchupDelta * 0.45f);
+
+            var smoothNoise = noise * range * cfg.longDowntrendNoiseStrength * dt;
+            var microNoise = (Mathf.PerlinNoise((r.seed * 0.0051f) + r.time * 1.35f, 0.82f) * 2f - 1f)
+                * range
+                * cfg.longDowntrendNoiseStrength
+                * 0.35f
+                * dt;
+            var maxNoise = Mathf.Max(0.000001f, maxCatchupDelta) * 0.35f;
+            smoothNoise = Mathf.Clamp(smoothNoise, -maxNoise * 0.45f, maxNoise);
+            microNoise = Mathf.Clamp(microNoise, -maxNoise * 0.25f, maxNoise * 0.5f);
+
+            UpdateLongDowntrendRallyPhase(r, dt, progress);
+
+            var rally = 0f;
+            if (r.longDowntrendRallyTimeLeft > 0f)
+            {
+                // Suppress downward guidance during the fake reversal so several green candles can happen in a row.
+                guidedDelta = Mathf.Max(guidedDelta, -maxCatchupDelta * 0.12f);
+                rally = Mathf.Min(
+                    range * cfg.longDowntrendRallyStrength * r.longDowntrendRallyPower * dt,
+                    maxCatchupDelta * 1.35f);
+            }
+
+            var outsidePull = 0f;
+            if (r.rawPrice > r.corridorHigh) outsidePull = (r.corridorHigh - r.rawPrice);
+            else if (r.rawPrice < r.corridorLow) outsidePull = (r.corridorLow - r.rawPrice);
+
+            var next = r.rawPrice + guidedDelta + smoothNoise + microNoise + rally + outsidePull * 0.20f;
+
+            r.corridorAnchor = Mathf.Lerp(r.corridorAnchor, r.longDowntrendTargetAnchor, 0.035f);
+            RebuildCorridor(r, next, force: false);
+
+            r.longDowntrendTimeLeft -= dt;
+            if (r.longDowntrendRecoveryTimeLeft > 0f)
+                r.longDowntrendRecoveryTimeLeft -= dt;
+
+            return next;
+        }
+
+        private void UpdateLongDowntrendRallyPhase(CoinRuntime r, float dt, float progress)
+        {
+            var cfg = r.config;
+
+            if (r.longDowntrendRallyCooldown > 0f)
+                r.longDowntrendRallyCooldown -= dt;
+
+            if (r.longDowntrendRallyTimeLeft > 0f)
+            {
+                r.longDowntrendRallyTimeLeft -= dt;
+                if (r.longDowntrendRallyTimeLeft <= 0f)
+                {
+                    r.longDowntrendRecoveryTimeLeft = cfg.longDowntrendRecoveryDurationSeconds;
+                    r.longDowntrendRallyCooldown = cfg.longDowntrendRallyCooldownSeconds;
+                }
+                return;
+            }
+
+            if (progress < 0.12f || progress > 0.82f)
+                return;
+
+            if (r.longDowntrendRallyCooldown > 0f)
+                return;
+
+            if (UnityEngine.Random.value >= cfg.longDowntrendRallyChancePerTick)
+                return;
+
+            var minDuration = Mathf.Min(cfg.longDowntrendRallyDurationMinSeconds, cfg.longDowntrendRallyDurationMaxSeconds);
+            var maxDuration = Mathf.Max(cfg.longDowntrendRallyDurationMinSeconds, cfg.longDowntrendRallyDurationMaxSeconds);
+            r.longDowntrendRallyTimeLeft = UnityEngine.Random.Range(minDuration, maxDuration);
+            r.longDowntrendRallyPower = UnityEngine.Random.Range(0.75f, 1.35f);
+            r.longDowntrendRecoveryTimeLeft = 0f;
+        }
+
+        private void StartLongDowntrend(CoinRuntime r)
+        {
+            var cfg = r.config;
+            var minDivider = Mathf.Min(cfg.longDowntrendTargetDividerMin, cfg.longDowntrendTargetDividerMax);
+            var maxDivider = Mathf.Max(cfg.longDowntrendTargetDividerMin, cfg.longDowntrendTargetDividerMax);
+            var divider = UnityEngine.Random.Range(minDivider, maxDivider);
+
+            r.longDowntrendStartPrice = r.rawPrice;
+            r.longDowntrendTargetAnchor = Mathf.Max(
+                cfg.initialPrice * cfg.minCorridorLowFromInitial,
+                r.corridorAnchor / divider);
+
+            var previousAnchor = r.corridorAnchor;
+            r.corridorAnchor = r.longDowntrendTargetAnchor;
+            RebuildCorridor(r, r.rawPrice, force: false);
+            r.longDowntrendTargetPrice = Mathf.Lerp(
+                r.corridorLow,
+                r.corridorHigh,
+                cfg.longDowntrendTargetCorridorPos);
+            r.corridorAnchor = previousAnchor;
+
+            var minTarget = cfg.initialPrice * cfg.minCorridorLowFromInitial;
+            r.longDowntrendTargetPrice = Mathf.Max(r.longDowntrendTargetPrice, minTarget);
+
+            r.longDowntrendDuration = Mathf.Max(1f, r.stateTimeLeft);
+            r.longDowntrendTimeLeft = r.longDowntrendDuration;
+            r.longDowntrendInitialized = true;
+
+            if (ShouldLogActiveCurrency(r))
+            {
+                Debug.Log(
+                    $"[LongDowntrend] {r.config.id}: started. " +
+                    $"divider={divider:0.00}, target={r.longDowntrendTargetPrice:0.##}, duration={r.longDowntrendDuration:0.0}s.",
+                    this);
+            }
+        }
+
+        private static void ResetLongDowntrend(CoinRuntime r)
+        {
+            r.longDowntrendStartPrice = 0f;
+            r.longDowntrendTargetPrice = 0f;
+            r.longDowntrendTargetAnchor = 0f;
+            r.longDowntrendDuration = 0f;
+            r.longDowntrendTimeLeft = 0f;
+            r.longDowntrendInitialized = false;
+            r.longDowntrendRallyTimeLeft = 0f;
+            r.longDowntrendRallyCooldown = 0f;
+            r.longDowntrendRallyPower = 0f;
+            r.longDowntrendRecoveryTimeLeft = 0f;
+        }
+
         private void StartNewChopPhase(CoinRuntime r, int direction)
         {
             r.chopDirection = direction >= 0 ? 1 : -1;
@@ -561,15 +907,15 @@ namespace TraidingIDLE.Currencies.Simulation
                 r.config.chopPhaseDurationMaxSeconds);
             r.chopPhaseTimeLeft = r.chopPhaseDuration;
             r.chopFakeoutUsed = false;
-            r.chopFakeoutTicksLeft = 0;
-            r.chopReturnBoostTicksLeft = 0;
+            r.chopFakeoutTimeLeft = 0f;
+            r.chopRecoveryTimeLeft = 0f;
 
             var targetPos = r.chopDirection > 0
                 ? UnityEngine.Random.Range(0.62f, 0.88f)
                 : UnityEngine.Random.Range(0.12f, 0.38f);
 
             r.chopTargetPrice = Mathf.Lerp(r.corridorLow, r.corridorHigh, targetPos);
-            r.chopFakeoutStartTime = r.chopPhaseDuration > 10f
+            r.chopFakeoutStartTime = r.chopPhaseDuration > 10f && UnityEngine.Random.value <= r.config.chopFakeoutChancePerPhase
                 ? UnityEngine.Random.Range(r.chopPhaseDuration * 0.35f, r.chopPhaseDuration * 0.70f)
                 : float.PositiveInfinity;
 
@@ -628,6 +974,8 @@ namespace TraidingIDLE.Currencies.Simulation
                 MarketStateType.MarketCrash => cfg.crashMaxPriceChangePerTick01,
                 MarketStateType.SlowUpThenPumpAndDump => cfg.pumpMaxPriceChangePerTick01,
                 MarketStateType.SlowUpThenDump => cfg.pumpMaxPriceChangePerTick01,
+                MarketStateType.LongUptrend => cfg.longUptrendMaxPriceChangePerTick01,
+                MarketStateType.LongDowntrend => cfg.longDowntrendMaxPriceChangePerTick01,
                 MarketStateType.Calm => cfg.calmMaxPriceChangePerTick01,
                 _ => cfg.normalMaxPriceChangePerTick01,
             };
@@ -655,6 +1003,44 @@ namespace TraidingIDLE.Currencies.Simulation
         private void LogActiveMarketStatesFromContextMenu()
         {
             LogActiveMarketStates("Manual market states log");
+        }
+
+        [ContextMenu("Debug/Apply Selected State Now")]
+        private void ApplyDebugSelectedStateNow()
+        {
+            if (!Application.isPlaying)
+            {
+                Debug.Log($"[{nameof(MarketSimulation)}] Enter Play Mode to apply a debug state.", this);
+                return;
+            }
+
+            var applied = 0;
+            foreach (var kv in _runtime)
+            {
+                var r = kv.Value;
+                if (!IsDebugStateSelectionTarget(r))
+                    continue;
+
+                EnterState(r, debugOverrideStateType, debugStateDurationSeconds, changeCorridor: false);
+                applied++;
+            }
+
+            Debug.Log(
+                $"[{nameof(MarketSimulation)}] Applied debug state {debugOverrideStateType} to {applied} coin(s).",
+                this);
+        }
+
+        private bool IsDebugStateOverrideTarget(CoinRuntime r)
+        {
+            return debugOverrideState && IsDebugStateSelectionTarget(r);
+        }
+
+        private bool IsDebugStateSelectionTarget(CoinRuntime r)
+        {
+            if (debugOverrideActiveCurrencyOnly && market != null)
+                return market.ActiveCurrency == r.config.id;
+
+            return r.config.id == debugOverrideCurrency;
         }
 
         private void LogActiveMarketStates(string reason)
@@ -723,17 +1109,27 @@ namespace TraidingIDLE.Currencies.Simulation
             EnsurePlannedStates(r);
 
             var next = r.plan.Dequeue();
-            r.currentState = next.type;
-            r.stateTimeLeft = next.durationSeconds;
+            EnterState(r, next.type, next.durationSeconds, changeCorridor: true);
+        }
+
+        private void EnterState(CoinRuntime r, MarketStateType state, float durationSeconds, bool changeCorridor)
+        {
+            r.currentState = state;
+            r.stateTimeLeft = Mathf.Max(1f, durationSeconds);
 
             if (r.currentState == MarketStateType.ChopInCorridor)
                 ResetChopInCorridor(r);
 
             // Сбрасываем фазу «Спокойствие» при любом входе в состояние и при уходе с него (чистые поля).
             ResetCalm(r);
+            ResetLongUptrend(r);
+            ResetLongDowntrend(r);
 
             // On state change, sometimes change corridor level up/down (with your minor/major/huge rules).
-            if (UnityEngine.Random.value <= corridorChangeChanceOnStateChange)
+            if (changeCorridor
+                && r.currentState != MarketStateType.LongUptrend
+                && r.currentState != MarketStateType.LongDowntrend
+                && UnityEngine.Random.value <= corridorChangeChanceOnStateChange)
                 ApplyCorridorLevelChange(r);
 
             // After crash ends (we just entered a new state that is not crash), roll next crash threshold again.
@@ -761,27 +1157,87 @@ namespace TraidingIDLE.Currencies.Simulation
             r.chopPhaseTimeLeft = 0f;
             r.chopFakeoutUsed = false;
             r.chopFakeoutStartTime = float.PositiveInfinity;
-            r.chopFakeoutTicksLeft = 0;
-            r.chopReturnBoostTicksLeft = 0;
+            r.chopFakeoutTimeLeft = 0f;
+            r.chopRecoveryTimeLeft = 0f;
         }
 
         private PlannedState GeneratePlannedState(CoinRuntime r)
         {
             var cfg = r.config;
 
-            var duration = UnityEngine.Random.Range(cfg.stateDurationMinSeconds, cfg.stateDurationMaxSeconds);
-            duration = Mathf.Max(1f, duration);
-
-            var stateType = r.planNextPreferChop
-                ? MarketStateType.ChopInCorridor
-                : MarketStateType.Calm;
-            r.planNextPreferChop = !r.planNextPreferChop;
+            var stateType = PickWeightedPlannedState(cfg);
+            var duration = PickStateDuration(cfg, stateType);
 
             return new PlannedState
             {
                 type = stateType,
                 durationSeconds = duration,
             };
+        }
+
+        private static float PickStateDuration(CoinSimulationConfig cfg, MarketStateType stateType)
+        {
+            if (stateType == MarketStateType.LongUptrend)
+            {
+                var min = Mathf.Min(cfg.longUptrendDurationMinSeconds, cfg.longUptrendDurationMaxSeconds);
+                var max = Mathf.Max(cfg.longUptrendDurationMinSeconds, cfg.longUptrendDurationMaxSeconds);
+                return Mathf.Max(1f, UnityEngine.Random.Range(min, max));
+            }
+
+            if (stateType == MarketStateType.LongDowntrend)
+            {
+                var min = Mathf.Min(cfg.longDowntrendDurationMinSeconds, cfg.longDowntrendDurationMaxSeconds);
+                var max = Mathf.Max(cfg.longDowntrendDurationMinSeconds, cfg.longDowntrendDurationMaxSeconds);
+                return Mathf.Max(1f, UnityEngine.Random.Range(min, max));
+            }
+
+            var duration = UnityEngine.Random.Range(cfg.stateDurationMinSeconds, cfg.stateDurationMaxSeconds);
+            return Mathf.Max(1f, duration);
+        }
+
+        private static MarketStateType PickWeightedPlannedState(CoinSimulationConfig cfg)
+        {
+            var weights = cfg.plannedStateWeights;
+            if (weights == null || weights.Length == 0)
+                return PickFallbackPlannedState();
+
+            var totalWeight = 0f;
+            for (var i = 0; i < weights.Length; i++)
+            {
+                var entry = weights[i];
+                if (entry == null)
+                    continue;
+
+                totalWeight += Mathf.Max(0f, entry.weight);
+            }
+
+            if (totalWeight <= 0f)
+                return PickFallbackPlannedState();
+
+            var roll = UnityEngine.Random.value * totalWeight;
+            for (var i = 0; i < weights.Length; i++)
+            {
+                var entry = weights[i];
+                if (entry == null)
+                    continue;
+
+                var weight = Mathf.Max(0f, entry.weight);
+                if (weight <= 0f)
+                    continue;
+
+                roll -= weight;
+                if (roll <= 0f)
+                    return entry.type;
+            }
+
+            return weights[^1] != null ? weights[^1].type : PickFallbackPlannedState();
+        }
+
+        private static MarketStateType PickFallbackPlannedState()
+        {
+            return UnityEngine.Random.value < 0.5f
+                ? MarketStateType.ChopInCorridor
+                : MarketStateType.Calm;
         }
 
         private void ApplyCorridorLevelChange(CoinRuntime r)
@@ -937,6 +1393,7 @@ namespace TraidingIDLE.Currencies.Simulation
 
             cfg.stateDurationMinSeconds = Mathf.Max(1f, cfg.stateDurationMinSeconds);
             cfg.stateDurationMaxSeconds = Mathf.Max(cfg.stateDurationMinSeconds, cfg.stateDurationMaxSeconds);
+            NormalizeStateWeights(cfg);
 
             cfg.initialPrice = Mathf.Max(0.000001f, cfg.initialPrice);
             cfg.highPriceReference = Mathf.Max(cfg.initialPrice, cfg.highPriceReference);
@@ -947,6 +1404,12 @@ namespace TraidingIDLE.Currencies.Simulation
 
             cfg.chopPhaseDurationMinSeconds = Mathf.Max(1f, cfg.chopPhaseDurationMinSeconds);
             cfg.chopPhaseDurationMaxSeconds = Mathf.Max(cfg.chopPhaseDurationMinSeconds, cfg.chopPhaseDurationMaxSeconds);
+            cfg.chopFakeoutChancePerPhase = Mathf.Clamp01(cfg.chopFakeoutChancePerPhase);
+            cfg.chopFakeoutDurationMinSeconds = Mathf.Max(0.5f, cfg.chopFakeoutDurationMinSeconds);
+            cfg.chopFakeoutDurationMaxSeconds = Mathf.Max(cfg.chopFakeoutDurationMinSeconds, cfg.chopFakeoutDurationMaxSeconds);
+            cfg.chopFakeoutStrength = Mathf.Clamp01(cfg.chopFakeoutStrength);
+            cfg.chopRecoveryDurationSeconds = Mathf.Max(0.5f, cfg.chopRecoveryDurationSeconds);
+            cfg.chopRecoveryBoost = Mathf.Clamp(cfg.chopRecoveryBoost, 1f, 4f);
 
             cfg.calmOffsetFromHalfMin01 = Mathf.Clamp(cfg.calmOffsetFromHalfMin01, 0f, 0.49f);
             cfg.calmOffsetFromHalfMax01 = Mathf.Clamp(cfg.calmOffsetFromHalfMax01, 0f, 0.49f);
@@ -961,12 +1424,99 @@ namespace TraidingIDLE.Currencies.Simulation
             cfg.calmNoiseStrength = Mathf.Max(0f, cfg.calmNoiseStrength);
             cfg.calmApproachStrength = Mathf.Clamp(cfg.calmApproachStrength, 0.05f, 0.6f);
 
+            cfg.longUptrendDurationMinSeconds = Mathf.Max(1f, cfg.longUptrendDurationMinSeconds);
+            cfg.longUptrendDurationMaxSeconds = Mathf.Max(cfg.longUptrendDurationMinSeconds, cfg.longUptrendDurationMaxSeconds);
+            cfg.longUptrendTargetMultiplierMin = Mathf.Max(1.01f, cfg.longUptrendTargetMultiplierMin);
+            cfg.longUptrendTargetMultiplierMax = Mathf.Max(cfg.longUptrendTargetMultiplierMin, cfg.longUptrendTargetMultiplierMax);
+            cfg.longUptrendSoftCapAtHighReference01 = Mathf.Clamp(cfg.longUptrendSoftCapAtHighReference01, 0.01f, 1f);
+            cfg.longUptrendMinBoostAfterSoftCap01 = Mathf.Clamp01(cfg.longUptrendMinBoostAfterSoftCap01);
+            cfg.longUptrendMaxEffectiveMultiplier = Mathf.Max(1.01f, cfg.longUptrendMaxEffectiveMultiplier);
+            cfg.longUptrendTargetCorridorPos = Mathf.Clamp(cfg.longUptrendTargetCorridorPos, 0.45f, 0.90f);
+            cfg.longUptrendApproachStrength = Mathf.Clamp(cfg.longUptrendApproachStrength, 0.05f, 0.8f);
+            cfg.longUptrendNoiseStrength = Mathf.Max(0f, cfg.longUptrendNoiseStrength);
+            cfg.longUptrendPullbackChancePerTick = Mathf.Clamp01(cfg.longUptrendPullbackChancePerTick);
+            cfg.longUptrendPullbackStrength = Mathf.Clamp01(cfg.longUptrendPullbackStrength);
+            cfg.longUptrendPullbackDurationMinSeconds = Mathf.Max(0.5f, cfg.longUptrendPullbackDurationMinSeconds);
+            cfg.longUptrendPullbackDurationMaxSeconds = Mathf.Max(cfg.longUptrendPullbackDurationMinSeconds, cfg.longUptrendPullbackDurationMaxSeconds);
+            cfg.longUptrendPullbackCooldownSeconds = Mathf.Max(0f, cfg.longUptrendPullbackCooldownSeconds);
+            cfg.longUptrendRecoveryDurationSeconds = Mathf.Max(0.5f, cfg.longUptrendRecoveryDurationSeconds);
+            cfg.longUptrendRecoveryCatchupMultiplier = Mathf.Clamp(cfg.longUptrendRecoveryCatchupMultiplier, 1f, 4f);
+            cfg.longUptrendMaxPriceChangePerTick01 = Mathf.Clamp01(cfg.longUptrendMaxPriceChangePerTick01);
+
+            cfg.longDowntrendDurationMinSeconds = Mathf.Max(1f, cfg.longDowntrendDurationMinSeconds);
+            cfg.longDowntrendDurationMaxSeconds = Mathf.Max(cfg.longDowntrendDurationMinSeconds, cfg.longDowntrendDurationMaxSeconds);
+            cfg.longDowntrendTargetDividerMin = Mathf.Max(1.01f, cfg.longDowntrendTargetDividerMin);
+            cfg.longDowntrendTargetDividerMax = Mathf.Max(cfg.longDowntrendTargetDividerMin, cfg.longDowntrendTargetDividerMax);
+            cfg.longDowntrendTargetCorridorPos = Mathf.Clamp(cfg.longDowntrendTargetCorridorPos, 0.10f, 0.55f);
+            cfg.longDowntrendApproachStrength = Mathf.Clamp(cfg.longDowntrendApproachStrength, 0.05f, 0.8f);
+            cfg.longDowntrendNoiseStrength = Mathf.Max(0f, cfg.longDowntrendNoiseStrength);
+            cfg.longDowntrendRallyChancePerTick = Mathf.Clamp01(cfg.longDowntrendRallyChancePerTick);
+            cfg.longDowntrendRallyStrength = Mathf.Clamp01(cfg.longDowntrendRallyStrength);
+            cfg.longDowntrendRallyDurationMinSeconds = Mathf.Max(0.5f, cfg.longDowntrendRallyDurationMinSeconds);
+            cfg.longDowntrendRallyDurationMaxSeconds = Mathf.Max(cfg.longDowntrendRallyDurationMinSeconds, cfg.longDowntrendRallyDurationMaxSeconds);
+            cfg.longDowntrendRallyCooldownSeconds = Mathf.Max(0f, cfg.longDowntrendRallyCooldownSeconds);
+            cfg.longDowntrendRecoveryDurationSeconds = Mathf.Max(0.5f, cfg.longDowntrendRecoveryDurationSeconds);
+            cfg.longDowntrendRecoveryCatchupMultiplier = Mathf.Clamp(cfg.longDowntrendRecoveryCatchupMultiplier, 1f, 4f);
+            cfg.longDowntrendMaxPriceChangePerTick01 = Mathf.Clamp01(cfg.longDowntrendMaxPriceChangePerTick01);
+
             cfg.normalMaxPriceChangePerTick01 = Mathf.Clamp01(cfg.normalMaxPriceChangePerTick01);
             cfg.pumpMaxPriceChangePerTick01 = Mathf.Clamp01(cfg.pumpMaxPriceChangePerTick01);
             cfg.crashMaxPriceChangePerTick01 = Mathf.Clamp01(cfg.crashMaxPriceChangePerTick01);
 
             cfg.crashThresholdRandomMin = Mathf.Max(0f, cfg.crashThresholdRandomMin);
             cfg.crashThresholdRandomMax = Mathf.Max(0f, cfg.crashThresholdRandomMax);
+        }
+
+        private static void NormalizeStateWeights(CoinSimulationConfig cfg)
+        {
+            if (cfg.plannedStateWeights == null || cfg.plannedStateWeights.Length == 0)
+            {
+                cfg.plannedStateWeights = new[]
+                {
+                    new MarketStateWeight { type = MarketStateType.Calm, weight = 1f },
+                    new MarketStateWeight { type = MarketStateType.ChopInCorridor, weight = 1f },
+                    new MarketStateWeight { type = MarketStateType.LongUptrend, weight = 0.35f },
+                    new MarketStateWeight { type = MarketStateType.LongDowntrend, weight = 0.25f },
+                };
+                return;
+            }
+
+            for (var i = 0; i < cfg.plannedStateWeights.Length; i++)
+            {
+                if (cfg.plannedStateWeights[i] == null)
+                {
+                    cfg.plannedStateWeights[i] = new MarketStateWeight();
+                    continue;
+                }
+
+                cfg.plannedStateWeights[i].weight = Mathf.Max(0f, cfg.plannedStateWeights[i].weight);
+            }
+
+            if (!HasStateWeight(cfg, MarketStateType.LongUptrend))
+            {
+                cfg.plannedStateWeights = cfg.plannedStateWeights
+                    .Concat(new[] { new MarketStateWeight { type = MarketStateType.LongUptrend, weight = 0.35f } })
+                    .ToArray();
+            }
+
+            if (!HasStateWeight(cfg, MarketStateType.LongDowntrend))
+            {
+                cfg.plannedStateWeights = cfg.plannedStateWeights
+                    .Concat(new[] { new MarketStateWeight { type = MarketStateType.LongDowntrend, weight = 0.25f } })
+                    .ToArray();
+            }
+        }
+
+        private static bool HasStateWeight(CoinSimulationConfig cfg, MarketStateType type)
+        {
+            for (var i = 0; i < cfg.plannedStateWeights.Length; i++)
+            {
+                var entry = cfg.plannedStateWeights[i];
+                if (entry != null && entry.type == type)
+                    return true;
+            }
+
+            return false;
         }
     }
 }
