@@ -50,8 +50,16 @@ namespace TraidingIDLE.Currencies.Simulation
             public int chopFakeoutTicksLeft;
             public int chopReturnBoostTicksLeft;
 
+            public float calmTargetPrice;
+            public float calmLegDuration;
+            public float calmLegTimeLeft;
+            public bool calmLegInitialized;
+
             public int seed;
             public float time;
+
+            /// <summary>Следующий запланированный тип между Chop и Calm (чередование, без длинных полос RNG).</summary>
+            public bool planNextPreferChop;
         }
 
         [Header("Target market")]
@@ -202,6 +210,7 @@ namespace TraidingIDLE.Currencies.Simulation
                     visiblePrice = RoundPrice(cfg, startPrice),
                     corridorAnchor = startPrice,
                     seed = UnityEngine.Random.Range(1, int.MaxValue),
+                    planNextPreferChop = UnityEngine.Random.value < 0.5f,
                 };
 
                 RebuildCorridor(r, r.rawPrice, force: true);
@@ -317,6 +326,8 @@ namespace TraidingIDLE.Currencies.Simulation
             {
                 case MarketStateType.ChopInCorridor:
                     return SimulateChopInCorridor(r, dt, noise, range);
+                case MarketStateType.Calm:
+                    return SimulateCalm(r, dt, noise, range);
                 case MarketStateType.Flat:
                     desiredPos = Mathf.Clamp01(0.5f + noise * 0.05f);
                     impulse = -0.05f;
@@ -469,6 +480,79 @@ namespace TraidingIDLE.Currencies.Simulation
             return next;
         }
 
+        private float SimulateCalm(CoinRuntime r, float dt, float noise, float range)
+        {
+            if (r.calmLegTimeLeft <= 0f || r.calmTargetPrice <= 0f)
+                StartNewCalmLeg(r);
+
+            var remaining = Mathf.Max(0.0001f, r.calmLegTimeLeft);
+            var cfg = r.config;
+            var guidedDelta = (r.calmTargetPrice - r.rawPrice) / remaining * dt * cfg.calmApproachStrength;
+
+            var noisyDelta = noise * range * cfg.calmNoiseStrength * dt;
+            var microWiggle = Mathf.PerlinNoise((r.seed * 0.0037f) + r.time * 1.1f, 0.3f) * 2f - 1f;
+            noisyDelta += microWiggle * range * cfg.calmNoiseStrength * 0.35f * dt;
+
+            var outsidePull = 0f;
+            if (r.rawPrice > r.corridorHigh) outsidePull = (r.corridorHigh - r.rawPrice);
+            else if (r.rawPrice < r.corridorLow) outsidePull = (r.corridorLow - r.rawPrice);
+
+            var next = r.rawPrice + guidedDelta + noisyDelta + outsidePull * 0.35f;
+
+            var corridorCenter = (r.corridorLow + r.corridorHigh) * 0.5f;
+            r.corridorAnchor = Mathf.Lerp(r.corridorAnchor, corridorCenter, 0.02f);
+            RebuildCorridor(r, next, force: false);
+
+            r.calmLegTimeLeft -= dt;
+            if (r.calmLegTimeLeft <= 0f)
+                StartNewCalmLeg(r);
+
+            return next;
+        }
+
+        private void StartNewCalmLeg(CoinRuntime r)
+        {
+            var cfg = r.config;
+            var range = Mathf.Max(0.000001f, r.corridorHigh - r.corridorLow);
+            var center = (r.corridorLow + r.corridorHigh) * 0.5f;
+            var half = range * 0.5f;
+
+            var fromPrice = r.calmLegInitialized ? r.calmTargetPrice : r.rawPrice;
+
+            var offMin = Mathf.Min(cfg.calmOffsetFromHalfMin01, cfg.calmOffsetFromHalfMax01);
+            var offMax = Mathf.Max(cfg.calmOffsetFromHalfMin01, cfg.calmOffsetFromHalfMax01);
+            offMin = Mathf.Clamp(offMin, 0f, 0.49f);
+            offMax = Mathf.Clamp(offMax, offMin, 0.49f);
+
+            var dir = UnityEngine.Random.value < 0.5f ? -1f : 1f;
+            var offsetT = UnityEngine.Random.Range(offMin, offMax);
+            var newTarget = center + dir * offsetT * half;
+            newTarget = Mathf.Clamp(newTarget, r.corridorLow, r.corridorHigh);
+
+            var relDist = Mathf.Abs(newTarget - fromPrice) / range;
+            var durMin = Mathf.Min(cfg.calmLegDurationMinSeconds, cfg.calmLegDurationMaxSeconds);
+            var durMax = Mathf.Max(cfg.calmLegDurationMinSeconds, cfg.calmLegDurationMaxSeconds);
+            var legDur = UnityEngine.Random.Range(durMin, durMax);
+
+            if (relDist <= cfg.calmSmallMoveRelativeThreshold)
+                legDur = Mathf.Min(legDur, cfg.calmShortLegMaxSeconds);
+
+            legDur = Mathf.Max(0.5f, legDur);
+
+            r.calmTargetPrice = newTarget;
+            r.calmLegDuration = legDur;
+            r.calmLegTimeLeft = legDur;
+            r.calmLegInitialized = true;
+        }
+
+        private static void ResetCalm(CoinRuntime r)
+        {
+            r.calmTargetPrice = 0f;
+            r.calmLegDuration = 0f;
+            r.calmLegTimeLeft = 0f;
+            r.calmLegInitialized = false;
+        }
+
         private void StartNewChopPhase(CoinRuntime r, int direction)
         {
             r.chopDirection = direction >= 0 ? 1 : -1;
@@ -544,6 +628,7 @@ namespace TraidingIDLE.Currencies.Simulation
                 MarketStateType.MarketCrash => cfg.crashMaxPriceChangePerTick01,
                 MarketStateType.SlowUpThenPumpAndDump => cfg.pumpMaxPriceChangePerTick01,
                 MarketStateType.SlowUpThenDump => cfg.pumpMaxPriceChangePerTick01,
+                MarketStateType.Calm => cfg.calmMaxPriceChangePerTick01,
                 _ => cfg.normalMaxPriceChangePerTick01,
             };
         }
@@ -644,6 +729,9 @@ namespace TraidingIDLE.Currencies.Simulation
             if (r.currentState == MarketStateType.ChopInCorridor)
                 ResetChopInCorridor(r);
 
+            // Сбрасываем фазу «Спокойствие» при любом входе в состояние и при уходе с него (чистые поля).
+            ResetCalm(r);
+
             // On state change, sometimes change corridor level up/down (with your minor/major/huge rules).
             if (UnityEngine.Random.value <= corridorChangeChanceOnStateChange)
                 ApplyCorridorLevelChange(r);
@@ -684,9 +772,14 @@ namespace TraidingIDLE.Currencies.Simulation
             var duration = UnityEngine.Random.Range(cfg.stateDurationMinSeconds, cfg.stateDurationMaxSeconds);
             duration = Mathf.Max(1f, duration);
 
+            var stateType = r.planNextPreferChop
+                ? MarketStateType.ChopInCorridor
+                : MarketStateType.Calm;
+            r.planNextPreferChop = !r.planNextPreferChop;
+
             return new PlannedState
             {
-                type = MarketStateType.ChopInCorridor,
+                type = stateType,
                 durationSeconds = duration,
             };
         }
@@ -854,6 +947,19 @@ namespace TraidingIDLE.Currencies.Simulation
 
             cfg.chopPhaseDurationMinSeconds = Mathf.Max(1f, cfg.chopPhaseDurationMinSeconds);
             cfg.chopPhaseDurationMaxSeconds = Mathf.Max(cfg.chopPhaseDurationMinSeconds, cfg.chopPhaseDurationMaxSeconds);
+
+            cfg.calmOffsetFromHalfMin01 = Mathf.Clamp(cfg.calmOffsetFromHalfMin01, 0f, 0.49f);
+            cfg.calmOffsetFromHalfMax01 = Mathf.Clamp(cfg.calmOffsetFromHalfMax01, 0f, 0.49f);
+            if (cfg.calmOffsetFromHalfMax01 < cfg.calmOffsetFromHalfMin01)
+                cfg.calmOffsetFromHalfMax01 = cfg.calmOffsetFromHalfMin01;
+
+            cfg.calmLegDurationMinSeconds = Mathf.Max(0.5f, cfg.calmLegDurationMinSeconds);
+            cfg.calmLegDurationMaxSeconds = Mathf.Max(cfg.calmLegDurationMinSeconds, cfg.calmLegDurationMaxSeconds);
+            cfg.calmShortLegMaxSeconds = Mathf.Max(0.5f, cfg.calmShortLegMaxSeconds);
+            cfg.calmSmallMoveRelativeThreshold = Mathf.Clamp01(cfg.calmSmallMoveRelativeThreshold);
+            cfg.calmMaxPriceChangePerTick01 = Mathf.Clamp01(cfg.calmMaxPriceChangePerTick01);
+            cfg.calmNoiseStrength = Mathf.Max(0f, cfg.calmNoiseStrength);
+            cfg.calmApproachStrength = Mathf.Clamp(cfg.calmApproachStrength, 0.05f, 0.6f);
 
             cfg.normalMaxPriceChangePerTick01 = Mathf.Clamp01(cfg.normalMaxPriceChangePerTick01);
             cfg.pumpMaxPriceChangePerTick01 = Mathf.Clamp01(cfg.pumpMaxPriceChangePerTick01);

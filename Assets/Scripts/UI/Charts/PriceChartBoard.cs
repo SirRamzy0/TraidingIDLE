@@ -1,4 +1,5 @@
 using UnityEngine;
+using UnityEngine.Serialization;
 using TraidingIDLE.Currencies;
 
 namespace TraidingIDLE.UI.Charts
@@ -40,10 +41,35 @@ namespace TraidingIDLE.UI.Charts
         [SerializeField] private float candleBodyNoise01 = 0.03f;
         [Range(0f, 0.25f)]
         [SerializeField] private float candleVariety01 = 0.10f;
+        [Tooltip("Minimum visual candle range relative to the current chart viewport, not to the price itself.")]
         [Range(0f, 0.10f)]
-        [SerializeField] private float minCandleRangeFromPrice01 = 0.02f;
+        [FormerlySerializedAs("minCandleRangeFromPrice01")]
+        [SerializeField] private float minCandleRangeFromViewport01 = 0.02f;
+        [Tooltip("Minimum visible wick length relative to the current chart viewport. Keeps small candles readable.")]
+        [Range(0f, 0.03f)]
+        [SerializeField] private float minCandleWickFromViewport01 = 0.006f;
         [Range(0f, 1f)]
         [SerializeField] private float minCandleBody01 = 0.18f;
+
+        [Header("Duplicate candles (same rounded price)")]
+        [SerializeField] private bool avoidIdenticalConsecutiveCandles = true;
+        [Range(0.05f, 0.45f)]
+        [SerializeField] private float duplicateBodyNudge01 = 0.18f;
+
+        [Header("Candle visuals (baked on candle creation, does not change market price)")]
+        [SerializeField] private bool enableCandleVisualJitter = true;
+        [Tooltip("How much the candle body height can vary inside the wick span.")]
+        [Range(0f, 0.60f)]
+        [SerializeField] private float bodyHeightJitter01 = 0.18f;
+        [Tooltip("How much the total wick length can vary from candle to candle.")]
+        [Range(0f, 0.80f)]
+        [SerializeField] private float wickLengthJitter01 = 0.35f;
+        [Tooltip("How strongly top vs bottom wick lengths can differ.")]
+        [Range(0f, 1f)]
+        [SerializeField] private float wickAsymmetry01 = 0.85f;
+        [Tooltip("Adds extra randomness around symmetric wicks (near 0.5 balance).")]
+        [Range(0f, 0.35f)]
+        [SerializeField] private float wickBalanceRandomness = 0.12f;
 
         private readonly PriceHistoryBuffer _history = new();
         private readonly CandleHistoryBuffer _candles = new();
@@ -104,6 +130,11 @@ namespace TraidingIDLE.UI.Charts
             _history.SetCapacity(historySize + 1);
             _candles.SetCapacity(historySize);
             EnsureCandlesArray();
+            duplicateBodyNudge01 = Mathf.Clamp(duplicateBodyNudge01, 0.05f, 0.45f);
+            bodyHeightJitter01 = Mathf.Clamp01(bodyHeightJitter01);
+            wickLengthJitter01 = Mathf.Clamp01(wickLengthJitter01);
+            wickAsymmetry01 = Mathf.Clamp01(wickAsymmetry01);
+            wickBalanceRandomness = Mathf.Clamp01(wickBalanceRandomness);
         }
 
         private void OnActiveCurrencyChanged(CurrencyId id)
@@ -145,7 +176,8 @@ namespace TraidingIDLE.UI.Charts
 
             _history.Push(price);
 
-            _candles.Push(BuildCandle(prev, price, _candles.Count));
+            var prevClose = _candles.Count > 0 ? _candles[_candles.Count - 1].close : prev;
+            _candles.Push(BuildCandle(prev, price, prevClose, _candles.Count));
 
             UpdateViewport(price);
             Render();
@@ -192,7 +224,8 @@ namespace TraidingIDLE.UI.Charts
                     close = baseP;
 
                 _history.Push(close);
-                _candles.Push(BuildCandle(open, close, i));
+                var prevClose = i > 0 ? _candles[i - 1].close : open;
+                _candles.Push(BuildCandle(open, close, prevClose, i));
             }
 
             UpdateViewport(close, force: true);
@@ -274,46 +307,81 @@ namespace TraidingIDLE.UI.Charts
             }
         }
 
-        private CandleHistoryBuffer.Candle BuildCandle(float open, float close, int index)
+        private CandleHistoryBuffer.Candle BuildCandle(float open, float close, float prevClose, int index)
         {
             var absOpen = Mathf.Max(0.000001f, open);
             var absClose = Mathf.Max(0.000001f, close);
+            var bodyDirection = GetCandleBodyDirection(absOpen, absClose, prevClose, index);
 
             var r1 = Hash01(_seed, index);
             var r2 = Hash01(_seed ^ 0x6C8E9CF5, index);
             var r3 = Hash01(_seed ^ 0x3C6EF372, index);
             var r4 = Hash01(_seed ^ unchecked((int)0xB5297A4D), index);
             var r5 = Hash01(_seed ^ unchecked((int)0x68E31DA4), index);
+            var r6 = Hash01(_seed ^ unchecked((int)0xC0FFEE11), index);
 
+            var visualReferenceRange = GetCandleVisualReferenceRange(absOpen, absClose);
             var baseRange = Mathf.Abs(absClose - absOpen);
-            var minRange = Mathf.Min(absOpen, absClose) * minCandleRangeFromPrice01;
-            var variedMinRange = minRange * Mathf.Lerp(0.35f, 2.80f + candleVariety01 * 5f, r4);
+            var minRange = visualReferenceRange * minCandleRangeFromViewport01;
+            var movement01 = Mathf.Clamp01(baseRange / Mathf.Max(0.000001f, visualReferenceRange * 0.08f));
+            var smallMoveScale = Mathf.Lerp(0.35f, 1f, movement01);
+            var variedMinRange = minRange
+                * smallMoveScale
+                * Mathf.Lerp(0.20f, 1.15f + candleVariety01 * 1.5f, r4);
             var range = Mathf.Max(baseRange, variedMinRange);
 
             // Variety: some candles get a long wick, some get a visible body.
-            var wickK = Mathf.Lerp(0.05f, 1.75f + candleVariety01 * 6f, r1);
             var bodyK = Mathf.Lerp(minCandleBody01 * 0.35f, Mathf.Min(0.95f, minCandleBody01 + candleBodyNoise01 + candleVariety01 * 3f), r2);
 
-            var wickAmp = range * candleWickNoise01 * wickK;
             var bodyAmp = range * bodyK;
-
-            var high = Mathf.Max(absOpen, absClose);
-            var low = Mathf.Min(absOpen, absClose);
 
             // Ensure body is visible sometimes (especially when rounded prices repeat).
             if (Mathf.Abs(absClose - absOpen) < bodyAmp)
             {
                 var mid = (absOpen + absClose) * 0.5f;
-                var bodyDirection = r5 >= 0.5f ? 1f : -1f;
                 absOpen = Mathf.Max(0f, mid - bodyAmp * 0.5f * bodyDirection);
                 absClose = Mathf.Max(0f, mid + bodyAmp * 0.5f * bodyDirection);
-                high = Mathf.Max(absOpen, absClose);
-                low = Mathf.Min(absOpen, absClose);
             }
 
-            // Asymmetric wicks (more "real" look)
-            var upWick = wickAmp * Mathf.Lerp(0.15f, 2.2f, r1);
-            var downWick = wickAmp * Mathf.Lerp(0.15f, 2.2f, r2);
+            if (avoidIdenticalConsecutiveCandles)
+                ApplyDuplicateCandleNudge(prevClose, bodyDirection, visualReferenceRange, ref absOpen, ref absClose);
+
+            if (enableCandleVisualJitter)
+                ApplyCandleBodyJitterPrice(index, ref absOpen, ref absClose);
+
+            var high = Mathf.Max(absOpen, absClose);
+            var low = Mathf.Min(absOpen, absClose);
+
+            // Most candles keep short readable wicks; long wick profiles are occasional accents.
+            var minWick = visualReferenceRange * minCandleWickFromViewport01;
+            var smallWick = Mathf.Max(
+                minWick,
+                Mathf.Abs(absClose - absOpen) * candleWickNoise01 * 0.35f);
+
+            var commonWick = smallWick * Mathf.Lerp(0.80f, 1.20f, r3);
+            var balance = Mathf.Lerp(0.90f, 1.10f, r4);
+            var upWick = commonWick * balance;
+            var downWick = commonWick / balance;
+            var profile = r5;
+
+            if (profile < 0.10f)
+            {
+                // Long upper wick, lower stays modest.
+                upWick = commonWick * Mathf.Lerp(2f, 3f, r6);
+                downWick = commonWick * Mathf.Lerp(0.80f, 1.15f, r2);
+            }
+            else if (profile < 0.20f)
+            {
+                // Long lower wick, upper stays modest.
+                upWick = commonWick * Mathf.Lerp(0.80f, 1.15f, r1);
+                downWick = commonWick * Mathf.Lerp(2f, 3f, r6);
+            }
+            else if (profile < 0.26f)
+            {
+                // Rare: both wicks are long.
+                upWick = commonWick * Mathf.Lerp(1.8f, 2.7f, r1);
+                downWick = commonWick * Mathf.Lerp(1.8f, 2.7f, r2);
+            }
 
             high += upWick;
             low = Mathf.Max(0f, low - downWick);
@@ -325,6 +393,106 @@ namespace TraidingIDLE.UI.Charts
                 high = high,
                 low = low,
             };
+        }
+
+        private float GetCandleVisualReferenceRange(float open, float close)
+        {
+            if (_hasViewport && _viewMax > _viewMin)
+                return Mathf.Max(minViewportRange, _viewMax - _viewMin);
+
+            if (_candles.TryGetMinMax(out var min, out var max) && max > min)
+                return Mathf.Max(minViewportRange, max - min);
+
+            var price = Mathf.Max(open, close, 0.000001f);
+            return Mathf.Max(minViewportRange, price * Mathf.Max(0.005f, initialFillNoise01));
+        }
+
+        private int GetCandleBodyDirection(float open, float close, float prevClose, int index)
+        {
+            const float Epsilon = 0.0001f;
+
+            if (close > open + Epsilon)
+                return 1;
+            if (close < open - Epsilon)
+                return -1;
+
+            if (close > prevClose + Epsilon)
+                return 1;
+            if (close < prevClose - Epsilon)
+                return -1;
+
+            return Hash01(_seed ^ unchecked((int)0x68E31DA4), index) >= 0.5f ? 1 : -1;
+        }
+
+        private void ApplyCandleBodyJitterPrice(int index, ref float open, ref float close)
+        {
+            // Visual-only jitter baked into stored OHLC so the candle doesn't "morph" every redraw tick.
+            var rA = Hash01(_seed ^ unchecked((int)0xD00DFACE), index);
+
+            var bodyTop = Mathf.Max(open, close);
+            var bodyBot = Mathf.Min(open, close);
+            var bodyMid = (bodyTop + bodyBot) * 0.5f;
+            var bodyHalf = Mathf.Max(0.000001f, (bodyTop - bodyBot) * 0.5f);
+
+            var jitterHalf = bodyHalf * (1f + (rA * 2f - 1f) * bodyHeightJitter01);
+            jitterHalf = Mathf.Max(0.000001f, jitterHalf);
+
+            var newTop = bodyMid + jitterHalf;
+            var newBot = bodyMid - jitterHalf;
+
+            if (close >= open)
+            {
+                open = Mathf.Max(0f, newBot);
+                close = Mathf.Max(0f, newTop);
+            }
+            else
+            {
+                open = Mathf.Max(0f, newTop);
+                close = Mathf.Max(0f, newBot);
+            }
+        }
+
+        private void ApplyDuplicateCandleNudge(
+            float prevClose,
+            int bodyDirection,
+            float visualReferenceRange,
+            ref float open,
+            ref float close)
+        {
+            var step = GetRoundingStepFor(Mathf.Max(open, close));
+            if (step <= 0f)
+                return;
+
+            var openR = RoundToStep(open, step);
+            var closeR = RoundToStep(close, step);
+            var prevR = RoundToStep(prevClose, step);
+
+            if (Mathf.Abs(openR - closeR) > 0.0001f)
+                return;
+
+            if (Mathf.Abs(closeR - prevR) > 0.0001f)
+                return;
+
+            var mid = (open + close) * 0.5f;
+            var nudge = Mathf.Max(step * 0.25f, visualReferenceRange * duplicateBodyNudge01 * 0.06f);
+            var dir = bodyDirection >= 0 ? 1f : -1f;
+
+            open = Mathf.Max(0f, open - nudge * dir);
+            close = Mathf.Max(0f, close + nudge * dir);
+        }
+
+        private static float GetRoundingStepFor(float price)
+        {
+            // Default chart rounding: multiples of 5 (matches typical SHT setup).
+            // If you later want per-currency rules here, we can wire CurrencyId through.
+            return 5f;
+        }
+
+        private static float RoundToStep(float v, float step)
+        {
+            if (step <= 0f)
+                return v;
+            return Mathf.Round(v / step) * step;
         }
 
         private static float Hash01(int seed, int index)

@@ -16,6 +16,9 @@ namespace TraidingIDLE.UI.Charts
         [SerializeField, Min(8)] private int fontSize = 18;
         [SerializeField] private string numberFormat = "N0";
 
+        [Header("Ticks")]
+        [SerializeField, Min(1f)] private float tickStep = 5f;
+
         private Text[] _labels = Array.Empty<Text>();
 
         private void Awake()
@@ -45,6 +48,7 @@ namespace TraidingIDLE.UI.Charts
         private void OnValidate()
         {
             labelsCount = Mathf.Max(2, labelsCount);
+            tickStep = Mathf.Max(1f, tickStep);
         }
 
         private void OnViewportChanged(float min, float max) => Apply(min, max);
@@ -111,10 +115,28 @@ namespace TraidingIDLE.UI.Charts
             if (h <= 0f)
                 return;
 
+            tickStep = Mathf.Max(1f, tickStep);
+
+            var niceMin = FloorToStep(min, tickStep);
+            var niceMax = CeilToStep(max, tickStep);
+            if (niceMax <= niceMin + tickStep * 0.5f)
+                niceMax = niceMin + tickStep;
+
+            var span = Mathf.Max(tickStep, niceMax - niceMin);
+            var step = ComputeNiceStep(span, _labels.Length - 1, tickStep);
+
+            var start = FloorToStep(niceMin, step);
+            var end = CeilToStep(niceMax, step);
+
+            var requiredSpan = step * (_labels.Length - 1);
+            if (end - start < requiredSpan - 0.0001f)
+                end = start + requiredSpan;
+
             for (var i = 0; i < _labels.Length; i++)
             {
                 var t01 = (float)i / (_labels.Length - 1);
-                var v = Mathf.Lerp(min, max, t01);
+                var v = Mathf.Lerp(start, end, t01);
+                v = RoundToStep(v, tickStep);
 
                 var label = _labels[i];
                 if (label == null)
@@ -128,6 +150,31 @@ namespace TraidingIDLE.UI.Charts
                 rt.anchoredPosition = new Vector2(0f, t01 * h);
                 rt.sizeDelta = new Vector2(220f, 28f);
             }
+        }
+
+        private static float ComputeNiceStep(float span, int divisions, float baseStep)
+        {
+            divisions = Mathf.Max(1, divisions);
+            var raw = span / divisions;
+
+            var k = Mathf.CeilToInt(raw / baseStep);
+            k = Mathf.Max(1, k);
+            return k * baseStep;
+        }
+
+        private static float FloorToStep(float v, float step)
+        {
+            return Mathf.Floor(v / step) * step;
+        }
+
+        private static float CeilToStep(float v, float step)
+        {
+            return Mathf.Ceil(v / step) * step;
+        }
+
+        private static float RoundToStep(float v, float step)
+        {
+            return Mathf.Round(v / step) * step;
         }
     }
 }

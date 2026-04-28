@@ -63,6 +63,29 @@ namespace TraidingIDLE.Currencies.Simulation
         [Min(1f)]
         public float chopPhaseDurationMaxSeconds = 35f;
 
+        [Header("Calm (Спокойствие)")]
+        [Tooltip("Доля от ПОЛОВИНЫ ширины коридора: цель = центр ± Random(min..max) * (high-low)/2.")]
+        [Range(0f, 0.49f)]
+        public float calmOffsetFromHalfMin01 = 0.10f;
+        [Range(0f, 0.49f)]
+        public float calmOffsetFromHalfMax01 = 0.30f;
+        [Min(1f)]
+        public float calmLegDurationMinSeconds = 10f;
+        [Min(1f)]
+        public float calmLegDurationMaxSeconds = 60f;
+        [Min(0.5f)]
+        public float calmShortLegMaxSeconds = 20f;
+        [Tooltip("Если |новая цель − предыдущая точка| / ширина коридора ≤ порога — длительность фазы не больше calmShortLegMaxSeconds.")]
+        [Range(0.01f, 1f)]
+        public float calmSmallMoveRelativeThreshold = 0.20f;
+        [Range(0f, 1f)]
+        public float calmMaxPriceChangePerTick01 = 0.045f;
+        [Min(0f)]
+        public float calmNoiseStrength = 0.08f;
+        [Tooltip("Насколько агрессивно тянем к цели за оставшееся время фазы (меньше — плавнее).")]
+        [Range(0.05f, 0.6f)]
+        public float calmApproachStrength = 0.22f;
+
         [Header("Max price change per tick")]
         [Range(0f, 1f)]
         public float normalMaxPriceChangePerTick01 = 0.10f;

@@ -9,6 +9,8 @@ namespace TraidingIDLE.Currencies.Simulation
         LongUptrend = 4,
         LongDowntrend = 5,
         MarketCrash = 6,
+        /// <summary>Плавное движение с малым шумом в середине коридора (цели ±10–30% от центра).</summary>
+        Calm = 7,
     }
 }
 

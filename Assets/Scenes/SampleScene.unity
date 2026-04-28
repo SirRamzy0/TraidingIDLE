@@ -5483,11 +5483,11 @@ MonoBehaviour:
   startActiveCurrency: 0
   startPrices:
   - id: 0
-    price: 50
+    price: 5000
   - id: 1
-    price: 2500
+    price: 100000
   - id: 2
-    price: 65000
+    price: 2500000
   coins:
   - id: 0
     tickIntervalSeconds: 0.6
@@ -5508,6 +5508,15 @@ MonoBehaviour:
     meanReversionStrength: 0.35
     chopPhaseDurationMinSeconds: 10
     chopPhaseDurationMaxSeconds: 35
+    calmOffsetFromHalfMin01: 0.1
+    calmOffsetFromHalfMax01: 0.3
+    calmLegDurationMinSeconds: 10
+    calmLegDurationMaxSeconds: 60
+    calmShortLegMaxSeconds: 20
+    calmSmallMoveRelativeThreshold: 0.2
+    calmMaxPriceChangePerTick01: 0.045
+    calmNoiseStrength: 0.08
+    calmApproachStrength: 0.22
     normalMaxPriceChangePerTick01: 0.12
     pumpMaxPriceChangePerTick01: 0.35
     crashMaxPriceChangePerTick01: 0.45
@@ -5537,6 +5546,15 @@ MonoBehaviour:
     meanReversionStrength: 0.35
     chopPhaseDurationMinSeconds: 10
     chopPhaseDurationMaxSeconds: 35
+    calmOffsetFromHalfMin01: 0.1
+    calmOffsetFromHalfMax01: 0.3
+    calmLegDurationMinSeconds: 10
+    calmLegDurationMaxSeconds: 60
+    calmShortLegMaxSeconds: 20
+    calmSmallMoveRelativeThreshold: 0.2
+    calmMaxPriceChangePerTick01: 0.045
+    calmNoiseStrength: 0.08
+    calmApproachStrength: 0.22
     normalMaxPriceChangePerTick01: 0.07
     pumpMaxPriceChangePerTick01: 0.25
     crashMaxPriceChangePerTick01: 0.35
@@ -5572,6 +5590,15 @@ MonoBehaviour:
     meanReversionStrength: 0.35
     chopPhaseDurationMinSeconds: 10
     chopPhaseDurationMaxSeconds: 35
+    calmOffsetFromHalfMin01: 0.1
+    calmOffsetFromHalfMax01: 0.3
+    calmLegDurationMinSeconds: 10
+    calmLegDurationMaxSeconds: 60
+    calmShortLegMaxSeconds: 20
+    calmSmallMoveRelativeThreshold: 0.2
+    calmMaxPriceChangePerTick01: 0.045
+    calmNoiseStrength: 0.08
+    calmApproachStrength: 0.22
     normalMaxPriceChangePerTick01: 0.04
     pumpMaxPriceChangePerTick01: 0.12
     crashMaxPriceChangePerTick01: 0.18
@@ -6541,6 +6568,7 @@ MonoBehaviour:
   color: {r: 1, g: 1, b: 1, a: 0.85}
   fontSize: 18
   numberFormat: N0
+  tickStep: 5
 --- !u!1 &1362985408
 GameObject:
   m_ObjectHideFlags: 0
@@ -7161,7 +7189,7 @@ RectTransform:
   m_AnchorMin: {x: 0, y: 0}
   m_AnchorMax: {x: 1, y: 1}
   m_AnchoredPosition: {x: 0, y: 0}
-  m_SizeDelta: {x: 0, y: 0}
+  m_SizeDelta: {x: -40, y: 0}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &1446783057
 MonoBehaviour:
@@ -7184,8 +7212,8 @@ MonoBehaviour:
   gridThickness: 1.5
   gridColor: {r: 1, g: 1, b: 1, a: 0.019607844}
   showCurrentPriceLine: 1
-  currentPriceLineThickness: 1.5
-  currentPriceLineColor: {r: 0.2, g: 0.95, b: 0.55, a: 0.85}
+  currentPriceLineThickness: 2
+  currentPriceLineColor: {r: 0.19999999, g: 0.9490196, b: 0.446938, a: 0.85}
   dashedCurrentPriceLine: 1
   dashLength: 10
   dashGap: 6
@@ -7526,7 +7554,7 @@ RectTransform:
   m_AnchorMin: {x: 0, y: 0}
   m_AnchorMax: {x: 1, y: 1}
   m_AnchoredPosition: {x: 0, y: 0}
-  m_SizeDelta: {x: 0, y: 0}
+  m_SizeDelta: {x: -40, y: 0}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &1523195675
 MonoBehaviour:
@@ -7553,8 +7581,16 @@ MonoBehaviour:
   candleWickNoise01: 0.06
   candleBodyNoise01: 0.03
   candleVariety01: 0.1
-  minCandleRangeFromPrice01: 0.02
+  minCandleRangeFromViewport01: 0.02
+  minCandleWickFromViewport01: 0.012
   minCandleBody01: 0.18
+  avoidIdenticalConsecutiveCandles: 1
+  duplicateBodyNudge01: 0.18
+  enableCandleVisualJitter: 1
+  bodyHeightJitter01: 0.12
+  wickLengthJitter01: 0.22
+  wickAsymmetry01: 0.75
+  wickBalanceRandomness: 0.12
 --- !u!114 &1523195676
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -7573,8 +7609,8 @@ MonoBehaviour:
   m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
   wickThickness: 2
   bodyWidth01: 0.65
-  upColor: {r: 0.25, g: 0.95, b: 0.55, a: 1}
-  downColor: {r: 0.95, g: 0.35, b: 0.35, a: 1}
+  upColor: {r: 0.3372549, g: 0.8745098, b: 0.63529414, a: 1}
+  downColor: {r: 0.91764706, g: 0.20784314, b: 0.41960785, a: 1}
 --- !u!222 &1523195677
 CanvasRenderer:
   m_ObjectHideFlags: 0
