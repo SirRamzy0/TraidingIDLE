@@ -1270,6 +1270,7 @@ GameObject:
   - component: {fileID: 19882171}
   - component: {fileID: 19882170}
   - component: {fileID: 19882169}
+  - component: {fileID: 19882174}
   m_Layer: 5
   m_Name: Mining_button
   m_TagString: Untagged
@@ -1366,7 +1367,7 @@ MonoBehaviour:
   m_Transition: 1
   m_Colors:
     m_NormalColor: {r: 1, g: 1, b: 1, a: 1}
-    m_HighlightedColor: {r: 0.9607843, g: 0.9607843, b: 0.9607843, a: 1}
+    m_HighlightedColor: {r: 0.5943396, g: 0.5943396, b: 0.5943396, a: 1}
     m_PressedColor: {r: 0.78431374, g: 0.78431374, b: 0.78431374, a: 1}
     m_SelectedColor: {r: 0.9607843, g: 0.9607843, b: 0.9607843, a: 1}
     m_DisabledColor: {r: 0.78431374, g: 0.78431374, b: 0.78431374, a: 0.5019608}
@@ -1426,6 +1427,24 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 19882167}
   m_CullTransparentMesh: 1
+--- !u!114 &19882174
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 19882167}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4ed5c0e2e6d868d4cbba20f53c785d10, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::TraidingIDLE.UI.MenuButtonHoverTextColor
+  text: {fileID: 1769479194}
+  selectable: {fileID: 19882171}
+  menu: {fileID: 1728360634}
+  menuIndex: 1
+  normalColor: {r: 1, g: 1, b: 1, a: 1}
+  hoverColor: {r: 0.7, g: 1, b: 0.7, a: 1}
 --- !u!1 &22837983
 GameObject:
   m_ObjectHideFlags: 0
@@ -11879,6 +11898,7 @@ GameObject:
   - component: {fileID: 279357740}
   - component: {fileID: 279357739}
   - component: {fileID: 279357738}
+  - component: {fileID: 279357743}
   m_Layer: 5
   m_Name: Temki_button
   m_TagString: Untagged
@@ -11975,7 +11995,7 @@ MonoBehaviour:
   m_Transition: 1
   m_Colors:
     m_NormalColor: {r: 1, g: 1, b: 1, a: 1}
-    m_HighlightedColor: {r: 0.9607843, g: 0.9607843, b: 0.9607843, a: 1}
+    m_HighlightedColor: {r: 0.5943396, g: 0.5943396, b: 0.5943396, a: 1}
     m_PressedColor: {r: 0.78431374, g: 0.78431374, b: 0.78431374, a: 1}
     m_SelectedColor: {r: 0.9607843, g: 0.9607843, b: 0.9607843, a: 1}
     m_DisabledColor: {r: 0.78431374, g: 0.78431374, b: 0.78431374, a: 0.5019608}
@@ -12035,6 +12055,24 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 279357736}
   m_CullTransparentMesh: 1
+--- !u!114 &279357743
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 279357736}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4ed5c0e2e6d868d4cbba20f53c785d10, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::TraidingIDLE.UI.MenuButtonHoverTextColor
+  text: {fileID: 1593126968}
+  selectable: {fileID: 279357740}
+  menu: {fileID: 1728360634}
+  menuIndex: 3
+  normalColor: {r: 1, g: 1, b: 1, a: 1}
+  hoverColor: {r: 0.7, g: 1, b: 0.7, a: 1}
 --- !u!1 &280169222
 GameObject:
   m_ObjectHideFlags: 0
@@ -56807,6 +56845,7 @@ GameObject:
   - component: {fileID: 1278346083}
   - component: {fileID: 1278346082}
   - component: {fileID: 1278346081}
+  - component: {fileID: 1278346086}
   m_Layer: 5
   m_Name: Bisnes_button
   m_TagString: Untagged
@@ -56903,7 +56942,7 @@ MonoBehaviour:
   m_Transition: 1
   m_Colors:
     m_NormalColor: {r: 1, g: 1, b: 1, a: 1}
-    m_HighlightedColor: {r: 0.9607843, g: 0.9607843, b: 0.9607843, a: 1}
+    m_HighlightedColor: {r: 0.5943396, g: 0.5943396, b: 0.5943396, a: 1}
     m_PressedColor: {r: 0.78431374, g: 0.78431374, b: 0.78431374, a: 1}
     m_SelectedColor: {r: 0.9607843, g: 0.9607843, b: 0.9607843, a: 1}
     m_DisabledColor: {r: 0.78431374, g: 0.78431374, b: 0.78431374, a: 0.5019608}
@@ -56963,6 +57002,24 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1278346079}
   m_CullTransparentMesh: 1
+--- !u!114 &1278346086
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1278346079}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4ed5c0e2e6d868d4cbba20f53c785d10, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::TraidingIDLE.UI.MenuButtonHoverTextColor
+  text: {fileID: 420436632}
+  selectable: {fileID: 1278346083}
+  menu: {fileID: 1728360634}
+  menuIndex: 2
+  normalColor: {r: 1, g: 1, b: 1, a: 1}
+  hoverColor: {r: 0.7, g: 1, b: 0.7, a: 1}
 --- !u!1 &1282466927
 GameObject:
   m_ObjectHideFlags: 0
@@ -57653,6 +57710,102 @@ CanvasRenderer:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1286632510}
+  m_CullTransparentMesh: 1
+--- !u!1 &1293761932
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1293761933}
+  - component: {fileID: 1293761936}
+  - component: {fileID: 1293761935}
+  - component: {fileID: 1293761934}
+  m_Layer: 5
+  m_Name: Highlight
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!224 &1293761933
+RectTransform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1293761932}
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 1728360629}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+  m_AnchorMin: {x: 0, y: 1}
+  m_AnchorMax: {x: 0, y: 1}
+  m_AnchoredPosition: {x: 159, y: -46}
+  m_SizeDelta: {x: 314, y: 86}
+  m_Pivot: {x: 0.5, y: 0.5}
+--- !u!114 &1293761934
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1293761932}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 306cc8c2b49d7114eaa3623786fc2126, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.LayoutElement
+  m_IgnoreLayout: 1
+  m_MinWidth: -1
+  m_MinHeight: -1
+  m_PreferredWidth: -1
+  m_PreferredHeight: -1
+  m_FlexibleWidth: -1
+  m_FlexibleHeight: -1
+  m_LayoutPriority: 1
+--- !u!114 &1293761935
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1293761932}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: fe87c0e1cc204ed48ad3b37840f39efc, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.Image
+  m_Material: {fileID: 0}
+  m_Color: {r: 1, g: 1, b: 1, a: 1}
+  m_RaycastTarget: 1
+  m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
+  m_Maskable: 1
+  m_OnCullStateChanged:
+    m_PersistentCalls:
+      m_Calls: []
+  m_Sprite: {fileID: 21300000, guid: 665f5bf3a2742c84eba62ca05144bbfe, type: 3}
+  m_Type: 0
+  m_PreserveAspect: 0
+  m_FillCenter: 1
+  m_FillMethod: 4
+  m_FillAmount: 1
+  m_FillClockwise: 1
+  m_FillOrigin: 0
+  m_UseSpriteMesh: 0
+  m_PixelsPerUnitMultiplier: 1
+--- !u!222 &1293761936
+CanvasRenderer:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1293761932}
   m_CullTransparentMesh: 1
 --- !u!1 &1299039178
 GameObject:
@@ -75412,6 +75565,7 @@ GameObject:
   m_Component:
   - component: {fileID: 1728360629}
   - component: {fileID: 1728360632}
+  - component: {fileID: 1728360634}
   - component: {fileID: 1728360630}
   - component: {fileID: 1728360633}
   m_Layer: 5
@@ -75433,6 +75587,7 @@ RectTransform:
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
+  - {fileID: 1293761933}
   - {fileID: 1877353412}
   - {fileID: 19882168}
   - {fileID: 1278346080}
@@ -75499,6 +75654,66 @@ MonoBehaviour:
   m_ChildScaleWidth: 0
   m_ChildScaleHeight: 0
   m_ReverseArrangement: 0
+--- !u!114 &1728360634
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1728360628}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: fa2e8810117986148988898267405b81, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::TraidingIDLE.UI.MenuSelectionHighlight
+  items:
+  - button: {fileID: 1877353413}
+    highlightTarget: {fileID: 1877353412}
+    tabRoot: {fileID: 2128873572}
+  - button: {fileID: 19882171}
+    highlightTarget: {fileID: 19882168}
+    tabRoot: {fileID: 280169222}
+  - button: {fileID: 1278346083}
+    highlightTarget: {fileID: 1278346080}
+    tabRoot: {fileID: 277380253}
+  - button: {fileID: 1903106543}
+    highlightTarget: {fileID: 1903106540}
+    tabRoot: {fileID: 1651323643}
+  - button: {fileID: 279357740}
+    highlightTarget: {fileID: 279357737}
+    tabRoot: {fileID: 2038480431}
+  highlight: {fileID: 1293761933}
+  matchTargetSize: 1
+  sizePadding: {x: 0, y: 0}
+  moveDurationSeconds: 0.18
+  moveCurve:
+    serializedVersion: 2
+    m_Curve:
+    - serializedVersion: 3
+      time: 0
+      value: 0
+      inSlope: 0
+      outSlope: 0
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0
+      outWeight: 0
+    - serializedVersion: 3
+      time: 1
+      value: 1
+      inSlope: 0
+      outSlope: 0
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0
+      outWeight: 0
+    m_PreInfinity: 2
+    m_PostInfinity: 2
+    m_RotationOrder: 4
+  unscaledTime: 1
+  initialIndex: 0
+  snapOnEnable: 1
+  delayInitialSnapByOneFrame: 1
 --- !u!1 &1728471201
 GameObject:
   m_ObjectHideFlags: 0
@@ -82212,6 +82427,7 @@ GameObject:
   - component: {fileID: 1877353413}
   - component: {fileID: 1877353417}
   - component: {fileID: 1877353416}
+  - component: {fileID: 1877353418}
   m_Layer: 5
   m_Name: Traidong_button
   m_TagString: Untagged
@@ -82262,7 +82478,7 @@ MonoBehaviour:
   m_Transition: 1
   m_Colors:
     m_NormalColor: {r: 1, g: 1, b: 1, a: 1}
-    m_HighlightedColor: {r: 0.9607843, g: 0.9607843, b: 0.9607843, a: 1}
+    m_HighlightedColor: {r: 0.5943396, g: 0.5943396, b: 0.5943396, a: 1}
     m_PressedColor: {r: 0.78431374, g: 0.78431374, b: 0.78431374, a: 1}
     m_SelectedColor: {r: 0.9607843, g: 0.9607843, b: 0.9607843, a: 1}
     m_DisabledColor: {r: 0.78431374, g: 0.78431374, b: 0.78431374, a: 0.5019608}
@@ -82297,7 +82513,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.Image
   m_Material: {fileID: 0}
-  m_Color: {r: 1, g: 1, b: 1, a: 0.11372549}
+  m_Color: {r: 1, g: 1, b: 1, a: 0}
   m_RaycastTarget: 1
   m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
   m_Maskable: 1
@@ -82368,6 +82584,24 @@ MonoBehaviour:
   m_FlexibleWidth: 0
   m_FlexibleHeight: 0
   m_LayoutPriority: 1
+--- !u!114 &1877353418
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1877353411}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4ed5c0e2e6d868d4cbba20f53c785d10, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::TraidingIDLE.UI.MenuButtonHoverTextColor
+  text: {fileID: 571892059}
+  selectable: {fileID: 1877353413}
+  menu: {fileID: 1728360634}
+  menuIndex: 0
+  normalColor: {r: 1, g: 1, b: 1, a: 1}
+  hoverColor: {r: 0.7, g: 1, b: 0.7, a: 1}
 --- !u!1 &1880400268
 GameObject:
   m_ObjectHideFlags: 0
@@ -83889,6 +84123,7 @@ GameObject:
   - component: {fileID: 1903106543}
   - component: {fileID: 1903106542}
   - component: {fileID: 1903106541}
+  - component: {fileID: 1903106546}
   m_Layer: 5
   m_Name: Collection_button
   m_TagString: Untagged
@@ -83985,7 +84220,7 @@ MonoBehaviour:
   m_Transition: 1
   m_Colors:
     m_NormalColor: {r: 1, g: 1, b: 1, a: 1}
-    m_HighlightedColor: {r: 0.9607843, g: 0.9607843, b: 0.9607843, a: 1}
+    m_HighlightedColor: {r: 0.5943396, g: 0.5943396, b: 0.5943396, a: 1}
     m_PressedColor: {r: 0.78431374, g: 0.78431374, b: 0.78431374, a: 1}
     m_SelectedColor: {r: 0.9607843, g: 0.9607843, b: 0.9607843, a: 1}
     m_DisabledColor: {r: 0.78431374, g: 0.78431374, b: 0.78431374, a: 0.5019608}
@@ -84045,6 +84280,24 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1903106539}
   m_CullTransparentMesh: 1
+--- !u!114 &1903106546
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1903106539}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4ed5c0e2e6d868d4cbba20f53c785d10, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::TraidingIDLE.UI.MenuButtonHoverTextColor
+  text: {fileID: 1009630623}
+  selectable: {fileID: 1903106543}
+  menu: {fileID: 1728360634}
+  menuIndex: 4
+  normalColor: {r: 1, g: 1, b: 1, a: 1}
+  hoverColor: {r: 0.7, g: 1, b: 0.7, a: 1}
 --- !u!1 &1903223695
 GameObject:
   m_ObjectHideFlags: 0
