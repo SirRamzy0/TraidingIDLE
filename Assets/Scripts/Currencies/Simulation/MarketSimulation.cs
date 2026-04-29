@@ -136,7 +136,10 @@ namespace TraidingIDLE.Currencies.Simulation
 
         [Header("Target market")]
         [SerializeField] private CurrencyMarket market = null!;
+        [SerializeField] private PriceHistoryStore? priceHistoryStore = null;
         [SerializeField] private bool useCurrencyMarketPricesOnStart = false;
+        [Tooltip("On first launch (no saved history), warm up each coin by running this many ticks so the chart isn't empty.")]
+        [SerializeField, Min(0)] private int initialHistoryWarmupTicks = 50;
 
         [Header("Game start")]
         [SerializeField] private bool applyGameStartSettings = true;
@@ -258,17 +261,26 @@ namespace TraidingIDLE.Currencies.Simulation
 
         private readonly Dictionary<CurrencyId, CoinRuntime> _runtime = new();
 
+        private bool _warmupInProgress;
+
         private void Awake()
         {
             if (market == null)
                 market = GetComponent<CurrencyMarket>();
+
+            if (priceHistoryStore == null)
+                priceHistoryStore = GetComponent<PriceHistoryStore>();
+            if (priceHistoryStore == null)
+                priceHistoryStore = FindFirstObjectByType<PriceHistoryStore>();
         }
 
         private void Start()
         {
             _runtime.Clear();
 
-            if (applyGameStartSettings)
+            var loadedFromSave = market != null && market.LoadedFromSave;
+
+            if (applyGameStartSettings && !loadedFromSave)
                 ApplyGameStartSettings();
 
             for (var i = 0; i < coins.Length; i++)
@@ -280,7 +292,7 @@ namespace TraidingIDLE.Currencies.Simulation
                 NormalizeConfig(cfg);
 
                 var startPrice = cfg.initialPrice;
-                if (useCurrencyMarketPricesOnStart && market != null)
+                if ((useCurrencyMarketPricesOnStart || loadedFromSave) && market != null)
                     startPrice = market.GetPrice(cfg.id);
 
                 var r = new CoinRuntime
@@ -302,8 +314,53 @@ namespace TraidingIDLE.Currencies.Simulation
                     market.SetPrice(cfg.id, r.visiblePrice);
             }
 
+            WarmupHistoryIfNeeded();
+
             if (logMarketStatesOnStart)
                 LogActiveMarketStates("Market simulation started");
+        }
+
+        private void WarmupHistoryIfNeeded()
+        {
+            if (priceHistoryStore == null || initialHistoryWarmupTicks <= 0)
+                return;
+
+            _warmupInProgress = true;
+            try
+            {
+                foreach (var kv in _runtime)
+                {
+                    var id = kv.Key;
+                    var r = kv.Value;
+
+                    if (priceHistoryStore.TryGet(id, out _))
+                    {
+                        // Push current price as the latest sample only if we don't already have one.
+                        continue;
+                    }
+
+                    var ticks = Mathf.Max(2, initialHistoryWarmupTicks);
+                    var dt = Mathf.Max(0.05f, GetEffectiveTickInterval(r));
+                    var samples = new List<float>(ticks);
+
+                    samples.Add(r.visiblePrice);
+                    for (var step = 1; step < ticks; step++)
+                    {
+                        r.time += dt;
+                        Tick(r, dt);
+                        samples.Add(r.visiblePrice);
+                    }
+
+                    priceHistoryStore.SetAll(id, samples);
+
+                    if (writeToCurrencyMarket && market != null)
+                        market.SetPrice(id, r.visiblePrice);
+                }
+            }
+            finally
+            {
+                _warmupInProgress = false;
+            }
         }
 
         private void ApplyGameStartSettings()
@@ -373,7 +430,7 @@ namespace TraidingIDLE.Currencies.Simulation
                     ApplyNextPlannedState(r);
                     EnsurePlannedStates(r);
 
-                    if (logMarketStatesOnStateChange)
+                    if (logMarketStatesOnStateChange && !_warmupInProgress)
                         LogActiveMarketStates($"{r.config.id} changed market state");
                 }
             }
@@ -388,8 +445,14 @@ namespace TraidingIDLE.Currencies.Simulation
             r.rawPrice = nextRaw;
             r.visiblePrice = RoundPrice(r.config, r.rawPrice);
 
+            if (_warmupInProgress)
+                return;
+
             if (writeToCurrencyMarket && market != null)
                 market.SetPrice(r.config.id, r.visiblePrice);
+
+            if (priceHistoryStore != null)
+                priceHistoryStore.Push(r.config.id, r.visiblePrice);
         }
 
         private float SimulateNextRawPrice(CoinRuntime r, float dt)
@@ -1559,6 +1622,17 @@ namespace TraidingIDLE.Currencies.Simulation
         private void LogActiveMarketStatesFromContextMenu()
         {
             LogActiveMarketStates("Manual market states log");
+        }
+
+        [ContextMenu("Debug/Reset all saves (player, market, history, risky)")]
+        private void Debug_ResetAllSaves()
+        {
+            TraidingIDLE.Saves.SaveStorage.DeleteKey("save.player.v1");
+            TraidingIDLE.Saves.SaveStorage.DeleteKey("save.market.v1");
+            TraidingIDLE.Saves.SaveStorage.DeleteKey("save.history.v1");
+            TraidingIDLE.Saves.SaveStorage.DeleteKey("save.risky.v1");
+            TraidingIDLE.Saves.SaveStorage.Flush();
+            Debug.Log($"[{nameof(MarketSimulation)}] All saves cleared. Restart Play Mode.", this);
         }
 
         [ContextMenu("Debug/Apply Selected State Now")]

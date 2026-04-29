@@ -1,6 +1,7 @@
 using UnityEngine;
 using UnityEngine.Serialization;
 using TraidingIDLE.Currencies;
+using TraidingIDLE.Currencies.Simulation;
 
 namespace TraidingIDLE.UI.Charts
 {
@@ -8,6 +9,7 @@ namespace TraidingIDLE.UI.Charts
     {
         [Header("Data source")]
         [SerializeField] private CurrencyMarket market = null!;
+        [SerializeField] private PriceHistoryStore? priceHistoryStore = null;
         [SerializeField] private bool followActiveCurrency = true;
         [SerializeField] private CurrencyId currency = CurrencyId.SHT;
 
@@ -95,6 +97,9 @@ namespace TraidingIDLE.UI.Charts
             if (market == null)
                 market = FindFirstObjectByType<CurrencyMarket>();
 
+            if (priceHistoryStore == null)
+                priceHistoryStore = FindFirstObjectByType<PriceHistoryStore>();
+
             _history.SetCapacity(historySize + 1);
             _candles.SetCapacity(historySize);
             EnsureCandlesArray();
@@ -109,10 +114,13 @@ namespace TraidingIDLE.UI.Charts
                 market.ActiveCurrencyChanged += OnActiveCurrencyChanged;
             }
 
+            if (priceHistoryStore != null)
+                priceHistoryStore.HistoryReset += OnHistoryReset;
+
             if (followActiveCurrency && market != null)
                 currency = market.ActiveCurrency;
 
-            SeedWithCurrentPrice();
+            SeedFromStoreOrCurrentPrice();
         }
 
         private void OnDisable()
@@ -122,6 +130,17 @@ namespace TraidingIDLE.UI.Charts
                 market.PriceChanged -= OnPriceChanged;
                 market.ActiveCurrencyChanged -= OnActiveCurrencyChanged;
             }
+
+            if (priceHistoryStore != null)
+                priceHistoryStore.HistoryReset -= OnHistoryReset;
+        }
+
+        private void OnHistoryReset(CurrencyId id)
+        {
+            if (id != currency)
+                return;
+
+            SeedFromStoreOrCurrentPrice();
         }
 
         private void OnValidate()
@@ -147,7 +166,7 @@ namespace TraidingIDLE.UI.Charts
             _candles.Clear();
             _hasViewport = false;
             _receivedLivePrice = false;
-            SeedWithCurrentPrice();
+            SeedFromStoreOrCurrentPrice();
         }
 
         private void OnPriceChanged(CurrencyId id, float price)
@@ -190,6 +209,52 @@ namespace TraidingIDLE.UI.Charts
 
             var p = market.GetPrice(currency);
             SeedAroundPrice(p);
+        }
+
+        private void SeedFromStoreOrCurrentPrice()
+        {
+            if (priceHistoryStore != null && priceHistoryStore.TryGet(currency, out var saved) && saved.Count >= 2)
+            {
+                SeedFromHistory(saved);
+                return;
+            }
+
+            SeedWithCurrentPrice();
+        }
+
+        private void SeedFromHistory(System.Collections.Generic.IReadOnlyList<float> saved)
+        {
+            _history.Clear();
+            _candles.Clear();
+            if (_history.Capacity != historySize + 1)
+                _history.SetCapacity(historySize + 1);
+            if (_candles.Capacity != historySize)
+                _candles.SetCapacity(historySize);
+
+            // Take the last `historySize` prices.
+            var start = System.Math.Max(0, saved.Count - historySize);
+            var first = Mathf.Max(0.000001f, saved[start]);
+            _history.Push(first);
+
+            var prevClose = first;
+            var index = 0;
+            for (var i = start + 1; i < saved.Count; i++)
+            {
+                var open = prevClose;
+                var close = Mathf.Max(0.000001f, saved[i]);
+                _history.Push(close);
+
+                _candles.Push(BuildCandle(open, close, prevClose, index));
+                prevClose = close;
+                index++;
+            }
+
+            _currentPrice = prevClose;
+            CurrentPriceChanged?.Invoke(_currentPrice);
+            _receivedLivePrice = true;
+
+            UpdateViewport(prevClose, force: true);
+            Render();
         }
 
         private void SeedAroundPrice(float price)

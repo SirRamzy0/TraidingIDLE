@@ -2,6 +2,7 @@ using System;
 using System.Globalization;
 using TMPro;
 using TraidingIDLE.Player;
+using TraidingIDLE.Saves;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -89,6 +90,24 @@ namespace TraidingIDLE.UI
         [SerializeField] private string successClaimLabel = "Получить";
         [SerializeField] private string successClaimedLabel = "Получено";
 
+        private const string SaveKey = "save.risky.v1";
+
+        [Serializable]
+        private sealed class SaveData
+        {
+            public int state;
+            public int idleVisibleDialog;
+            public float stateTimeLeft;
+            public float nextOfferTimeLeft;
+            public bool betPlaced;
+            public bool fomoNoBet;
+            public bool claimTaken;
+            public long stakeRubles;
+            public long displayStakeRubles;
+            public float chance01;
+            public long profitRubles;
+        }
+
         private State _state;
         private float _stateTimeLeft;
         private float _nextOfferTimeLeft;
@@ -111,6 +130,12 @@ namespace TraidingIDLE.UI
             ResetOfferBetButtonLabel();
             ResetSuccessClaimButtonLabel();
 
+            if (LoadFromStorage())
+            {
+                ApplyLoadedLabelsAndUI();
+                return;
+            }
+
             if (startWithImmediateOffer)
             {
                 // First run: show offer immediately so the widget is always "on screen".
@@ -123,6 +148,7 @@ namespace TraidingIDLE.UI
             SetState(State.IdleBetweenOffers, force: true);
             RefreshAllTexts();
             UpdateButtons();
+            SaveToStorage();
         }
 
         private void OnEnable()
@@ -144,6 +170,9 @@ namespace TraidingIDLE.UI
         private void Update()
         {
             var dt = Time.deltaTime;
+
+            var prevTimerSlot = (int)Mathf.Ceil(_stateTimeLeft);
+            var prevNextOfferSlot = (int)Mathf.Ceil(_nextOfferTimeLeft);
 
             switch (_state)
             {
@@ -178,6 +207,11 @@ namespace TraidingIDLE.UI
             }
 
             RefreshTimersOnly();
+
+            var newTimerSlot = (int)Mathf.Ceil(_stateTimeLeft);
+            var newNextOfferSlot = (int)Mathf.Ceil(_nextOfferTimeLeft);
+            if (newTimerSlot != prevTimerSlot || newNextOfferSlot != prevNextOfferSlot)
+                SaveToStorage();
         }
 
         private void ScheduleNextOffer()
@@ -205,6 +239,7 @@ namespace TraidingIDLE.UI
             SetState(State.Offer);
             RefreshAllTexts();
             UpdateButtons();
+            SaveToStorage();
         }
 
         private void StartAnalysis()
@@ -213,6 +248,7 @@ namespace TraidingIDLE.UI
             SetState(State.Analysis);
             RefreshAllTexts();
             UpdateButtons();
+            SaveToStorage();
         }
 
         private void Resolve()
@@ -233,6 +269,7 @@ namespace TraidingIDLE.UI
                 SetState(State.IdleBetweenOffers);
                 UpdateButtons();
                 RefreshAllTexts();
+                SaveToStorage();
                 return;
             }
 
@@ -247,6 +284,7 @@ namespace TraidingIDLE.UI
 
             RefreshAllTexts();
             UpdateButtons();
+            SaveToStorage();
         }
 
         private void OnBetClicked()
@@ -273,6 +311,7 @@ namespace TraidingIDLE.UI
                 offerBetButton.interactable = false;
             UpdateButtons();
             RefreshAllTexts();
+            SaveToStorage();
         }
 
         private void OnClaimClicked()
@@ -298,6 +337,7 @@ namespace TraidingIDLE.UI
                 successClaimButton.interactable = false;
             ScheduleNextOffer();
             UpdateButtons();
+            SaveToStorage();
         }
 
         private bool IsSuccessClaimable()
@@ -513,6 +553,69 @@ namespace TraidingIDLE.UI
         private static string SafeFormat(string format, string fallback)
         {
             return string.IsNullOrEmpty(format) ? fallback : format;
+        }
+
+        private void SaveToStorage()
+        {
+            var data = new SaveData
+            {
+                state = (int)_state,
+                idleVisibleDialog = (int)_idleVisibleDialog,
+                stateTimeLeft = _stateTimeLeft,
+                nextOfferTimeLeft = _nextOfferTimeLeft,
+                betPlaced = _betPlaced,
+                fomoNoBet = _fomoNoBet,
+                claimTaken = _claimTaken,
+                stakeRubles = _stakeRubles,
+                displayStakeRubles = _displayStakeRubles,
+                chance01 = _chance01,
+                profitRubles = _profitRubles,
+            };
+            SaveStorage.SaveJson(SaveKey, data);
+        }
+
+        private bool LoadFromStorage()
+        {
+            if (!SaveStorage.TryLoadJson<SaveData>(SaveKey, out var data))
+                return false;
+
+            _state = ClampState(data.state);
+            _idleVisibleDialog = ClampState(data.idleVisibleDialog);
+            _stateTimeLeft = Mathf.Max(0f, data.stateTimeLeft);
+            _nextOfferTimeLeft = Mathf.Max(0f, data.nextOfferTimeLeft);
+            _betPlaced = data.betPlaced;
+            _fomoNoBet = data.fomoNoBet;
+            _claimTaken = data.claimTaken;
+            _stakeRubles = Math.Max(0, data.stakeRubles);
+            _displayStakeRubles = Math.Max(0, data.displayStakeRubles);
+            _chance01 = Mathf.Clamp01(data.chance01);
+            _profitRubles = Math.Max(0, data.profitRubles);
+
+            return true;
+        }
+
+        private static State ClampState(int v)
+        {
+            if (v < 0 || v > (int)State.IdleBetweenOffers)
+                return State.IdleBetweenOffers;
+            return (State)v;
+        }
+
+        private void ApplyLoadedLabelsAndUI()
+        {
+            if (_betPlaced)
+                SetOfferBetButtonLabel(offerBetWaitingLabel);
+            else
+                ResetOfferBetButtonLabel();
+
+            if (_claimTaken)
+                SetSuccessClaimButtonLabel(successClaimedLabel);
+            else
+                ResetSuccessClaimButtonLabel();
+
+            SetState(_state, force: true);
+            RefreshAllTexts();
+            UpdateButtons();
         }
     }
 }

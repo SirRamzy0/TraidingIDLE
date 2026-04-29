@@ -1,5 +1,6 @@
 using System;
 using TraidingIDLE.Currencies;
+using TraidingIDLE.Saves;
 using UnityEngine;
 
 namespace TraidingIDLE.Player
@@ -14,6 +15,15 @@ namespace TraidingIDLE.Player
             [Min(0)] public int cap;
             public long investedRubles;
         }
+
+        [Serializable]
+        private sealed class SaveData
+        {
+            public long rubles;
+            public CoinHolding[] holdings = Array.Empty<CoinHolding>();
+        }
+
+        private const string SaveKey = "save.player.v1";
 
         [Header("Rubles (main currency)")]
         [SerializeField, Min(0)] private long startingRubles = 25_000;
@@ -37,6 +47,7 @@ namespace TraidingIDLE.Player
         {
             EnsureHoldingsConfigured();
             _rubles = Math.Max(0, startingRubles);
+            LoadFromStorage();
         }
 
         private void OnValidate()
@@ -86,6 +97,7 @@ namespace TraidingIDLE.Player
 
             RublesChanged?.Invoke(_rubles);
             HoldingsChanged?.Invoke(id);
+            SaveToStorage();
             return true;
         }
 
@@ -123,6 +135,7 @@ namespace TraidingIDLE.Player
 
             RublesChanged?.Invoke(_rubles);
             HoldingsChanged?.Invoke(id);
+            SaveToStorage();
             return true;
         }
 
@@ -143,6 +156,7 @@ namespace TraidingIDLE.Player
 
             holdings[index] = holding;
             HoldingsChanged?.Invoke(id);
+            SaveToStorage();
         }
 
         public void AddRubles(long delta)
@@ -152,6 +166,61 @@ namespace TraidingIDLE.Player
 
             _rubles = Math.Max(0, _rubles + delta);
             RublesChanged?.Invoke(_rubles);
+            SaveToStorage();
+        }
+
+        public void SaveToStorage()
+        {
+            var data = new SaveData
+            {
+                rubles = _rubles,
+                holdings = (CoinHolding[])holdings.Clone(),
+            };
+            SaveStorage.SaveJson(SaveKey, data);
+            SaveStorage.Flush();
+        }
+
+        private void LoadFromStorage()
+        {
+            if (!SaveStorage.TryLoadJson<SaveData>(SaveKey, out var data))
+                return;
+
+            _rubles = Math.Max(0, data.rubles);
+
+            if (data.holdings == null)
+                return;
+
+            for (var i = 0; i < data.holdings.Length; i++)
+            {
+                var saved = data.holdings[i];
+                var index = FindHolding(saved.id);
+                if (index < 0)
+                    continue;
+
+                var current = holdings[index];
+                current.amount = Mathf.Max(0, saved.amount);
+                current.cap = Mathf.Max(0, saved.cap);
+                current.investedRubles = Math.Max(0, saved.investedRubles);
+
+                if (current.amount > current.cap)
+                    current.amount = current.cap;
+
+                if (current.amount <= 0)
+                    current.investedRubles = 0;
+
+                holdings[index] = current;
+            }
+
+            RublesChanged?.Invoke(_rubles);
+            for (var i = 0; i < holdings.Length; i++)
+                HoldingsChanged?.Invoke(holdings[i].id);
+        }
+
+        [ContextMenu("Debug/Reset save")]
+        private void Debug_ResetSave()
+        {
+            SaveStorage.DeleteKey(SaveKey);
+            SaveStorage.Flush();
         }
 
         [ContextMenu("Debug/Add 100k rubles")]

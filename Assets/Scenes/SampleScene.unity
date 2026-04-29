@@ -5650,6 +5650,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::TraidingIDLE.UI.Charts.PriceChartBoard
   market: {fileID: 1136403799}
+  priceHistoryStore: {fileID: 0}
   followActiveCurrency: 1
   currency: 0
   historySize: 50
@@ -28760,6 +28761,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::TraidingIDLE.UI.Charts.PriceChartBoard
   market: {fileID: 1136403799}
+  priceHistoryStore: {fileID: 0}
   followActiveCurrency: 1
   currency: 0
   historySize: 50
@@ -45081,6 +45083,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::TraidingIDLE.UI.Charts.PriceChartBoard
   market: {fileID: 1136403799}
+  priceHistoryStore: {fileID: 0}
   followActiveCurrency: 1
   currency: 0
   historySize: 50
@@ -49693,6 +49696,7 @@ GameObject:
   - component: {fileID: 1136403800}
   - component: {fileID: 1136403799}
   - component: {fileID: 1136403798}
+  - component: {fileID: 1136403801}
   m_Layer: 0
   m_Name: MarketSiulation
   m_TagString: Untagged
@@ -49713,7 +49717,9 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::TraidingIDLE.Currencies.Simulation.MarketSimulation
   market: {fileID: 1136403799}
+  priceHistoryStore: {fileID: 1136403801}
   useCurrencyMarketPricesOnStart: 0
+  initialHistoryWarmupTicks: 50
   applyGameStartSettings: 1
   startActiveCurrency: 0
   startPrices:
@@ -50245,6 +50251,20 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &1136403801
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1136403797}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 0a7c2784b8618984b8ec28ca21379c49, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::TraidingIDLE.Currencies.Simulation.PriceHistoryStore
+  historySize: 50
+  saveCooldownSeconds: 2
 --- !u!1 &1136961011
 GameObject:
   m_ObjectHideFlags: 0
@@ -54857,6 +54877,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::TraidingIDLE.UI.Charts.PriceChartBoard
   market: {fileID: 1136403799}
+  priceHistoryStore: {fileID: 0}
   followActiveCurrency: 1
   currency: 0
   historySize: 50
@@ -67090,6 +67111,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::TraidingIDLE.UI.Charts.PriceChartBoard
   market: {fileID: 1136403799}
+  priceHistoryStore: {fileID: 0}
   followActiveCurrency: 1
   currency: 0
   historySize: 50

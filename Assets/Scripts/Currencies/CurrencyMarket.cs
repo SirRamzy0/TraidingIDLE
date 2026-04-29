@@ -1,4 +1,5 @@
 using System;
+using TraidingIDLE.Saves;
 using UnityEngine;
 
 namespace TraidingIDLE.Currencies
@@ -11,6 +12,15 @@ namespace TraidingIDLE.Currencies
             public CurrencyId id;
             public float price;
         }
+
+        [Serializable]
+        private sealed class SaveData
+        {
+            public int activeCurrency;
+            public CurrencyPrice[] prices = Array.Empty<CurrencyPrice>();
+        }
+
+        private const string SaveKey = "save.market.v1";
 
         [Header("Initial state")]
         [SerializeField] private CurrencyId activeCurrency = CurrencyId.SHT;
@@ -27,16 +37,105 @@ namespace TraidingIDLE.Currencies
         };
 
         public CurrencyId ActiveCurrency => activeCurrency;
+        public bool LoadedFromSave { get; private set; }
 
         public event Action<CurrencyId>? ActiveCurrencyChanged;
         public event Action<CurrencyId, float>? PriceChanged;
 
         private CurrencyId _lastActiveCurrency;
 
+        private float _saveCooldown;
+        private bool _dirty;
+
         private void Awake()
         {
             EnsureConfiguredPrices();
+            LoadFromStorage();
             _lastActiveCurrency = activeCurrency;
+        }
+
+        private void Update()
+        {
+            if (!_dirty)
+                return;
+
+            _saveCooldown -= Time.unscaledDeltaTime;
+            if (_saveCooldown > 0f)
+                return;
+
+            FlushSave();
+        }
+
+        private void OnDisable()
+        {
+            if (_dirty)
+                FlushSave();
+        }
+
+        private void OnApplicationPause(bool pause)
+        {
+            if (pause && _dirty)
+                FlushSave();
+        }
+
+        private void OnApplicationQuit()
+        {
+            if (_dirty)
+                FlushSave();
+        }
+
+        private void MarkDirty()
+        {
+            _dirty = true;
+            if (_saveCooldown <= 0f)
+                _saveCooldown = 5f;
+        }
+
+        private void FlushSave()
+        {
+            _dirty = false;
+            _saveCooldown = 0f;
+            SaveToStorage();
+        }
+
+        private void SaveToStorage()
+        {
+            var data = new SaveData
+            {
+                activeCurrency = (int)activeCurrency,
+                prices = (CurrencyPrice[])prices.Clone(),
+            };
+            SaveStorage.SaveJson(SaveKey, data);
+            SaveStorage.Flush();
+        }
+
+        private void LoadFromStorage()
+        {
+            if (!SaveStorage.TryLoadJson<SaveData>(SaveKey, out var data))
+                return;
+
+            LoadedFromSave = true;
+
+            if (Enum.IsDefined(typeof(CurrencyId), data.activeCurrency))
+                activeCurrency = (CurrencyId)data.activeCurrency;
+
+            if (data.prices == null)
+                return;
+
+            for (var i = 0; i < data.prices.Length; i++)
+            {
+                var saved = data.prices[i];
+                if (saved.price < 0f)
+                    continue;
+
+                for (var j = 0; j < prices.Length; j++)
+                {
+                    if (prices[j].id != saved.id)
+                        continue;
+                    prices[j].price = saved.price;
+                    break;
+                }
+            }
         }
 
         private void OnValidate()
@@ -65,6 +164,7 @@ namespace TraidingIDLE.Currencies
             activeCurrency = id;
             _lastActiveCurrency = activeCurrency;
             ActiveCurrencyChanged?.Invoke(activeCurrency);
+            MarkDirty();
         }
 
         [ContextMenu("Set Active Currency/SHT")]
@@ -110,11 +210,13 @@ namespace TraidingIDLE.Currencies
 
                 prices[i].price = price;
                 PriceChanged?.Invoke(id, price);
+                MarkDirty();
                 return;
             }
 
             AddPrice(id, price);
             PriceChanged?.Invoke(id, price);
+            MarkDirty();
         }
 
         private void EnsureConfiguredPrices()
