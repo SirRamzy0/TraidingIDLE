@@ -20,6 +20,15 @@ namespace TraidingIDLE.UI
         [SerializeField] private TMP_Text holdingsText = null!;
         [SerializeField] private string holdingsFormat = "кол-во: {0}/{1}";
 
+        [Header("Active coin value + profit")]
+        [SerializeField] private TMP_Text totalValueText = null!;
+        [SerializeField] private TMP_Text profitPercentText = null!;
+        [SerializeField] private string totalValueFormat = "Общая стоимость: {0}";
+        [SerializeField] private string profitPercentFormat = "{0}%";
+        [SerializeField] private Color profitPositiveColor = new(0.18f, 1f, 0.68f);
+        [SerializeField] private Color profitNegativeColor = new(1f, 0.25f, 0.38f);
+        [SerializeField] private Color profitNeutralColor = new(0.85f, 0.85f, 0.85f);
+
         [Header("Buy")]
         [SerializeField] private Button buyButton = null!;
         [SerializeField] private Slider buySlider = null!;
@@ -75,6 +84,7 @@ namespace TraidingIDLE.UI
             if (sellSlider != null) sellSlider.onValueChanged.AddListener(OnSellSliderChanged);
 
             RefreshHoldings();
+            RefreshValueAndProfit();
             RefreshTransaction();
         }
 
@@ -111,13 +121,17 @@ namespace TraidingIDLE.UI
             ResetSlider(buySlider);
             ResetSlider(sellSlider);
             RefreshHoldings();
+            RefreshValueAndProfit();
             RefreshTransaction();
         }
 
         private void OnPriceChanged(CurrencyId id, float price)
         {
             if (id == _activeCurrency)
+            {
+                RefreshValueAndProfit();
                 RefreshTransaction();
+            }
         }
 
         private void OnRublesChanged(long _)
@@ -130,6 +144,7 @@ namespace TraidingIDLE.UI
             if (id == _activeCurrency)
             {
                 RefreshHoldings();
+                RefreshValueAndProfit();
                 RefreshTransaction();
             }
         }
@@ -199,6 +214,37 @@ namespace TraidingIDLE.UI
                 SafeFormat(holdingsFormat, "{0}/{1}"),
                 FormatThousands(amount),
                 FormatThousands(cap));
+        }
+
+        private void RefreshValueAndProfit()
+        {
+            if (profile == null || market == null)
+                return;
+
+            var amount = profile.GetAmount(_activeCurrency);
+            var unitPrice = GetUnitPrice();
+            var totalValue = unitPrice * Math.Max(0, amount);
+            var invested = profile.GetInvestedRubles(_activeCurrency);
+
+            if (totalValueText != null)
+                totalValueText.text = string.Format(SafeFormat(totalValueFormat, "{0}"), FormatThousands(totalValue));
+
+            if (profitPercentText != null)
+            {
+                if (invested <= 0)
+                {
+                    profitPercentText.text = string.Format(SafeFormat(profitPercentFormat, "{0}%"), "+0");
+                    profitPercentText.color = profitNeutralColor;
+                    return;
+                }
+
+                var diff = (double)(totalValue - invested);
+                var pct = diff / invested * 100.0;
+                var pctInt = (int)Math.Round(pct);
+                var sign = pctInt >= 0 ? "+" : "";
+                profitPercentText.text = string.Format(SafeFormat(profitPercentFormat, "{0}%"), $"{sign}{pctInt}");
+                profitPercentText.color = pctInt > 0 ? profitPositiveColor : (pctInt < 0 ? profitNegativeColor : profitNeutralColor);
+            }
         }
 
         private void UpdateRow(

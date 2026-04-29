@@ -12,6 +12,7 @@ namespace TraidingIDLE.Player
             public CurrencyId id;
             [Min(0)] public int amount;
             [Min(0)] public int cap;
+            public long investedRubles;
         }
 
         [Header("Rubles (main currency)")]
@@ -55,6 +56,12 @@ namespace TraidingIDLE.Player
             return index < 0 ? 0 : holdings[index].cap;
         }
 
+        public long GetInvestedRubles(CurrencyId id)
+        {
+            var index = FindHolding(id);
+            return index < 0 ? 0 : Math.Max(0, holdings[index].investedRubles);
+        }
+
         public bool TryBuy(CurrencyId id, int count, long unitPrice)
         {
             if (count <= 0 || unitPrice < 0)
@@ -74,6 +81,7 @@ namespace TraidingIDLE.Player
 
             _rubles -= cost;
             holding.amount += count;
+            holding.investedRubles = Math.Max(0, holding.investedRubles + cost);
             holdings[index] = holding;
 
             RublesChanged?.Invoke(_rubles);
@@ -95,7 +103,21 @@ namespace TraidingIDLE.Player
                 return false;
 
             var proceeds = unitPrice * count;
+
+            // Reduce investedRubles proportionally using weighted average cost.
+            if (holding.amount > 0 && holding.investedRubles > 0)
+            {
+                var avgCost = (double)holding.investedRubles / holding.amount;
+                var costRemoved = (long)Math.Round(avgCost * count);
+                holding.investedRubles = Math.Max(0, holding.investedRubles - costRemoved);
+            }
+
             holding.amount -= count;
+            if (holding.amount <= 0)
+            {
+                holding.amount = 0;
+                holding.investedRubles = 0;
+            }
             holdings[index] = holding;
             _rubles += proceeds;
 
@@ -166,8 +188,11 @@ namespace TraidingIDLE.Player
                 var h = holdings[i];
                 h.amount = Mathf.Max(0, h.amount);
                 h.cap = Mathf.Max(0, h.cap);
+                h.investedRubles = Math.Max(0, h.investedRubles);
                 if (h.amount > h.cap)
                     h.amount = h.cap;
+                if (h.amount <= 0)
+                    h.investedRubles = 0;
                 holdings[i] = h;
             }
         }
@@ -178,7 +203,7 @@ namespace TraidingIDLE.Player
                 return;
 
             Array.Resize(ref holdings, holdings.Length + 1);
-            holdings[^1] = new CoinHolding { id = id, amount = 0, cap = Mathf.Max(0, defaultCap) };
+            holdings[^1] = new CoinHolding { id = id, amount = 0, cap = Mathf.Max(0, defaultCap), investedRubles = 0 };
         }
     }
 }

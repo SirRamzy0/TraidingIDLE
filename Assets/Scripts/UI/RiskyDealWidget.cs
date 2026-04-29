@@ -76,7 +76,7 @@ namespace TraidingIDLE.UI
         [SerializeField] private int payoutX5Weight = 20;
 
         [Header("Formats")]
-        [SerializeField] private string chanceFormat = "Шанс: {0}%";
+        [SerializeField] private string chanceFormat = "{0}";
         [SerializeField] private string offerStakePromptFormat = "Вложить: {0}";
         [SerializeField] private string offerStakeCommittedFormat = "Вложено: {0}";
         [SerializeField] private string analysisStakeFormat = "Вложено: {0}";
@@ -148,9 +148,13 @@ namespace TraidingIDLE.UI
             switch (_state)
             {
                 case State.IdleBetweenOffers:
-                    _nextOfferTimeLeft -= dt;
-                    if (_nextOfferTimeLeft <= 0f)
-                        StartNewOffer();
+                    // If player has a real win to claim, keep success visible forever until claim click.
+                    if (!(_idleVisibleDialog == State.Success && _betPlaced && !_claimTaken))
+                    {
+                        _nextOfferTimeLeft -= dt;
+                        if (_nextOfferTimeLeft <= 0f)
+                            StartNewOffer();
+                    }
                     break;
 
                 case State.Offer:
@@ -222,7 +226,9 @@ namespace TraidingIDLE.UI
                     : RollPayoutMultiplierWeighted();
                 _profitRubles = Math.Max(0, _stakeRubles * (payoutMultiplier - 1));
                 _displayStakeRubles = _betPlaced ? _stakeRubles : 0;
-                ScheduleNextOffer();
+                // Start next-cycle timer only if there is no reward to claim.
+                if (!_betPlaced)
+                    ScheduleNextOffer();
                 _idleVisibleDialog = State.Success;
                 SetState(State.IdleBetweenOffers);
                 UpdateButtons();
@@ -290,6 +296,7 @@ namespace TraidingIDLE.UI
             SetSuccessClaimButtonLabel(successClaimedLabel);
             if (successClaimButton != null)
                 successClaimButton.interactable = false;
+            ScheduleNextOffer();
             UpdateButtons();
         }
 
@@ -353,7 +360,7 @@ namespace TraidingIDLE.UI
         private void RefreshAllTexts()
         {
             if (offerChanceText != null)
-                offerChanceText.text = string.Format(SafeFormat(chanceFormat, "{0}%"), Mathf.RoundToInt(_chance01 * 100f));
+                offerChanceText.text = string.Format(SafeFormat(chanceFormat, "{0}"), Mathf.RoundToInt(_chance01 * 100f));
 
             if (offerStakeText != null)
             {
@@ -365,7 +372,10 @@ namespace TraidingIDLE.UI
                 offerTimerText.text = FormatTimerLabel(_stateTimeLeft);
 
             if (analysisStakeText != null)
-                analysisStakeText.text = string.Format(SafeFormat(analysisStakeFormat, "{0}"), FormatRubles(_stakeRubles));
+            {
+                var analysisStake = _betPlaced ? _stakeRubles : 0;
+                analysisStakeText.text = string.Format(SafeFormat(analysisStakeFormat, "{0}"), FormatRubles(analysisStake));
+            }
 
             if (analysisTimerText != null && _state == State.Analysis)
                 analysisTimerText.text = FormatTimerLabel(_stateTimeLeft);
@@ -388,12 +398,22 @@ namespace TraidingIDLE.UI
                 return 0;
 
             if (min == max)
-                return min;
+                return QuantizeStakeToStep(min);
 
             // Unity Random for long range via double.
             var v = UnityEngine.Random.value;
             var rolled = min + (long)Math.Round((max - min) * v);
-            return Math.Max(0, rolled);
+            return QuantizeStakeToStep(Math.Max(0, rolled));
+        }
+
+        private static long QuantizeStakeToStep(long value)
+        {
+            const long StakeStep = 20_000;
+            if (value <= 0)
+                return 0;
+
+            var quantized = (long)Math.Round((double)value / StakeStep) * StakeStep;
+            return Math.Max(StakeStep, quantized);
         }
 
         private float RollChance01()
