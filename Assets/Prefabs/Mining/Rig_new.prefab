@@ -167,7 +167,7 @@ MonoBehaviour:
   m_faceColor:
     serializedVersion: 2
     rgba: 4294967295
-  m_fontSize: 18
+  m_fontSize: 12
   m_fontSizeBase: 24
   m_fontWeight: 400
   m_enableAutoSizing: 1
@@ -473,6 +473,7 @@ GameObject:
   - component: {fileID: 4183997690227968692}
   - component: {fileID: 5106998398027711117}
   - component: {fileID: 1737642580237247333}
+  - component: {fileID: 4715324561992434072}
   m_Layer: 5
   m_Name: Rig_new
   m_TagString: Untagged
@@ -587,6 +588,26 @@ MonoBehaviour:
   m_ChildScaleWidth: 0
   m_ChildScaleHeight: 0
   m_ReverseArrangement: 0
+--- !u!114 &4715324561992434072
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3395417655173186820}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 0087285eb446f2847ad61480d3512b20, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::TraidingIDLE.Mining.MiningBuyRigCardUI
+  titleText: {fileID: 0}
+  priceText: {fileID: 0}
+  buttonText: {fileID: 9210476659604365561}
+  buyButton: {fileID: 2527558733110492785}
+  titleFormat: "\u041A\u0443\u043F\u0438\u0442\u044C\n\u043D\u043E\u0432\u044B\u0439
+    \u0440\u0438\u0433"
+  priceFormat: '{0}'
+  buttonFormat: "\u041A\u0443\u043F\u0438\u0442\u044C\n{0}"
 --- !u!1 &3872953750614552264
 GameObject:
   m_ObjectHideFlags: 0
@@ -679,7 +700,7 @@ MonoBehaviour:
   m_faceColor:
     serializedVersion: 2
     rgba: 4294967295
-  m_fontSize: 18
+  m_fontSize: 12
   m_fontSizeBase: 36
   m_fontWeight: 400
   m_enableAutoSizing: 1

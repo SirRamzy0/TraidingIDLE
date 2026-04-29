@@ -167,7 +167,7 @@ MonoBehaviour:
   m_faceColor:
     serializedVersion: 2
     rgba: 4294967295
-  m_fontSize: 18
+  m_fontSize: 12
   m_fontSizeBase: 24
   m_fontWeight: 400
   m_enableAutoSizing: 1
@@ -304,7 +304,7 @@ MonoBehaviour:
   m_faceColor:
     serializedVersion: 2
     rgba: 4294967295
-  m_fontSize: 12
+  m_fontSize: 6
   m_fontSizeBase: 36
   m_fontWeight: 400
   m_enableAutoSizing: 1
@@ -416,7 +416,7 @@ MonoBehaviour:
       m_Calls: []
   m_Sprite: {fileID: 21300000, guid: 3c96fbedca2df3745aa9a16a712bda1d, type: 3}
   m_Type: 0
-  m_PreserveAspect: 0
+  m_PreserveAspect: 1
   m_FillCenter: 1
   m_FillMethod: 4
   m_FillAmount: 1
@@ -516,7 +516,7 @@ MonoBehaviour:
   m_faceColor:
     serializedVersion: 2
     rgba: 4294967295
-  m_fontSize: 10
+  m_fontSize: 5
   m_fontSizeBase: 36
   m_fontWeight: 400
   m_enableAutoSizing: 1
@@ -574,6 +574,7 @@ GameObject:
   - component: {fileID: 418681908149996784}
   - component: {fileID: 8111381222114975504}
   - component: {fileID: 2592112903600479792}
+  - component: {fileID: 7443792476894076232}
   m_Layer: 5
   m_Name: Rig
   m_TagString: Untagged
@@ -688,6 +689,30 @@ MonoBehaviour:
   m_ChildScaleWidth: 0
   m_ChildScaleHeight: 0
   m_ReverseArrangement: 0
+--- !u!114 &7443792476894076232
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2172168219197467369}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f78b24d8219d2f74e867713cea0ea217, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::TraidingIDLE.Mining.MiningRigCardUI
+  rigImage: {fileID: 1289626544116384677}
+  rigNameText: {fileID: 3029776466830829529}
+  levelText: {fileID: 1525342782093534429}
+  incomePerHourText: {fileID: 2778091781034248925}
+  upgradeButtonText: {fileID: 6000665350889145322}
+  progressSlider: {fileID: 794093408256312361}
+  upgradeButton: {fileID: 4564070457593361697}
+  rigNameFormat: "\u0420\u0438\u0433 #{0}"
+  levelFormat: "\u0423\u0440\u043E\u0432\u0435\u043D\u044C {0}"
+  incomeFormat: "{0} {1} \u0432 \u0447\u0430\u0441"
+  upgradeFormat: "\u0423\u043B\u0443\u0447\u0448\u0438\u0442\u044C\n{0}"
+  maxLabel: MAX
 --- !u!1 &3066162783552354718
 GameObject:
   m_ObjectHideFlags: 0
@@ -1270,7 +1295,7 @@ MonoBehaviour:
   m_faceColor:
     serializedVersion: 2
     rgba: 4294967295
-  m_fontSize: 26
+  m_fontSize: 12
   m_fontSizeBase: 36
   m_fontWeight: 400
   m_enableAutoSizing: 1
@@ -1899,7 +1924,7 @@ MonoBehaviour:
   m_faceColor:
     serializedVersion: 2
     rgba: 4294967295
-  m_fontSize: 18
+  m_fontSize: 12
   m_fontSizeBase: 36
   m_fontWeight: 400
   m_enableAutoSizing: 1

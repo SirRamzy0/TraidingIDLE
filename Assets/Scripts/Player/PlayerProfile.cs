@@ -20,6 +20,7 @@ namespace TraidingIDLE.Player
         private sealed class SaveData
         {
             public long rubles;
+            public long gems;
             public CoinHolding[] holdings = Array.Empty<CoinHolding>();
         }
 
@@ -27,6 +28,9 @@ namespace TraidingIDLE.Player
 
         [Header("Rubles (main currency)")]
         [SerializeField, Min(0)] private long startingRubles = 25_000;
+
+        [Header("Gems (hard currency)")]
+        [SerializeField, Min(0)] private long startingGems = 0;
 
         [Header("Coin holdings")]
         [SerializeField] private CoinHolding[] holdings =
@@ -37,16 +41,20 @@ namespace TraidingIDLE.Player
         };
 
         public event Action<long>? RublesChanged;
+        public event Action<long>? GemsChanged;
         public event Action<CurrencyId>? HoldingsChanged;
 
         private long _rubles;
+        private long _gems;
 
         public long Rubles => _rubles;
+        public long Gems => _gems;
 
         private void Awake()
         {
             EnsureHoldingsConfigured();
             _rubles = Math.Max(0, startingRubles);
+            _gems = Math.Max(0, startingGems);
             LoadFromStorage();
         }
 
@@ -71,6 +79,16 @@ namespace TraidingIDLE.Player
         {
             var index = FindHolding(id);
             return index < 0 ? 0 : Math.Max(0, holdings[index].investedRubles);
+        }
+
+        public int GetAvailableRoom(CurrencyId id)
+        {
+            var index = FindHolding(id);
+            if (index < 0)
+                return 0;
+
+            var holding = holdings[index];
+            return Math.Max(0, holding.cap - holding.amount);
         }
 
         public bool TryBuy(CurrencyId id, int count, long unitPrice)
@@ -139,6 +157,64 @@ namespace TraidingIDLE.Player
             return true;
         }
 
+        public bool TryAddCoins(CurrencyId id, int count, out int added)
+        {
+            added = 0;
+            if (count <= 0)
+                return false;
+
+            var index = FindHolding(id);
+            if (index < 0)
+                return false;
+
+            var holding = holdings[index];
+            added = Mathf.Clamp(count, 0, Math.Max(0, holding.cap - holding.amount));
+            if (added <= 0)
+                return false;
+
+            holding.amount += added;
+            holdings[index] = holding;
+
+            HoldingsChanged?.Invoke(id);
+            SaveToStorage();
+            return true;
+        }
+
+        public bool TrySpendCoins(CurrencyId id, int count)
+        {
+            if (count < 0)
+                return false;
+            if (count == 0)
+                return true;
+
+            var index = FindHolding(id);
+            if (index < 0)
+                return false;
+
+            var holding = holdings[index];
+            if (holding.amount < count)
+                return false;
+
+            if (holding.amount > 0 && holding.investedRubles > 0)
+            {
+                var avgCost = (double)holding.investedRubles / holding.amount;
+                var costRemoved = (long)Math.Round(avgCost * count);
+                holding.investedRubles = Math.Max(0, holding.investedRubles - costRemoved);
+            }
+
+            holding.amount -= count;
+            if (holding.amount <= 0)
+            {
+                holding.amount = 0;
+                holding.investedRubles = 0;
+            }
+
+            holdings[index] = holding;
+            HoldingsChanged?.Invoke(id);
+            SaveToStorage();
+            return true;
+        }
+
         public void SetCap(CurrencyId id, int cap)
         {
             var index = FindHolding(id);
@@ -169,11 +245,48 @@ namespace TraidingIDLE.Player
             SaveToStorage();
         }
 
+        public void AddGems(long delta)
+        {
+            if (delta == 0)
+                return;
+
+            _gems = Math.Max(0, _gems + delta);
+            GemsChanged?.Invoke(_gems);
+            SaveToStorage();
+        }
+
+        public bool TrySpendRubles(long amount)
+        {
+            if (amount < 0 || _rubles < amount)
+                return false;
+            if (amount == 0)
+                return true;
+
+            _rubles -= amount;
+            RublesChanged?.Invoke(_rubles);
+            SaveToStorage();
+            return true;
+        }
+
+        public bool TrySpendGems(long amount)
+        {
+            if (amount < 0 || _gems < amount)
+                return false;
+            if (amount == 0)
+                return true;
+
+            _gems -= amount;
+            GemsChanged?.Invoke(_gems);
+            SaveToStorage();
+            return true;
+        }
+
         public void SaveToStorage()
         {
             var data = new SaveData
             {
                 rubles = _rubles,
+                gems = _gems,
                 holdings = (CoinHolding[])holdings.Clone(),
             };
             SaveStorage.SaveJson(SaveKey, data);
@@ -186,6 +299,7 @@ namespace TraidingIDLE.Player
                 return;
 
             _rubles = Math.Max(0, data.rubles);
+            _gems = Math.Max(0, data.gems);
 
             if (data.holdings == null)
                 return;
@@ -212,6 +326,7 @@ namespace TraidingIDLE.Player
             }
 
             RublesChanged?.Invoke(_rubles);
+            GemsChanged?.Invoke(_gems);
             for (var i = 0; i < holdings.Length; i++)
                 HoldingsChanged?.Invoke(holdings[i].id);
         }
@@ -225,6 +340,9 @@ namespace TraidingIDLE.Player
 
         [ContextMenu("Debug/Add 100k rubles")]
         private void Debug_Add100k() => AddRubles(100_000);
+
+        [ContextMenu("Debug/Add 100 gems")]
+        private void Debug_Add100Gems() => AddGems(100);
 
         [ContextMenu("Debug/Reset to starting rubles")]
         private void Debug_ResetRubles()

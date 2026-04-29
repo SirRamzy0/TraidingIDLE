@@ -1,0 +1,946 @@
+using System;
+using System.Collections.Generic;
+using System.Globalization;
+using TMPro;
+using TraidingIDLE.Currencies;
+using TraidingIDLE.Player;
+using TraidingIDLE.Saves;
+using UnityEngine;
+using UnityEngine.UI;
+
+namespace TraidingIDLE.Mining
+{
+    public sealed class MiningController : MonoBehaviour
+    {
+        [Serializable]
+        private sealed class RigLevelSettings
+        {
+            [Min(0)] public long costToReachLevelRubles;
+            [Tooltip("Optional. If empty, this level reuses the previous configured rig sprite.")]
+            public Sprite rigSprite;
+            [Min(0f)] public float shtPerHour;
+            [Min(0f)] public float ethPerHour;
+            [Min(0f)] public float btcPerHour;
+        }
+
+        [Serializable]
+        private sealed class CurrencyMiningSettings
+        {
+            public CurrencyId id;
+            [Min(1f)] public float cycleDurationSeconds = 10f;
+        }
+
+        [Serializable]
+        private sealed class SaveData
+        {
+            public int openedCurrency;
+            public double accumulated;
+            public int[] rigLevels = Array.Empty<int>();
+            public float[] rigProgress = Array.Empty<float>();
+            public float adSpeedTimeLeft;
+            public float gemSpeedTimeLeft;
+            public float coinIncomeTimeLeft;
+            public int coinIncomeBoostUseCount;
+            public long lastSimulationUtcSeconds;
+        }
+
+        private const string SaveKey = "save.mining.v1";
+
+        [Header("Refs")]
+        [SerializeField] private PlayerProfile profile = null!;
+        [SerializeField] private CurrencyMarket market = null!;
+
+        [Header("Top UI")]
+        [SerializeField] private TMP_Text totalIncomePerHourText = null!;
+        [SerializeField] private TMP_Text accumulatedText = null!;
+        [SerializeField] private Button claimButton = null!;
+
+        [Header("Stats UI")]
+        [SerializeField] private TMP_Text boughtRigsStatText = null!;
+        [SerializeField] private TMP_Text maxedRigsStatText = null!;
+        [SerializeField] private TMP_Text incomeBonusStatText = null!;
+        [SerializeField] private TMP_Text speedBonusStatText = null!;
+
+        [Header("Rig List")]
+        [SerializeField] private Transform rigCardsRoot = null!;
+        [SerializeField] private MiningRigCardUI rigCardPrefab = null!;
+        [SerializeField] private MiningBuyRigCardUI buyRigCardPrefab = null!;
+        [SerializeField] private MiningLockedRigCardUI lockedRigCardPrefab = null!;
+        [SerializeField, Min(1)] private int maxRigCount = 7;
+
+        [Header("Rig Levels (same for every rig)")]
+        [SerializeField] private RigLevelSettings[] rigLevels =
+        {
+            new() { costToReachLevelRubles = 0, shtPerHour = 10f, ethPerHour = 1f, btcPerHour = 0.05f },
+            new() { costToReachLevelRubles = 50_000, shtPerHour = 24f, ethPerHour = 2.2f, btcPerHour = 0.11f },
+            new() { costToReachLevelRubles = 180_000, shtPerHour = 48f, ethPerHour = 4.6f, btcPerHour = 0.24f },
+            new() { costToReachLevelRubles = 650_000, shtPerHour = 92f, ethPerHour = 9.2f, btcPerHour = 0.50f },
+            new() { costToReachLevelRubles = 2_500_000, shtPerHour = 170f, ethPerHour = 17f, btcPerHour = 0.95f },
+            new() { costToReachLevelRubles = 6_000_000, shtPerHour = 285f, ethPerHour = 29f, btcPerHour = 1.65f },
+            new() { costToReachLevelRubles = 12_000_000, shtPerHour = 440f, ethPerHour = 46f, btcPerHour = 2.70f },
+            new() { costToReachLevelRubles = 23_000_000, shtPerHour = 650f, ethPerHour = 70f, btcPerHour = 4.15f },
+            new() { costToReachLevelRubles = 40_000_000, shtPerHour = 920f, ethPerHour = 102f, btcPerHour = 6.10f },
+            new() { costToReachLevelRubles = 70_000_000, shtPerHour = 1_260f, ethPerHour = 145f, btcPerHour = 8.80f },
+            new() { costToReachLevelRubles = 115_000_000, shtPerHour = 1_700f, ethPerHour = 202f, btcPerHour = 12.50f },
+            new() { costToReachLevelRubles = 185_000_000, shtPerHour = 2_250f, ethPerHour = 275f, btcPerHour = 17.30f },
+            new() { costToReachLevelRubles = 290_000_000, shtPerHour = 2_950f, ethPerHour = 368f, btcPerHour = 23.50f },
+            new() { costToReachLevelRubles = 450_000_000, shtPerHour = 3_850f, ethPerHour = 485f, btcPerHour = 31.50f },
+            new() { costToReachLevelRubles = 680_000_000, shtPerHour = 5_000f, ethPerHour = 635f, btcPerHour = 42.00f },
+            new() { costToReachLevelRubles = 1_000_000_000, shtPerHour = 6_450f, ethPerHour = 820f, btcPerHour = 55.50f },
+            new() { costToReachLevelRubles = 1_450_000_000, shtPerHour = 8_250f, ethPerHour = 1_060f, btcPerHour = 73.00f },
+            new() { costToReachLevelRubles = 2_050_000_000, shtPerHour = 10_500f, ethPerHour = 1_360f, btcPerHour = 95.00f },
+            new() { costToReachLevelRubles = 2_850_000_000, shtPerHour = 13_300f, ethPerHour = 1_740f, btcPerHour = 123.00f },
+            new() { costToReachLevelRubles = 3_900_000_000, shtPerHour = 16_800f, ethPerHour = 2_200f, btcPerHour = 158.00f },
+        };
+
+        [Header("Rig Purchase")]
+        [SerializeField] private long[] rigPurchaseCostsRubles =
+        {
+            50_000,
+            150_000,
+            450_000,
+            1_200_000,
+            3_000_000,
+            7_500_000,
+            18_000_000,
+        };
+        [SerializeField, Min(1f)] private float extraRigCostMultiplier = 2.4f;
+
+        [Header("Mining Currency")]
+        [SerializeField] private CurrencyMiningSettings[] currencySettings =
+        {
+            new() { id = CurrencyId.SHT, cycleDurationSeconds = 8f },
+            new() { id = CurrencyId.ETH, cycleDurationSeconds = 30f },
+            new() { id = CurrencyId.BTC, cycleDurationSeconds = 90f },
+        };
+
+        [Header("Boost Cards")]
+        [SerializeField] private MiningBoostCardUI adSpeedBoostCard = null!;
+        [SerializeField] private MiningBoostCardUI gemSpeedBoostCard = null!;
+        [SerializeField] private MiningBoostCardUI coinIncomeBoostCard = null!;
+        [SerializeField] private MiningBoostCardUI currencyUnlockBoostCard = null!;
+
+        [Header("Boost 1: Ad speed")]
+        [SerializeField, Min(1f)] private float adSpeedMultiplier = 2f;
+        [SerializeField, Min(1f)] private float adSpeedDurationSeconds = 3600f;
+
+        [Header("Boost 2: Gems speed")]
+        [SerializeField, Min(1f)] private float gemSpeedMultiplier = 5f;
+        [SerializeField, Min(1f)] private float gemSpeedDurationSeconds = 86_400f;
+        [SerializeField, Min(0)] private long gemSpeedCost = 100;
+
+        [Header("Boost 3: Coin income")]
+        [SerializeField, Min(1f)] private float coinIncomeMultiplier = 2f;
+        [SerializeField, Min(1f)] private float coinIncomeDurationSeconds = 1800f;
+        [SerializeField, Min(1)] private int coinIncomeBaseCost = 100;
+        [SerializeField, Min(1f)] private float coinIncomeCostMultiplier = 1.8f;
+
+        [Header("Boost 4: Currency unlock")]
+        [SerializeField] private long[] currencyUnlockCostsRubles = { 1_000_000, 10_000_000 };
+
+        [Header("Formats")]
+        [SerializeField] private string totalIncomePerHourFormat = "{0} {1}";
+        [SerializeField] private string accumulatedFormat = "{0} {1}";
+        [SerializeField] private string boughtRigsStatFormat = "{0}/{1}";
+        [SerializeField] private string maxedRigsStatFormat = "{0}/{1}";
+        [SerializeField] private string bonusPercentFormat = "+{0}%";
+
+        private readonly List<MiningRigCardUI> _rigCards = new();
+        private int[] _rigStateLevels = Array.Empty<int>();
+        private float[] _rigProgress = Array.Empty<float>();
+        private CurrencyId _openedCurrency = CurrencyId.SHT;
+        private double _accumulated;
+        private float _adSpeedTimeLeft;
+        private float _gemSpeedTimeLeft;
+        private float _coinIncomeTimeLeft;
+        private int _coinIncomeBoostUseCount;
+        private long _lastSimulationUtcSeconds;
+        private float _saveTimer;
+        private bool _dirty;
+
+        private int MaxRigLevel => Math.Max(1, rigLevels?.Length ?? 0);
+        private CurrencyId ActiveCurrency => _openedCurrency;
+
+        private void Awake()
+        {
+            if (profile == null)
+                profile = FindAnyObjectByType<PlayerProfile>();
+            if (market == null)
+                market = FindAnyObjectByType<CurrencyMarket>();
+
+            EnsureStateArrays();
+            LoadFromStorage();
+            EnsureStateArrays();
+            ProcessElapsedSinceLastTimestamp();
+        }
+
+        private void OnEnable()
+        {
+            ProcessElapsedSinceLastTimestamp();
+
+            if (claimButton != null)
+                claimButton.onClick.AddListener(ClaimAccumulated);
+
+            if (profile != null)
+            {
+                profile.RublesChanged += OnProfileChanged;
+                profile.GemsChanged += OnProfileChanged;
+                profile.HoldingsChanged += OnHoldingChanged;
+            }
+
+            RebuildRigCards();
+            RefreshAll();
+        }
+
+        private void OnDisable()
+        {
+            if (claimButton != null)
+                claimButton.onClick.RemoveListener(ClaimAccumulated);
+
+            if (profile != null)
+            {
+                profile.RublesChanged -= OnProfileChanged;
+                profile.GemsChanged -= OnProfileChanged;
+                profile.HoldingsChanged -= OnHoldingChanged;
+            }
+
+            SaveToStorage();
+        }
+
+        private void OnApplicationPause(bool pause)
+        {
+            if (pause)
+                SaveToStorage();
+        }
+
+        private void OnApplicationQuit()
+        {
+            SaveToStorage();
+        }
+
+        private void Update()
+        {
+            var dt = Time.deltaTime;
+            if (dt > 0f)
+            {
+                ProcessSimulation(dt);
+                RefreshDynamicUi();
+                MarkDirty();
+            }
+
+            if (!_dirty)
+                return;
+
+            _saveTimer -= Time.unscaledDeltaTime;
+            if (_saveTimer <= 0f)
+                SaveToStorage();
+        }
+
+        private void ProcessElapsedSinceLastTimestamp()
+        {
+            var now = GetUtcSeconds();
+            if (Time.timeScale <= 0f)
+            {
+                _lastSimulationUtcSeconds = now;
+                return;
+            }
+
+            if (_lastSimulationUtcSeconds <= 0)
+            {
+                _lastSimulationUtcSeconds = now;
+                return;
+            }
+
+            var elapsed = now - _lastSimulationUtcSeconds;
+            _lastSimulationUtcSeconds = now;
+            if (elapsed <= 0)
+                return;
+
+            ProcessSimulation(elapsed);
+            MarkDirty();
+        }
+
+        private void ProcessSimulation(double seconds)
+        {
+            var remaining = Math.Max(0d, seconds);
+            while (remaining > 0.0001d)
+            {
+                var segment = remaining;
+                segment = MinPositive(segment, _adSpeedTimeLeft);
+                segment = MinPositive(segment, _gemSpeedTimeLeft);
+                segment = MinPositive(segment, _coinIncomeTimeLeft);
+
+                var dt = (float)Math.Min(segment, float.MaxValue);
+                TickRigs(dt);
+                TickBoostTimers(dt);
+
+                remaining -= dt;
+
+                // Safety against precision stalls.
+                if (dt <= 0.0001f)
+                    break;
+            }
+        }
+
+        private static double MinPositive(double current, float candidate)
+        {
+            return candidate > 0f ? Math.Min(current, candidate) : current;
+        }
+
+        private void TickBoostTimers(float dt)
+        {
+            _adSpeedTimeLeft = Mathf.Max(0f, _adSpeedTimeLeft - dt);
+            _gemSpeedTimeLeft = Mathf.Max(0f, _gemSpeedTimeLeft - dt);
+            _coinIncomeTimeLeft = Mathf.Max(0f, _coinIncomeTimeLeft - dt);
+        }
+
+        private void TickRigs(float dt)
+        {
+            var speedMultiplier = GetSpeedMultiplier();
+            var incomeMultiplier = GetIncomeMultiplier();
+            var cycle = Mathf.Max(0.1f, GetCycleDuration(ActiveCurrency));
+
+            for (var i = 0; i < _rigStateLevels.Length; i++)
+            {
+                var level = _rigStateLevels[i];
+                if (level <= 0)
+                    continue;
+
+                var baseIncomePerHour = GetRigIncomePerHour(level, ActiveCurrency);
+                _rigProgress[i] += (float)(dt * speedMultiplier / cycle);
+                if (_rigProgress[i] < 1f)
+                    continue;
+
+                var completedCycles = Mathf.FloorToInt(_rigProgress[i]);
+                _rigProgress[i] -= completedCycles;
+
+                var minedPerCycle = baseIncomePerHour * incomeMultiplier * cycle / 3600d;
+                _accumulated += minedPerCycle * completedCycles;
+            }
+        }
+
+        private void ClaimAccumulated()
+        {
+            if (profile == null)
+                return;
+
+            var available = Mathf.FloorToInt((float)Math.Min(_accumulated, int.MaxValue));
+            if (available <= 0)
+                return;
+
+            if (profile.TryAddCoins(ActiveCurrency, available, out var added))
+            {
+                _accumulated = Math.Max(0d, _accumulated - added);
+                MarkDirty();
+                RefreshAll();
+            }
+        }
+
+        private void BuyRig(int rigIndex)
+        {
+            if (profile == null || rigIndex < 0 || rigIndex >= _rigStateLevels.Length)
+                return;
+
+            if (_rigStateLevels[rigIndex] > 0)
+                return;
+
+            if (rigIndex != GetBoughtRigCount())
+                return;
+
+            var cost = GetRigPurchaseCost(rigIndex);
+            if (!profile.TrySpendRubles(cost))
+                return;
+
+            _rigStateLevels[rigIndex] = 1;
+            _rigProgress[rigIndex] = 0f;
+            MarkDirty();
+            RebuildRigCards();
+            RefreshAll();
+        }
+
+        private void UpgradeRig(int rigIndex)
+        {
+            if (profile == null || rigIndex < 0 || rigIndex >= _rigStateLevels.Length)
+                return;
+
+            var level = _rigStateLevels[rigIndex];
+            if (level <= 0 || level >= MaxRigLevel)
+                return;
+
+            var cost = GetUpgradeCost(level);
+            if (!profile.TrySpendRubles(cost))
+                return;
+
+            _rigStateLevels[rigIndex] = level + 1;
+            MarkDirty();
+            RebuildRigCards();
+            RefreshAll();
+        }
+
+        private void ActivateAdSpeedBoost()
+        {
+            _adSpeedTimeLeft = adSpeedDurationSeconds;
+            MarkDirty();
+            RefreshAll();
+        }
+
+        private void ActivateGemSpeedBoost()
+        {
+            if (profile == null)
+                return;
+
+            if (!profile.TrySpendGems(gemSpeedCost))
+                return;
+
+            _gemSpeedTimeLeft = gemSpeedDurationSeconds;
+            MarkDirty();
+            RefreshAll();
+        }
+
+        private void ActivateCoinIncomeBoost()
+        {
+            if (profile == null)
+                return;
+
+            var cost = GetCoinIncomeBoostCost();
+            if (!profile.TrySpendCoins(ActiveCurrency, cost))
+                return;
+
+            _coinIncomeTimeLeft = coinIncomeDurationSeconds;
+            _coinIncomeBoostUseCount++;
+            MarkDirty();
+            RefreshAll();
+        }
+
+        private void UnlockNextCurrency()
+        {
+            if (profile == null || market == null)
+                return;
+
+            if (!TryGetNextCurrency(ActiveCurrency, out var next))
+                return;
+
+            var cost = GetCurrencyUnlockCost(ActiveCurrency);
+            if (!profile.TrySpendRubles(cost))
+                return;
+
+            ConvertAccumulated(ActiveCurrency, next);
+            _openedCurrency = next;
+            for (var i = 0; i < _rigProgress.Length; i++)
+                _rigProgress[i] = 0f;
+
+            MarkDirty();
+            RebuildRigCards();
+            RefreshAll();
+        }
+
+        private void ConvertAccumulated(CurrencyId from, CurrencyId to)
+        {
+            if (market == null || _accumulated <= 0d)
+                return;
+
+            var fromPrice = Math.Max(0.000001d, market.GetPrice(from));
+            var toPrice = Math.Max(0.000001d, market.GetPrice(to));
+            _accumulated = Math.Ceiling(_accumulated * fromPrice / toPrice);
+        }
+
+        private void RebuildRigCards()
+        {
+            _rigCards.Clear();
+            if (rigCardsRoot == null)
+                return;
+
+            for (var i = rigCardsRoot.childCount - 1; i >= 0; i--)
+                Destroy(rigCardsRoot.GetChild(i).gameObject);
+
+            var bought = GetBoughtRigCount();
+            for (var i = 0; i < bought; i++)
+            {
+                if (rigCardPrefab == null)
+                    continue;
+
+                var rigCard = Instantiate(rigCardPrefab, rigCardsRoot);
+                _rigCards.Add(rigCard);
+                ConfigureRigCard(rigCard, i);
+            }
+
+            if (bought >= maxRigCount)
+                return;
+
+            if (buyRigCardPrefab != null)
+            {
+                var buyCard = Instantiate(buyRigCardPrefab, rigCardsRoot);
+                buyCard.Configure(bought, GetRigPurchaseCost(bought), CanSpendRubles(GetRigPurchaseCost(bought)), BuyRig);
+            }
+
+            // Show only one locked preview. On the penultimate rig, the last buy card is enough.
+            if (bought >= maxRigCount - 1 || lockedRigCardPrefab == null)
+                return;
+
+            var lockedIndex = bought + 1;
+            var locked = Instantiate(lockedRigCardPrefab, rigCardsRoot);
+            locked.Configure(lockedIndex);
+        }
+
+        private void ConfigureRigCard(MiningRigCardUI card, int rigIndex)
+        {
+            var level = _rigStateLevels[rigIndex];
+            var upgradeCost = GetUpgradeCost(level);
+            var canAfford = CanSpendRubles(upgradeCost);
+            card.Configure(
+                rigIndex,
+                level,
+                MaxRigLevel,
+                GetRigIncomePerHour(level, ActiveCurrency) * GetIncomeMultiplier() * GetSpeedMultiplier(),
+                ActiveCurrency,
+                GetRigSprite(level),
+                upgradeCost,
+                canAfford,
+                UpgradeRig);
+            card.SetProgress(_rigProgress[rigIndex]);
+        }
+
+        private void RefreshAll()
+        {
+            RefreshDynamicUi();
+            RefreshBoostCards();
+            RefreshStats();
+            RefreshRigCardsStatic();
+        }
+
+        private void RefreshDynamicUi()
+        {
+            if (totalIncomePerHourText != null)
+            {
+                totalIncomePerHourText.text = string.Format(
+                    SafeFormat(totalIncomePerHourFormat, "{0} {1}"),
+                    FormatAmount(GetTotalIncomePerHour()),
+                    ActiveCurrency);
+            }
+
+            if (accumulatedText != null)
+            {
+                accumulatedText.text = string.Format(
+                    SafeFormat(accumulatedFormat, "{0} {1}"),
+                    FormatAmount(Math.Floor(_accumulated)),
+                    ActiveCurrency);
+            }
+
+            if (claimButton != null)
+            {
+                var canClaim = profile != null
+                    && Math.Floor(_accumulated) >= 1d
+                    && profile.GetAvailableRoom(ActiveCurrency) > 0;
+                claimButton.interactable = canClaim;
+            }
+
+            RefreshRigProgress();
+        }
+
+        private void RefreshRigProgress()
+        {
+            var cardIndex = 0;
+            for (var i = 0; i < _rigStateLevels.Length && cardIndex < _rigCards.Count; i++)
+            {
+                if (_rigStateLevels[i] <= 0)
+                    continue;
+
+                _rigCards[cardIndex].SetProgress(_rigProgress[i]);
+                cardIndex++;
+            }
+        }
+
+        private void RefreshRigCardsStatic()
+        {
+            var cardIndex = 0;
+            for (var i = 0; i < _rigStateLevels.Length && cardIndex < _rigCards.Count; i++)
+            {
+                if (_rigStateLevels[i] <= 0)
+                    continue;
+
+                ConfigureRigCard(_rigCards[cardIndex], i);
+                cardIndex++;
+            }
+        }
+
+        private void RefreshBoostCards()
+        {
+            if (adSpeedBoostCard != null)
+            {
+                var activeText = _adSpeedTimeLeft > 0f ? $"Активно {FormatTimer(_adSpeedTimeLeft)}" : "Активировать";
+                adSpeedBoostCard.Configure(
+                    "Реклама",
+                    $"x{FormatMultiplier(adSpeedMultiplier)} скорости",
+                    $"На {FormatDuration(adSpeedDurationSeconds)}",
+                    activeText,
+                    true,
+                    ActivateAdSpeedBoost);
+            }
+
+            if (gemSpeedBoostCard != null)
+            {
+                var activeText = _gemSpeedTimeLeft > 0f ? $"Активно {FormatTimer(_gemSpeedTimeLeft)}" : $"За {FormatRubles(gemSpeedCost)} гемов";
+                gemSpeedBoostCard.Configure(
+                    "Гемы",
+                    $"x{FormatMultiplier(gemSpeedMultiplier)} скорости",
+                    $"На {FormatDuration(gemSpeedDurationSeconds)}",
+                    activeText,
+                    profile != null && profile.Gems >= gemSpeedCost,
+                    ActivateGemSpeedBoost);
+            }
+
+            if (coinIncomeBoostCard != null)
+            {
+                var cost = GetCoinIncomeBoostCost();
+                var activeText = _coinIncomeTimeLeft > 0f ? $"Активно {FormatTimer(_coinIncomeTimeLeft)}" : $"За {FormatRubles(cost)} {ActiveCurrency}";
+                coinIncomeBoostCard.Configure(
+                    "Доход",
+                    $"x{FormatMultiplier(coinIncomeMultiplier)} дохода",
+                    $"На {FormatDuration(coinIncomeDurationSeconds)}",
+                    activeText,
+                    profile != null && profile.GetAmount(ActiveCurrency) >= cost,
+                    ActivateCoinIncomeBoost);
+            }
+
+            if (currencyUnlockBoostCard != null)
+            {
+                if (!TryGetNextCurrency(ActiveCurrency, out var next))
+                {
+                    currencyUnlockBoostCard.Configure(
+                        "Новая валюта",
+                        "MAX",
+                        "Все валюты открыты",
+                        "MAX",
+                        false,
+                        UnlockNextCurrency);
+                }
+                else
+                {
+                    var cost = GetCurrencyUnlockCost(ActiveCurrency);
+                    currencyUnlockBoostCard.Configure(
+                        "Новая валюта",
+                        $"{ActiveCurrency} → {next}",
+                        $"Все риги начнут добывать {next}",
+                        $"Открыть {FormatRubles(cost)}",
+                        CanSpendRubles(cost),
+                        UnlockNextCurrency);
+                }
+            }
+        }
+
+        private void RefreshStats()
+        {
+            var bought = GetBoughtRigCount();
+            var maxed = GetMaxedRigCount();
+
+            if (boughtRigsStatText != null)
+                boughtRigsStatText.text = string.Format(SafeFormat(boughtRigsStatFormat, "{0}/{1}"), bought, maxRigCount);
+
+            if (maxedRigsStatText != null)
+                maxedRigsStatText.text = string.Format(SafeFormat(maxedRigsStatFormat, "{0}/{1}"), maxed, maxRigCount);
+
+            if (incomeBonusStatText != null)
+                incomeBonusStatText.text = string.Format(SafeFormat(bonusPercentFormat, "+{0}%"), Mathf.RoundToInt((float)((GetIncomeMultiplier() - 1d) * 100d)));
+
+            if (speedBonusStatText != null)
+                speedBonusStatText.text = string.Format(SafeFormat(bonusPercentFormat, "+{0}%"), Mathf.RoundToInt((float)((GetSpeedMultiplier() - 1d) * 100d)));
+        }
+
+        private double GetTotalIncomePerHour()
+        {
+            var total = 0d;
+            for (var i = 0; i < _rigStateLevels.Length; i++)
+            {
+                if (_rigStateLevels[i] > 0)
+                    total += GetRigIncomePerHour(_rigStateLevels[i], ActiveCurrency);
+            }
+
+            return total * GetIncomeMultiplier() * GetSpeedMultiplier();
+        }
+
+        private double GetRigIncomePerHour(int level, CurrencyId currency)
+        {
+            if (rigLevels == null || rigLevels.Length == 0)
+                return 0d;
+
+            var index = Mathf.Clamp(level - 1, 0, rigLevels.Length - 1);
+            var cfg = rigLevels[index];
+            return currency switch
+            {
+                CurrencyId.SHT => Math.Max(0f, cfg.shtPerHour),
+                CurrencyId.ETH => Math.Max(0f, cfg.ethPerHour),
+                CurrencyId.BTC => Math.Max(0f, cfg.btcPerHour),
+                _ => 0d,
+            };
+        }
+
+        private Sprite GetRigSprite(int level)
+        {
+            if (rigLevels == null || rigLevels.Length == 0)
+                return null;
+
+            var index = Mathf.Clamp(level - 1, 0, rigLevels.Length - 1);
+            for (var i = index; i >= 0; i--)
+            {
+                if (rigLevels[i] != null && rigLevels[i].rigSprite != null)
+                    return rigLevels[i].rigSprite;
+            }
+
+            return null;
+        }
+
+        private double GetIncomeMultiplier()
+        {
+            return _coinIncomeTimeLeft > 0f ? Math.Max(1f, coinIncomeMultiplier) : 1d;
+        }
+
+        private double GetSpeedMultiplier()
+        {
+            var speed = 1d;
+            if (_adSpeedTimeLeft > 0f)
+                speed *= Math.Max(1f, adSpeedMultiplier);
+            if (_gemSpeedTimeLeft > 0f)
+                speed *= Math.Max(1f, gemSpeedMultiplier);
+            return speed;
+        }
+
+        private long GetUpgradeCost(int currentLevel)
+        {
+            if (rigLevels == null || rigLevels.Length == 0 || currentLevel >= MaxRigLevel)
+                return 0;
+
+            var nextLevelIndex = Mathf.Clamp(currentLevel, 0, rigLevels.Length - 1);
+            return Math.Max(0, rigLevels[nextLevelIndex].costToReachLevelRubles);
+        }
+
+        private long GetRigPurchaseCost(int rigIndex)
+        {
+            if (rigIndex < 0)
+                return 0;
+
+            if (rigPurchaseCostsRubles != null && rigIndex < rigPurchaseCostsRubles.Length)
+                return Math.Max(0, rigPurchaseCostsRubles[rigIndex]);
+
+            var baseCost = rigPurchaseCostsRubles != null && rigPurchaseCostsRubles.Length > 0
+                ? Math.Max(1, rigPurchaseCostsRubles[^1])
+                : 50_000;
+            var extraSteps = rigIndex - (rigPurchaseCostsRubles?.Length ?? 0) + 1;
+            return (long)Math.Round(baseCost * Math.Pow(Math.Max(1f, extraRigCostMultiplier), Math.Max(0, extraSteps)));
+        }
+
+        private int GetCoinIncomeBoostCost()
+        {
+            var cost = coinIncomeBaseCost * Math.Pow(Math.Max(1f, coinIncomeCostMultiplier), _coinIncomeBoostUseCount);
+            return Math.Max(1, (int)Math.Ceiling(cost));
+        }
+
+        private long GetCurrencyUnlockCost(CurrencyId current)
+        {
+            var index = current == CurrencyId.SHT ? 0 : 1;
+            if (currencyUnlockCostsRubles != null && index < currencyUnlockCostsRubles.Length)
+                return Math.Max(0, currencyUnlockCostsRubles[index]);
+            return index == 0 ? 1_000_000 : 10_000_000;
+        }
+
+        private float GetCycleDuration(CurrencyId currency)
+        {
+            if (currencySettings != null)
+            {
+                for (var i = 0; i < currencySettings.Length; i++)
+                {
+                    if (currencySettings[i] != null && currencySettings[i].id == currency)
+                        return Mathf.Max(0.1f, currencySettings[i].cycleDurationSeconds);
+                }
+            }
+
+            return currency switch
+            {
+                CurrencyId.SHT => 8f,
+                CurrencyId.ETH => 30f,
+                CurrencyId.BTC => 90f,
+                _ => 10f,
+            };
+        }
+
+        private int GetBoughtRigCount()
+        {
+            var count = 0;
+            for (var i = 0; i < _rigStateLevels.Length; i++)
+            {
+                if (_rigStateLevels[i] > 0)
+                    count++;
+            }
+
+            return count;
+        }
+
+        private int GetMaxedRigCount()
+        {
+            var count = 0;
+            for (var i = 0; i < _rigStateLevels.Length; i++)
+            {
+                if (_rigStateLevels[i] >= MaxRigLevel)
+                    count++;
+            }
+
+            return count;
+        }
+
+        private bool CanSpendRubles(long amount)
+        {
+            return profile != null && amount >= 0 && profile.Rubles >= amount;
+        }
+
+        private static bool TryGetNextCurrency(CurrencyId current, out CurrencyId next)
+        {
+            next = current switch
+            {
+                CurrencyId.SHT => CurrencyId.ETH,
+                CurrencyId.ETH => CurrencyId.BTC,
+                _ => current,
+            };
+            return next != current;
+        }
+
+        private void EnsureStateArrays()
+        {
+            maxRigCount = Mathf.Max(1, maxRigCount);
+
+            if (_rigStateLevels == null || _rigStateLevels.Length != maxRigCount)
+                Array.Resize(ref _rigStateLevels, maxRigCount);
+            if (_rigProgress == null || _rigProgress.Length != maxRigCount)
+                Array.Resize(ref _rigProgress, maxRigCount);
+
+            for (var i = 0; i < _rigStateLevels.Length; i++)
+            {
+                _rigStateLevels[i] = Mathf.Clamp(_rigStateLevels[i], 0, MaxRigLevel);
+                _rigProgress[i] = Mathf.Clamp01(_rigProgress[i]);
+            }
+        }
+
+        private void OnProfileChanged(long _)
+        {
+            RefreshAll();
+        }
+
+        private void OnHoldingChanged(CurrencyId _)
+        {
+            RefreshAll();
+        }
+
+        private void MarkDirty()
+        {
+            _dirty = true;
+            if (_saveTimer <= 0f)
+                _saveTimer = 2f;
+        }
+
+        private void SaveToStorage()
+        {
+            EnsureStateArrays();
+            var data = new SaveData
+            {
+                openedCurrency = (int)_openedCurrency,
+                accumulated = _accumulated,
+                rigLevels = (int[])_rigStateLevels.Clone(),
+                rigProgress = (float[])_rigProgress.Clone(),
+                adSpeedTimeLeft = _adSpeedTimeLeft,
+                gemSpeedTimeLeft = _gemSpeedTimeLeft,
+                coinIncomeTimeLeft = _coinIncomeTimeLeft,
+                coinIncomeBoostUseCount = _coinIncomeBoostUseCount,
+                lastSimulationUtcSeconds = GetUtcSeconds(),
+            };
+            _lastSimulationUtcSeconds = data.lastSimulationUtcSeconds;
+
+            SaveStorage.SaveJson(SaveKey, data);
+            SaveStorage.Flush();
+            _dirty = false;
+            _saveTimer = 0f;
+        }
+
+        private void LoadFromStorage()
+        {
+            if (!SaveStorage.TryLoadJson<SaveData>(SaveKey, out var data))
+                return;
+
+            _openedCurrency = Enum.IsDefined(typeof(CurrencyId), data.openedCurrency)
+                ? (CurrencyId)data.openedCurrency
+                : CurrencyId.SHT;
+            _accumulated = Math.Max(0d, data.accumulated);
+
+            if (data.rigLevels != null && data.rigLevels.Length > 0)
+            {
+                _rigStateLevels = new int[maxRigCount];
+                Array.Copy(data.rigLevels, _rigStateLevels, Math.Min(maxRigCount, data.rigLevels.Length));
+            }
+
+            if (data.rigProgress != null && data.rigProgress.Length > 0)
+            {
+                _rigProgress = new float[maxRigCount];
+                Array.Copy(data.rigProgress, _rigProgress, Math.Min(maxRigCount, data.rigProgress.Length));
+            }
+
+            _adSpeedTimeLeft = Mathf.Max(0f, data.adSpeedTimeLeft);
+            _gemSpeedTimeLeft = Mathf.Max(0f, data.gemSpeedTimeLeft);
+            _coinIncomeTimeLeft = Mathf.Max(0f, data.coinIncomeTimeLeft);
+            _coinIncomeBoostUseCount = Mathf.Max(0, data.coinIncomeBoostUseCount);
+            _lastSimulationUtcSeconds = data.lastSimulationUtcSeconds > 0
+                ? data.lastSimulationUtcSeconds
+                : GetUtcSeconds();
+        }
+
+        [ContextMenu("Debug/Reset mining save")]
+        private void Debug_ResetSave()
+        {
+            SaveStorage.DeleteKey(SaveKey);
+            SaveStorage.Flush();
+        }
+
+        private static string SafeFormat(string format, string fallback)
+        {
+            return string.IsNullOrEmpty(format) ? fallback : format;
+        }
+
+        private static long GetUtcSeconds()
+        {
+            return DateTimeOffset.UtcNow.ToUnixTimeSeconds();
+        }
+
+        private static string FormatAmount(double value)
+        {
+            return Math.Max(0d, value)
+                .ToString("N0", CultureInfo.InvariantCulture)
+                .Replace(",", ".");
+        }
+
+        private static string FormatRubles(long value)
+        {
+            return Math.Max(0, value)
+                .ToString("N0", CultureInfo.InvariantCulture)
+                .Replace(",", ".");
+        }
+
+        private static string FormatMultiplier(float value)
+        {
+            return Math.Max(1f, value).ToString("0.#", CultureInfo.InvariantCulture);
+        }
+
+        private static string FormatTimer(float seconds)
+        {
+            var total = Mathf.CeilToInt(Mathf.Max(0f, seconds));
+            var hours = total / 3600;
+            var minutes = total % 3600 / 60;
+            var secs = total % 60;
+            return hours > 0 ? $"{hours:00}:{minutes:00}:{secs:00}" : $"{minutes:00}:{secs:00}";
+        }
+
+        private static string FormatDuration(float seconds)
+        {
+            if (seconds >= 3600f)
+                return $"{Mathf.RoundToInt(seconds / 3600f)}ч";
+            if (seconds >= 60f)
+                return $"{Mathf.RoundToInt(seconds / 60f)}м";
+            return $"{Mathf.RoundToInt(seconds)}с";
+        }
+    }
+}
