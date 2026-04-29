@@ -11,11 +11,11 @@ namespace TraidingIDLE.UI
     {
         private enum State
         {
-            WaitingForNextOffer,
             Offer,
             Analysis,
             Success,
             Fail,
+            IdleBetweenOffers,
         }
 
         [Header("Refs")]
@@ -32,15 +32,18 @@ namespace TraidingIDLE.UI
         [SerializeField] private TMP_Text offerTimerText = null!;
         [SerializeField] private TMP_Text offerStakeText = null!;
         [SerializeField] private Button offerBetButton = null!;
+        [SerializeField] private TMP_Text offerBetButtonLabel = null!;
 
         [Header("Analysis UI")]
         [SerializeField] private TMP_Text analysisTimerText = null!;
         [SerializeField] private TMP_Text analysisStakeText = null!;
+        [SerializeField] private Button analysisWaitButton = null!;
 
         [Header("Success UI")]
         [SerializeField] private TMP_Text successProfitText = null!;
         [SerializeField] private TMP_Text successStakeText = null!;
         [SerializeField] private Button successClaimButton = null!;
+        [SerializeField] private TMP_Text successClaimButtonLabel = null!;
 
         [Header("Fail UI")]
         [SerializeField] private TMP_Text failStakeText = null!;
@@ -54,8 +57,8 @@ namespace TraidingIDLE.UI
         [SerializeField, Min(1f)] private float offerDurationSeconds = 120f;
         [Tooltip("Analysis duration after bet window ends (or immediately after bet).")]
         [SerializeField, Min(1f)] private float analysisDurationSeconds = 30f;
-        [Tooltip("How long to keep result visible before next offer cycle.")]
-        [SerializeField, Min(0f)] private float resultHoldSeconds = 4f;
+        [Tooltip("If true, the very first cycle starts immediately in Offer (no initial wait).")]
+        [SerializeField] private bool startWithImmediateOffer = true;
 
         [Header("Random ranges")]
         [Range(1f, 99f)]
@@ -74,18 +77,28 @@ namespace TraidingIDLE.UI
 
         [Header("Formats")]
         [SerializeField] private string chanceFormat = "Шанс: {0}%";
-        [SerializeField] private string stakeFormat = "Вложить: {0}";
-        [SerializeField] private string stakeFormatShort = "{0}";
+        [SerializeField] private string offerStakePromptFormat = "Вложить: {0}";
+        [SerializeField] private string offerStakeCommittedFormat = "Вложено: {0}";
+        [SerializeField] private string analysisStakeFormat = "Вложено: {0}";
+        [SerializeField] private string successStakeFormat = "Вложено: {0}";
         [SerializeField] private string profitFormat = "Прибыль: +{0}";
+
+        [Header("Button labels")]
+        [SerializeField] private string offerBetEnterLabel = "Войти";
+        [SerializeField] private string offerBetWaitingLabel = "Ожидание";
+        [SerializeField] private string successClaimLabel = "Получить";
+        [SerializeField] private string successClaimedLabel = "Получено";
 
         private State _state;
         private float _stateTimeLeft;
         private float _nextOfferTimeLeft;
+        private State _idleVisibleDialog;
 
         private bool _betPlaced;
         private bool _fomoNoBet;
         private bool _claimTaken;
         private long _stakeRubles;
+        private long _displayStakeRubles;
         private float _chance01;
         private long _profitRubles;
 
@@ -94,7 +107,22 @@ namespace TraidingIDLE.UI
             if (profile == null)
                 profile = FindFirstObjectByType<PlayerProfile>();
 
-            SetState(State.WaitingForNextOffer, force: true);
+            CacheButtonLabelsIfNeeded();
+            ResetOfferBetButtonLabel();
+            ResetSuccessClaimButtonLabel();
+
+            if (startWithImmediateOffer)
+            {
+                // First run: show offer immediately so the widget is always "on screen".
+                StartNewOffer();
+                return;
+            }
+
+            ScheduleNextOffer();
+            _idleVisibleDialog = State.Fail;
+            SetState(State.IdleBetweenOffers, force: true);
+            RefreshAllTexts();
+            UpdateButtons();
         }
 
         private void OnEnable()
@@ -104,6 +132,7 @@ namespace TraidingIDLE.UI
 
             SyncDialogVisibility();
             RefreshAllTexts();
+            UpdateButtons();
         }
 
         private void OnDisable()
@@ -118,7 +147,7 @@ namespace TraidingIDLE.UI
 
             switch (_state)
             {
-                case State.WaitingForNextOffer:
+                case State.IdleBetweenOffers:
                     _nextOfferTimeLeft -= dt;
                     if (_nextOfferTimeLeft <= 0f)
                         StartNewOffer();
@@ -141,32 +170,17 @@ namespace TraidingIDLE.UI
 
                 case State.Success:
                 case State.Fail:
-                    if (resultHoldSeconds > 0f)
-                    {
-                        _stateTimeLeft -= dt;
-                        if (_stateTimeLeft <= 0f)
-                            StartWaitingForNextOffer();
-                    }
                     break;
             }
 
             RefreshTimersOnly();
         }
 
-        private void StartWaitingForNextOffer()
+        private void ScheduleNextOffer()
         {
-            _betPlaced = false;
-            _fomoNoBet = false;
-            _claimTaken = false;
-            _stakeRubles = 0;
-            _profitRubles = 0;
-            _chance01 = 0f;
-
             _nextOfferTimeLeft = UnityEngine.Random.Range(
                 Mathf.Min(offerIntervalMinSeconds, offerIntervalMaxSeconds),
                 Mathf.Max(offerIntervalMinSeconds, offerIntervalMaxSeconds));
-
-            SetState(State.WaitingForNextOffer);
         }
 
         private void StartNewOffer()
@@ -176,8 +190,12 @@ namespace TraidingIDLE.UI
             _claimTaken = false;
 
             _stakeRubles = RollStake();
+            _displayStakeRubles = _stakeRubles;
             _chance01 = RollChance01();
             _profitRubles = 0;
+
+            ResetOfferBetButtonLabel();
+            ResetSuccessClaimButtonLabel();
 
             _stateTimeLeft = offerDurationSeconds;
             SetState(State.Offer);
@@ -190,6 +208,7 @@ namespace TraidingIDLE.UI
             _stateTimeLeft = analysisDurationSeconds;
             SetState(State.Analysis);
             RefreshAllTexts();
+            UpdateButtons();
         }
 
         private void Resolve()
@@ -202,21 +221,26 @@ namespace TraidingIDLE.UI
                     ? RollPayoutMultiplierUniform()
                     : RollPayoutMultiplierWeighted();
                 _profitRubles = Math.Max(0, _stakeRubles * (payoutMultiplier - 1));
-                _stateTimeLeft = resultHoldSeconds;
-                SetState(State.Success);
+                _displayStakeRubles = _betPlaced ? _stakeRubles : 0;
+                ScheduleNextOffer();
+                _idleVisibleDialog = State.Success;
+                SetState(State.IdleBetweenOffers);
                 UpdateButtons();
                 RefreshAllTexts();
                 return;
             }
 
             _profitRubles = 0;
-            _stateTimeLeft = resultHoldSeconds;
-            SetState(State.Fail);
+            _displayStakeRubles = _betPlaced ? _stakeRubles : 0;
+            ScheduleNextOffer();
+            _idleVisibleDialog = State.Fail;
+            SetState(State.IdleBetweenOffers);
 
             if (failClaimButton != null)
                 failClaimButton.interactable = false;
 
             RefreshAllTexts();
+            UpdateButtons();
         }
 
         private void OnBetClicked()
@@ -238,16 +262,22 @@ namespace TraidingIDLE.UI
 
             profile.AddRubles(-_stakeRubles);
             _betPlaced = true;
+            SetOfferBetButtonLabel(offerBetWaitingLabel);
+            if (offerBetButton != null)
+                offerBetButton.interactable = false;
             UpdateButtons();
             RefreshAllTexts();
         }
 
         private void OnClaimClicked()
         {
-            if (_state != State.Success)
+            if (!IsSuccessClaimable())
                 return;
 
             if (_claimTaken)
+                return;
+
+            if (!_betPlaced)
                 return;
 
             if (profile == null)
@@ -257,10 +287,18 @@ namespace TraidingIDLE.UI
             profile.AddRubles(payout);
 
             _claimTaken = true;
+            SetSuccessClaimButtonLabel(successClaimedLabel);
+            if (successClaimButton != null)
+                successClaimButton.interactable = false;
             UpdateButtons();
+        }
 
-            if (resultHoldSeconds <= 0f)
-                StartWaitingForNextOffer();
+        private bool IsSuccessClaimable()
+        {
+            if (_state == State.Success)
+                return true;
+
+            return _state == State.IdleBetweenOffers && _idleVisibleDialog == State.Success;
         }
 
         private void SetState(State s, bool force = false)
@@ -270,17 +308,19 @@ namespace TraidingIDLE.UI
 
             _state = s;
             SyncDialogVisibility();
-
-            if (_state == State.WaitingForNextOffer && _nextOfferTimeLeft <= 0f)
-                StartWaitingForNextOffer();
         }
 
         private void SyncDialogVisibility()
         {
-            SetActiveSafe(dealOfferDialog, _state == State.Offer);
-            SetActiveSafe(dealAnalysisDialog, _state == State.Analysis);
-            SetActiveSafe(dealSuccessDialog, _state == State.Success);
-            SetActiveSafe(dealFailDialog, _state == State.Fail);
+            var showOffer = _state == State.Offer;
+            var showAnalysis = _state == State.Analysis;
+            var showSuccess = _state == State.Success || (_state == State.IdleBetweenOffers && _idleVisibleDialog == State.Success);
+            var showFail = _state == State.Fail || (_state == State.IdleBetweenOffers && _idleVisibleDialog == State.Fail);
+
+            SetActiveSafe(dealOfferDialog, showOffer);
+            SetActiveSafe(dealAnalysisDialog, showAnalysis);
+            SetActiveSafe(dealSuccessDialog, showSuccess);
+            SetActiveSafe(dealFailDialog, showFail);
         }
 
         private void UpdateButtons()
@@ -288,8 +328,11 @@ namespace TraidingIDLE.UI
             if (offerBetButton != null)
                 offerBetButton.interactable = _state == State.Offer && !_betPlaced && profile != null && profile.Rubles >= _stakeRubles && _stateTimeLeft > 0f;
 
+            if (analysisWaitButton != null)
+                analysisWaitButton.interactable = false;
+
             if (successClaimButton != null)
-                successClaimButton.interactable = _state == State.Success && !_claimTaken && _betPlaced;
+                successClaimButton.interactable = IsSuccessClaimable() && !_claimTaken && _betPlaced;
         }
 
         private void RefreshTimersOnly()
@@ -297,13 +340,13 @@ namespace TraidingIDLE.UI
             if (_state == State.Offer)
             {
                 if (offerTimerText != null)
-                    offerTimerText.text = FormatTimer(_stateTimeLeft);
+                    offerTimerText.text = FormatTimerLabel(_stateTimeLeft);
                 UpdateButtons();
             }
             else if (_state == State.Analysis)
             {
                 if (analysisTimerText != null)
-                    analysisTimerText.text = FormatTimer(_stateTimeLeft);
+                    analysisTimerText.text = FormatTimerLabel(_stateTimeLeft);
             }
         }
 
@@ -313,25 +356,28 @@ namespace TraidingIDLE.UI
                 offerChanceText.text = string.Format(SafeFormat(chanceFormat, "{0}%"), Mathf.RoundToInt(_chance01 * 100f));
 
             if (offerStakeText != null)
-                offerStakeText.text = string.Format(SafeFormat(stakeFormat, "{0}"), FormatRubles(_stakeRubles));
+            {
+                var fmt = _betPlaced ? offerStakeCommittedFormat : offerStakePromptFormat;
+                offerStakeText.text = string.Format(SafeFormat(fmt, "{0}"), FormatRubles(_stakeRubles));
+            }
 
             if (offerTimerText != null && _state == State.Offer)
-                offerTimerText.text = FormatTimer(_stateTimeLeft);
+                offerTimerText.text = FormatTimerLabel(_stateTimeLeft);
 
             if (analysisStakeText != null)
-                analysisStakeText.text = string.Format(SafeFormat(stakeFormatShort, "{0}"), FormatRubles(_stakeRubles));
+                analysisStakeText.text = string.Format(SafeFormat(analysisStakeFormat, "{0}"), FormatRubles(_stakeRubles));
 
             if (analysisTimerText != null && _state == State.Analysis)
-                analysisTimerText.text = FormatTimer(_stateTimeLeft);
+                analysisTimerText.text = FormatTimerLabel(_stateTimeLeft);
 
             if (successStakeText != null)
-                successStakeText.text = string.Format(SafeFormat(stakeFormatShort, "{0}"), FormatRubles(_stakeRubles));
+                successStakeText.text = string.Format(SafeFormat(successStakeFormat, "{0}"), FormatRubles(_displayStakeRubles));
 
             if (successProfitText != null)
                 successProfitText.text = string.Format(SafeFormat(profitFormat, "{0}"), FormatRubles(_profitRubles));
 
             if (failStakeText != null)
-                failStakeText.text = string.Format(SafeFormat(stakeFormatShort, "{0}"), FormatRubles(_stakeRubles));
+                failStakeText.text = string.Format(SafeFormat(successStakeFormat, "{0}"), FormatRubles(_displayStakeRubles));
         }
 
         private long RollStake()
@@ -400,6 +446,42 @@ namespace TraidingIDLE.UI
             var m = total / 60;
             var s = total % 60;
             return $"{m:00}:{s:00}";
+        }
+
+        private static string FormatTimerLabel(float seconds)
+        {
+            return " " + FormatTimer(seconds);
+        }
+
+        private void CacheButtonLabelsIfNeeded()
+        {
+            if (offerBetButtonLabel == null && offerBetButton != null)
+                offerBetButtonLabel = offerBetButton.GetComponentInChildren<TMP_Text>(true);
+
+            if (successClaimButtonLabel == null && successClaimButton != null)
+                successClaimButtonLabel = successClaimButton.GetComponentInChildren<TMP_Text>(true);
+        }
+
+        private void SetOfferBetButtonLabel(string text)
+        {
+            if (offerBetButtonLabel != null)
+                offerBetButtonLabel.text = text;
+        }
+
+        private void ResetOfferBetButtonLabel()
+        {
+            SetOfferBetButtonLabel(offerBetEnterLabel);
+        }
+
+        private void SetSuccessClaimButtonLabel(string text)
+        {
+            if (successClaimButtonLabel != null)
+                successClaimButtonLabel.text = text;
+        }
+
+        private void ResetSuccessClaimButtonLabel()
+        {
+            SetSuccessClaimButtonLabel(successClaimLabel);
         }
 
         private static void SetActiveSafe(GameObject go, bool active)
