@@ -16,7 +16,7 @@ namespace TraidingIDLE.Currencies
         [Serializable]
         private sealed class SaveData
         {
-            public int activeCurrency;
+            // Active currency is intentionally NOT persisted: each launch must start with SHT.
             public CurrencyPrice[] prices = Array.Empty<CurrencyPrice>();
         }
 
@@ -102,7 +102,6 @@ namespace TraidingIDLE.Currencies
         {
             var data = new SaveData
             {
-                activeCurrency = (int)activeCurrency,
                 prices = (CurrencyPrice[])prices.Clone(),
             };
             SaveStorage.SaveJson(SaveKey, data);
@@ -115,9 +114,6 @@ namespace TraidingIDLE.Currencies
                 return;
 
             LoadedFromSave = true;
-
-            if (Enum.IsDefined(typeof(CurrencyId), data.activeCurrency))
-                activeCurrency = (CurrencyId)data.activeCurrency;
 
             if (data.prices == null)
                 return;

@@ -280,8 +280,14 @@ namespace TraidingIDLE.Currencies.Simulation
 
             var loadedFromSave = market != null && market.LoadedFromSave;
 
-            if (applyGameStartSettings && !loadedFromSave)
-                ApplyGameStartSettings();
+            if (applyGameStartSettings)
+            {
+                if (market != null)
+                    market.SetActiveCurrency(startActiveCurrency);
+
+                if (!loadedFromSave)
+                    ApplyStartPriceOverrides();
+            }
 
             for (var i = 0; i < coins.Length; i++)
             {
@@ -368,6 +374,11 @@ namespace TraidingIDLE.Currencies.Simulation
             if (market != null)
                 market.SetActiveCurrency(startActiveCurrency);
 
+            ApplyStartPriceOverrides();
+        }
+
+        private void ApplyStartPriceOverrides()
+        {
             for (var i = 0; i < coins.Length; i++)
             {
                 var cfg = coins[i];

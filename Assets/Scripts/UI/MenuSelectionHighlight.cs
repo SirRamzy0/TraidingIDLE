@@ -27,7 +27,8 @@ namespace TraidingIDLE.UI
         [Header("Animation")]
         [SerializeField, Min(0f)] private float moveDurationSeconds = 0.18f;
         [SerializeField] private AnimationCurve moveCurve = AnimationCurve.EaseInOut(0, 0, 1, 1);
-        [SerializeField] private bool unscaledTime = true;
+        [Tooltip("Leave off so highlight animation freezes when gameplay is paused (Time.timeScale = 0).")]
+        [SerializeField] private bool unscaledTime = false;
 
         [Header("Startup")]
         [SerializeField, Min(0)] private int initialIndex = 0;
