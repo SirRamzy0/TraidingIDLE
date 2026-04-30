@@ -2333,6 +2333,12 @@ namespace TraidingIDLE.Currencies.Simulation
 
             return false;
         }
+
+        /// <summary>Запланировать бизнес-навык, подменяющий следующее рыночное состояние (реализация будет добавлена позже).</summary>
+        public void EnqueueBusinessSkillOverrideNextState(CurrencyId currency)
+        {
+            Debug.Log($"[{nameof(MarketSimulation)}] Бизнес-навык рынка для {currency} — точка входа зарезервирована.", this);
+        }
     }
 }
 

@@ -82,6 +82,9 @@ namespace TraidingIDLE.Mining
         [SerializeField] private PlayerProfile profile = null!;
         [SerializeField] private CurrencyMarket market = null!;
 
+        [Header("Passive links")]
+        [SerializeField] private Business.BusinessController? businessPassiveLink;
+
         [Header("Top UI")]
         [SerializeField] private TMP_Text totalIncomePerHourText = null!;
         [SerializeField] private TMP_Text accumulatedText = null!;
@@ -770,7 +773,9 @@ namespace TraidingIDLE.Mining
 
         private double GetIncomeMultiplier()
         {
-            return _coinIncomeTimeLeft > 0f ? Math.Max(1f, coinIncomeMultiplier) : 1d;
+            var fromBoost = _coinIncomeTimeLeft > 0f ? Math.Max(1f, coinIncomeMultiplier) : 1d;
+            var business = businessPassiveLink != null ? businessPassiveLink.GetMiningIncomeMultiplierFromBusinessSkills() : 1d;
+            return fromBoost * business;
         }
 
         private double GetSpeedMultiplier()
