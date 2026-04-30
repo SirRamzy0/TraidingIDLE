@@ -12,6 +12,14 @@ namespace TraidingIDLE.Mining
 {
     public sealed class MiningController : MonoBehaviour
     {
+        private enum BoostCostCurrency
+        {
+            Rubles = 0,
+            SHT = 1,
+            ETH = 2,
+            BTC = 3,
+        }
+
         [Serializable]
         private sealed class RigLevelSettings
         {
@@ -28,6 +36,28 @@ namespace TraidingIDLE.Mining
         {
             public CurrencyId id;
             [Min(1f)] public float cycleDurationSeconds = 10f;
+        }
+
+        [Serializable]
+        private sealed class BoostTextSettings
+        {
+            public string title = "";
+            public string levelFormat = "{0}";
+            public string descriptionFormat = "{0}";
+            public string inactiveButtonFormat = "{0}";
+            public string activeButtonFormat = "Активно {0}";
+        }
+
+        [Serializable]
+        private sealed class CurrencyUnlockTextSettings
+        {
+            public string title = "Новая валюта";
+            public string levelFormat = "{0} → {1}";
+            public string descriptionFormat = "Все риги начнут добывать {0}";
+            public string buttonFormat = "Открыть {0}";
+            public string maxLevel = "MAX";
+            public string maxDescription = "Все валюты открыты";
+            public string maxButton = "MAX";
         }
 
         [Serializable]
@@ -132,6 +162,7 @@ namespace TraidingIDLE.Mining
         [Header("Boost 3: Coin income")]
         [SerializeField, Min(1f)] private float coinIncomeMultiplier = 2f;
         [SerializeField, Min(1f)] private float coinIncomeDurationSeconds = 1800f;
+        [SerializeField] private BoostCostCurrency coinIncomeCostCurrency = BoostCostCurrency.SHT;
         [SerializeField, Min(1)] private int coinIncomeBaseCost = 100;
         [SerializeField, Min(1f)] private float coinIncomeCostMultiplier = 1.8f;
 
@@ -144,6 +175,33 @@ namespace TraidingIDLE.Mining
         [SerializeField] private string boughtRigsStatFormat = "{0}/{1}";
         [SerializeField] private string maxedRigsStatFormat = "{0}/{1}";
         [SerializeField] private string bonusPercentFormat = "+{0}%";
+
+        [Header("Boost Texts")]
+        [SerializeField] private BoostTextSettings adSpeedBoostText = new()
+        {
+            title = "Реклама",
+            levelFormat = "x{0} скорости",
+            descriptionFormat = "На {0}",
+            inactiveButtonFormat = "Активировать",
+            activeButtonFormat = "Активно {0}",
+        };
+        [SerializeField] private BoostTextSettings gemSpeedBoostText = new()
+        {
+            title = "Гемы",
+            levelFormat = "x{0} скорости",
+            descriptionFormat = "На {0}",
+            inactiveButtonFormat = "За {0} гемов",
+            activeButtonFormat = "Активно {0}",
+        };
+        [SerializeField] private BoostTextSettings coinIncomeBoostText = new()
+        {
+            title = "Доход",
+            levelFormat = "x{0} дохода",
+            descriptionFormat = "На {0}",
+            inactiveButtonFormat = "За {0} {1}",
+            activeButtonFormat = "Активно {0}",
+        };
+        [SerializeField] private CurrencyUnlockTextSettings currencyUnlockBoostText = new();
 
         private readonly List<MiningRigCardUI> _rigCards = new();
         private int[] _rigStateLevels = Array.Empty<int>();
@@ -298,7 +356,6 @@ namespace TraidingIDLE.Mining
         {
             var speedMultiplier = GetSpeedMultiplier();
             var incomeMultiplier = GetIncomeMultiplier();
-            var cycle = Mathf.Max(0.1f, GetCycleDuration(ActiveCurrency));
 
             for (var i = 0; i < _rigStateLevels.Length; i++)
             {
@@ -307,15 +364,17 @@ namespace TraidingIDLE.Mining
                     continue;
 
                 var baseIncomePerHour = GetRigIncomePerHour(level, ActiveCurrency);
-                _rigProgress[i] += (float)(dt * speedMultiplier / cycle);
+                var earnedCoins = baseIncomePerHour * incomeMultiplier * speedMultiplier / 3600d * dt;
+                if (earnedCoins <= 0d)
+                    continue;
+
+                _rigProgress[i] += (float)Math.Min(earnedCoins, float.MaxValue);
                 if (_rigProgress[i] < 1f)
                     continue;
 
-                var completedCycles = Mathf.FloorToInt(_rigProgress[i]);
-                _rigProgress[i] -= completedCycles;
-
-                var minedPerCycle = baseIncomePerHour * incomeMultiplier * cycle / 3600d;
-                _accumulated += minedPerCycle * completedCycles;
+                var completedCoins = Mathf.FloorToInt(_rigProgress[i]);
+                _rigProgress[i] -= completedCoins;
+                _accumulated += completedCoins;
             }
         }
 
@@ -403,7 +462,7 @@ namespace TraidingIDLE.Mining
                 return;
 
             var cost = GetCoinIncomeBoostCost();
-            if (!profile.TrySpendCoins(ActiveCurrency, cost))
+            if (!TrySpendBoostCost(coinIncomeCostCurrency, cost))
                 return;
 
             _coinIncomeTimeLeft = coinIncomeDurationSeconds;
@@ -567,11 +626,13 @@ namespace TraidingIDLE.Mining
         {
             if (adSpeedBoostCard != null)
             {
-                var activeText = _adSpeedTimeLeft > 0f ? $"Активно {FormatTimer(_adSpeedTimeLeft)}" : "Активировать";
+                var activeText = _adSpeedTimeLeft > 0f
+                    ? FormatOne(adSpeedBoostText.activeButtonFormat, "Активно {0}", FormatTimer(_adSpeedTimeLeft))
+                    : SafeFormat(adSpeedBoostText.inactiveButtonFormat, "Активировать");
                 adSpeedBoostCard.Configure(
-                    "Реклама",
-                    $"x{FormatMultiplier(adSpeedMultiplier)} скорости",
-                    $"На {FormatDuration(adSpeedDurationSeconds)}",
+                    SafeFormat(adSpeedBoostText.title, "Реклама"),
+                    FormatOne(adSpeedBoostText.levelFormat, "x{0} скорости", FormatMultiplier(adSpeedMultiplier)),
+                    FormatOne(adSpeedBoostText.descriptionFormat, "На {0}", FormatDuration(adSpeedDurationSeconds)),
                     activeText,
                     true,
                     ActivateAdSpeedBoost);
@@ -579,11 +640,13 @@ namespace TraidingIDLE.Mining
 
             if (gemSpeedBoostCard != null)
             {
-                var activeText = _gemSpeedTimeLeft > 0f ? $"Активно {FormatTimer(_gemSpeedTimeLeft)}" : $"За {FormatRubles(gemSpeedCost)} гемов";
+                var activeText = _gemSpeedTimeLeft > 0f
+                    ? FormatOne(gemSpeedBoostText.activeButtonFormat, "Активно {0}", FormatTimer(_gemSpeedTimeLeft))
+                    : FormatOne(gemSpeedBoostText.inactiveButtonFormat, "За {0} гемов", FormatRubles(gemSpeedCost));
                 gemSpeedBoostCard.Configure(
-                    "Гемы",
-                    $"x{FormatMultiplier(gemSpeedMultiplier)} скорости",
-                    $"На {FormatDuration(gemSpeedDurationSeconds)}",
+                    SafeFormat(gemSpeedBoostText.title, "Гемы"),
+                    FormatOne(gemSpeedBoostText.levelFormat, "x{0} скорости", FormatMultiplier(gemSpeedMultiplier)),
+                    FormatOne(gemSpeedBoostText.descriptionFormat, "На {0}", FormatDuration(gemSpeedDurationSeconds)),
                     activeText,
                     profile != null && profile.Gems >= gemSpeedCost,
                     ActivateGemSpeedBoost);
@@ -592,13 +655,15 @@ namespace TraidingIDLE.Mining
             if (coinIncomeBoostCard != null)
             {
                 var cost = GetCoinIncomeBoostCost();
-                var activeText = _coinIncomeTimeLeft > 0f ? $"Активно {FormatTimer(_coinIncomeTimeLeft)}" : $"За {FormatRubles(cost)} {ActiveCurrency}";
+                var activeText = _coinIncomeTimeLeft > 0f
+                    ? FormatOne(coinIncomeBoostText.activeButtonFormat, "Активно {0}", FormatTimer(_coinIncomeTimeLeft))
+                    : FormatTwo(coinIncomeBoostText.inactiveButtonFormat, "За {0} {1}", FormatRubles(cost), FormatBoostCostCurrency(coinIncomeCostCurrency));
                 coinIncomeBoostCard.Configure(
-                    "Доход",
-                    $"x{FormatMultiplier(coinIncomeMultiplier)} дохода",
-                    $"На {FormatDuration(coinIncomeDurationSeconds)}",
+                    SafeFormat(coinIncomeBoostText.title, "Доход"),
+                    FormatOne(coinIncomeBoostText.levelFormat, "x{0} дохода", FormatMultiplier(coinIncomeMultiplier)),
+                    FormatOne(coinIncomeBoostText.descriptionFormat, "На {0}", FormatDuration(coinIncomeDurationSeconds)),
                     activeText,
-                    profile != null && profile.GetAmount(ActiveCurrency) >= cost,
+                    CanSpendBoostCost(coinIncomeCostCurrency, cost),
                     ActivateCoinIncomeBoost);
             }
 
@@ -607,10 +672,10 @@ namespace TraidingIDLE.Mining
                 if (!TryGetNextCurrency(ActiveCurrency, out var next))
                 {
                     currencyUnlockBoostCard.Configure(
-                        "Новая валюта",
-                        "MAX",
-                        "Все валюты открыты",
-                        "MAX",
+                        SafeFormat(currencyUnlockBoostText.title, "Новая валюта"),
+                        SafeFormat(currencyUnlockBoostText.maxLevel, "MAX"),
+                        SafeFormat(currencyUnlockBoostText.maxDescription, "Все валюты открыты"),
+                        SafeFormat(currencyUnlockBoostText.maxButton, "MAX"),
                         false,
                         UnlockNextCurrency);
                 }
@@ -618,10 +683,10 @@ namespace TraidingIDLE.Mining
                 {
                     var cost = GetCurrencyUnlockCost(ActiveCurrency);
                     currencyUnlockBoostCard.Configure(
-                        "Новая валюта",
-                        $"{ActiveCurrency} → {next}",
-                        $"Все риги начнут добывать {next}",
-                        $"Открыть {FormatRubles(cost)}",
+                        SafeFormat(currencyUnlockBoostText.title, "Новая валюта"),
+                        FormatTwo(currencyUnlockBoostText.levelFormat, "{0} → {1}", ActiveCurrency.ToString(), next.ToString()),
+                        FormatOne(currencyUnlockBoostText.descriptionFormat, "Все риги начнут добывать {0}", next.ToString()),
+                        FormatOne(currencyUnlockBoostText.buttonFormat, "Открыть {0}", FormatRubles(cost)),
                         CanSpendRubles(cost),
                         UnlockNextCurrency);
                 }
@@ -791,6 +856,51 @@ namespace TraidingIDLE.Mining
             return profile != null && amount >= 0 && profile.Rubles >= amount;
         }
 
+        private bool CanSpendBoostCost(BoostCostCurrency currency, int amount)
+        {
+            if (profile == null || amount < 0)
+                return false;
+
+            if (currency == BoostCostCurrency.Rubles)
+                return profile.Rubles >= amount;
+
+            if (TryConvertBoostCostCurrency(currency, out var coin))
+                return profile.GetAmount(coin) >= amount;
+
+            return false;
+        }
+
+        private bool TrySpendBoostCost(BoostCostCurrency currency, int amount)
+        {
+            if (profile == null)
+                return false;
+
+            if (currency == BoostCostCurrency.Rubles)
+                return profile.TrySpendRubles(amount);
+
+            return TryConvertBoostCostCurrency(currency, out var coin)
+                && profile.TrySpendCoins(coin, amount);
+        }
+
+        private static bool TryConvertBoostCostCurrency(BoostCostCurrency currency, out CurrencyId coin)
+        {
+            switch (currency)
+            {
+                case BoostCostCurrency.SHT:
+                    coin = CurrencyId.SHT;
+                    return true;
+                case BoostCostCurrency.ETH:
+                    coin = CurrencyId.ETH;
+                    return true;
+                case BoostCostCurrency.BTC:
+                    coin = CurrencyId.BTC;
+                    return true;
+                default:
+                    coin = CurrencyId.SHT;
+                    return false;
+            }
+        }
+
         private static bool TryGetNextCurrency(CurrencyId current, out CurrencyId next)
         {
             next = current switch
@@ -901,6 +1011,16 @@ namespace TraidingIDLE.Mining
             return string.IsNullOrEmpty(format) ? fallback : format;
         }
 
+        private static string FormatOne(string format, string fallback, string value)
+        {
+            return string.Format(SafeFormat(format, fallback), value);
+        }
+
+        private static string FormatTwo(string format, string fallback, string a, string b)
+        {
+            return string.Format(SafeFormat(format, fallback), a, b);
+        }
+
         private static long GetUtcSeconds()
         {
             return DateTimeOffset.UtcNow.ToUnixTimeSeconds();
@@ -918,6 +1038,11 @@ namespace TraidingIDLE.Mining
             return Math.Max(0, value)
                 .ToString("N0", CultureInfo.InvariantCulture)
                 .Replace(",", ".");
+        }
+
+        private static string FormatBoostCostCurrency(BoostCostCurrency currency)
+        {
+            return currency == BoostCostCurrency.Rubles ? "Р" : currency.ToString();
         }
 
         private static string FormatMultiplier(float value)
