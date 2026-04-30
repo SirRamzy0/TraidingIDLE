@@ -1,10 +1,12 @@
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Globalization;
 using TMPro;
 using TraidingIDLE.Currencies;
 using TraidingIDLE.Player;
 using TraidingIDLE.Saves;
+using TraidingIDLE.UI;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -523,22 +525,34 @@ namespace TraidingIDLE.Mining
                 ConfigureRigCard(rigCard, i);
             }
 
-            if (bought >= maxRigCount)
-                return;
-
-            if (buyRigCardPrefab != null)
+            if (bought < maxRigCount)
             {
-                var buyCard = Instantiate(buyRigCardPrefab, rigCardsRoot);
-                buyCard.Configure(bought, GetRigPurchaseCost(bought), CanSpendRubles(GetRigPurchaseCost(bought)), BuyRig);
+                if (buyRigCardPrefab != null)
+                {
+                    var buyCard = Instantiate(buyRigCardPrefab, rigCardsRoot);
+                    buyCard.Configure(bought, GetRigPurchaseCost(bought), CanSpendRubles(GetRigPurchaseCost(bought)), BuyRig);
+                }
+
+                if (bought < maxRigCount - 1 && lockedRigCardPrefab != null)
+                {
+                    var lockedIndex = bought + 1;
+                    var locked = Instantiate(lockedRigCardPrefab, rigCardsRoot);
+                    locked.Configure(lockedIndex);
+                }
             }
 
-            // Show only one locked preview. On the penultimate rig, the last buy card is enough.
-            if (bought >= maxRigCount - 1 || lockedRigCardPrefab == null)
-                return;
+            StartCoroutine(RefreshRigStripLayoutDeferred());
+        }
 
-            var lockedIndex = bought + 1;
-            var locked = Instantiate(lockedRigCardPrefab, rigCardsRoot);
-            locked.Configure(lockedIndex);
+        private IEnumerator RefreshRigStripLayoutDeferred()
+        {
+            yield return null;
+            if (rigCardsRoot == null)
+                yield break;
+
+            var sizer = rigCardsRoot.GetComponent<HorizontalScrollContentLayoutSize>();
+            if (sizer != null)
+                sizer.Refresh();
         }
 
         private void ConfigureRigCard(MiningRigCardUI card, int rigIndex)
