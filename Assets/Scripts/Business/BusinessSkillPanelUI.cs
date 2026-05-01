@@ -1,12 +1,9 @@
-using TMPro;
+﻿using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 
 namespace TraidingIDLE.Business
 {
-    /// <summary>
-    /// Два независимых корня: «навык закрыт» и «навык открыт» — переключение по видимости.
-    /// </summary>
     public sealed class BusinessSkillPanelUI : MonoBehaviour
     {
         [SerializeField] private GameObject skillLockedRoot = null!;
@@ -28,9 +25,6 @@ namespace TraidingIDLE.Business
                 skillAvatar.enabled = false;
         }
 
-        /// <summary>
-        /// Отрисовать панель. Если навык недоступен по уровню — показывается только объект «locked» с текстом-подсказкой.
-        /// </summary>
         public void PresentLocked(int requiredLevel, string lockedFormat)
         {
             if (skillLockedRoot != null)

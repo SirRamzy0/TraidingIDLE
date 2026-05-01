@@ -1,8 +1,7 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Globalization;
 using TMPro;
-using TraidingIDLE.Currencies;
 using TraidingIDLE.Currencies.Simulation;
 using TraidingIDLE.Player;
 using TraidingIDLE.Saves;
@@ -11,48 +10,19 @@ using UnityEngine.UI;
 
 namespace TraidingIDLE.Business
 {
-    /// <summary>
-    /// Пассивный доход бизнесов, энергия, навыки (отдельный запуск), сбор на рубли и один глобальный временный буст.
-    /// </summary>
     public sealed class BusinessController : MonoBehaviour
     {
         [Serializable]
-        private sealed class BusinessTierConfig
+        private sealed class BusinessLevelSave
         {
-            [Min(0f)] public float incomeRublesPerHour;
-            [Min(0)] public long upgradeRublesCost;
+            public string id = "";
+            public int level;
         }
 
         [Serializable]
-        private sealed class BusinessCatalogEntry
-        {
-            public string displayName = "Бизнес";
-            public string category = "Разное";
-            [Tooltip("Доход на уровне N = tiers[N-1]; покупка первого уровня = upgradeRublesCost tiers[0].")]
-            public BusinessTierConfig[] tiers = { new() };
-
-            [Min(1)] public int skillUnlockLevel = 5;
-            [Min(0)] public int skillEnergyCost = 1;
-            public BusinessSkillEffectKind skillEffect = BusinessSkillEffectKind.InstantRubles;
-
-            [Tooltip("Только для навыка «рынок» (Market Manipulate): какую монету из симуляции торгов затронуть при следующей смене состояния рынка.")]
-            public CurrencyId marketSkillCurrency = CurrencyId.SHT;
-
-            [Min(0)] public long skillInstantRubles;
-            [Min(1f)] public float temporaryIncomeMultiplier = 5f;
-            [Min(1f)] public float temporaryDurationSeconds = 600f;
-
-            public Sprite? skillIcon;
-            public string skillTitle = "Умение";
-            [TextArea] public string skillDescription = "";
-            public string lockedSkillFormat = "Улучши до {0} уровня, чтобы открыть умение";
-            public string launchButtonIdleFormat = "Запустить ⚡{0}";
-            public string temporarySkillActiveFormat = "навык активен {0}";
-        }
-
         private sealed class SaveData
         {
-            public int[] levels = Array.Empty<int>();
+            public BusinessLevelSave[] businessLevels = Array.Empty<BusinessLevelSave>();
             public double accumulatedRubles;
             public int energyCurrent;
             public long lastSimUtcSeconds;
@@ -63,57 +33,86 @@ namespace TraidingIDLE.Business
             public int selectedBusinessIndex;
         }
 
-        private const string SaveKey = "save.business.v1";
+        private sealed class RuntimeBusinessEntry
+        {
+            public string saveId = "";
+            public string displayName = "";
+            public string category = "";
+            public Sprite artwork;
+            public BusinessLevelConfig[] levels = Array.Empty<BusinessLevelConfig>();
+            public BusinessSkillConfig skill = new();
+
+            public int MaxLevel => Mathf.Max(0, levels?.Length ?? 0);
+
+            public double GetIncomePerHour(int level)
+            {
+                if (levels == null || levels.Length == 0 || level <= 0)
+                    return 0d;
+
+                var index = Mathf.Clamp(level - 1, 0, levels.Length - 1);
+                return Math.Max(0d, levels[index].incomeRublesPerHour);
+            }
+
+            public long GetUpgradeCostFromLevel(int currentLevel)
+            {
+                if (levels == null || levels.Length == 0 || currentLevel < 0 || currentLevel >= levels.Length)
+                    return 0;
+
+                return Math.Max(0, levels[currentLevel].upgradeRublesCost);
+            }
+        }
+
+        private const string SaveKey = "save.business.v2";
 
         [Header("Refs")]
-        [SerializeField] private PlayerProfile profile = null!;
-        [SerializeField] private MarketSimulation? marketSimulation;
+        [SerializeField] private PlayerProfile profile;
+        [SerializeField] private MarketSimulation marketSimulation;
 
-        [Header("Спавн из префаба (если заполнены — главный режим для Scroll View)")]
-        [Tooltip("Префаб корня карточки с BusinessListRowUI (кнопки и тексты настроены один раз на префабе).")]
-        [SerializeField] private BusinessListRowUI? rowCardPrefab;
-        [Tooltip("Объект Content внутри Scroll View — сюда клонируются карточки, столько же сколько элементов Catalog.")]
-        [SerializeField] private RectTransform? rowCardsContent;
+        [Header("Business list")]
+        [SerializeField] private BusinessListRowUI rowCardPrefab;
+        [SerializeField] private RectTransform rowCardsContent;
 
-        [Tooltip("Главный простой вариант: контейнер, у которого прямые дочерние объекты — карточки бизнеса сверху вниз. На каждом дочернем объекте висит BusinessListRowUI.\nНомера в каталоге: первый ребёнок = Catalog[0], второй = Catalog[1]…")]
-        [SerializeField] private Transform? businessRowsParent;
+        [Header("Selected business")]
+        [SerializeField] private BusinessDetailCardUI detailCard;
+        [SerializeField] private BusinessSkillPanelUI skillPanel;
 
-        [Tooltip("Если Rows Parent не задан: перетащите сюда карточки в том же порядке, что и Catalog (первая = бизнес 0). Перенумерация сделает контроллер сам.")]
-        [SerializeField] private BusinessListRowUI[] listRows = Array.Empty<BusinessListRowUI>();
+        [Header("Definitions")]
+        [SerializeField] private BusinessDefinition[] businesses = Array.Empty<BusinessDefinition>();
 
-        [SerializeField] private BusinessSkillPanelUI skillPanel = null!;
-
-        [Header("Энергия")]
+        [Header("Energy")]
         [SerializeField, Min(1)] private int energyMax = 3;
         [SerializeField, Min(1f)] private float energyChunkRegenSeconds = 1200f;
 
-        [Header("Каталог")]
-        [SerializeField] private BusinessCatalogEntry[] catalog = { new() };
+        [Header("Top UI")]
+        [SerializeField] private TMP_Text energyCountText;
+        [SerializeField] private TMP_Text energyTimerText;
+        [SerializeField] private TMP_Text totalIncomePerHourText;
+        [SerializeField] private TMP_Text accumulatedAbbrevText;
+        [SerializeField] private Button claimButton;
 
-        [Header("Верхняя панель")]
-        [SerializeField] private TMP_Text energyCountText = null!;
-        [SerializeField] private TMP_Text energyTimerText = null!;
-        [SerializeField] private TMP_Text totalIncomePerHourText = null!;
-        [SerializeField] private TMP_Text accumulatedAbbrevText = null!;
-        [SerializeField] private Button claimButton = null!;
-        [SerializeField, Min(1f)] private float accumulatedDisplayLerpPerSecond = 8f;
+        [Header("Animation")]
+        [SerializeField, Min(0.1f)] private float accumulatedDisplayLerpPerSecond = 8f;
 
-        [Header("Тексты кнопки строки")]
+        [Header("Texts")]
         [SerializeField] private string rowPrimaryBuyCaption = "Купить";
         [SerializeField] private string rowPrimaryUpgradeCaption = "Улучшить";
+        [SerializeField] private string maxLevelCaption = "Макс.";
+        [SerializeField] private string rowLevelFormat = "Уровень {0}";
+        [SerializeField] private string rowNextLevelFormat = "+{0}";
+        [SerializeField] private string totalIncomePerHourFormat = "{0} в час";
+        [SerializeField] private string rublesCurrencySuffix = "р";
 
-        [Header("Формат сумм")]
+        [Header("Number format")]
+        [SerializeField] private string thousandSep = ".";
+        [SerializeField] private string thousandSuffix = " тыс";
         [SerializeField] private string millionSuffix = " млн";
         [SerializeField] private string billionSuffix = " млрд";
-        [SerializeField] private string thousandSep = ".";
 
-        [SerializeField]
-        [Tooltip("Подпись валюты в TMP после суммы. По умолчанию кириллическое «р». Если вижу квадрат — включи символ во Font Atlas TMP.")]
-        private string rublesCurrencySuffix = "р";
-
+        private readonly List<RuntimeBusinessEntry> _entries = new();
         private BusinessListRowUI[] _resolvedRows = Array.Empty<BusinessListRowUI>();
         private int[] _levels = Array.Empty<int>();
         private double _accumulatedRubles;
+        private double _displayAccumRubles;
         private int _energy;
         private long _lastSimUtcSeconds;
         private long _nextEnergyAtUtc;
@@ -121,8 +120,6 @@ namespace TraidingIDLE.Business
         private long _tempBuffEndUtc;
         private float _tempMultiplier = 1f;
         private int _selectedIndex;
-
-        private double _displayAccumRubles;
         private float _saveTimer;
         private bool _dirty;
 
@@ -130,6 +127,7 @@ namespace TraidingIDLE.Business
         {
             if (_tempKind != BusinessTemporaryBuffKind.MiningIncome)
                 return 1d;
+
             if (!IsTemporaryBuffActive(out _))
             {
                 ClearTemporaryBuffIfExpired();
@@ -143,6 +141,7 @@ namespace TraidingIDLE.Business
         {
             if (_tempKind != BusinessTemporaryBuffKind.AllBusinessIncome)
                 return 1d;
+
             if (!IsTemporaryBuffActive(out _))
             {
                 ClearTemporaryBuffIfExpired();
@@ -152,149 +151,42 @@ namespace TraidingIDLE.Business
             return Math.Max(1d, _tempMultiplier);
         }
 
-        private static void WarnRowCatalogMismatch(string context, int rowCount, int catalogLength)
-        {
-            if (catalogLength <= 0 || rowCount == catalogLength)
-                return;
-            Debug.LogWarning(
-                $"[Business]{context}: карточек {rowCount}, записей каталога {catalogLength}. Сделайте число строк и элементов Catalog одинаковым.");
-        }
-
-        private bool IsPrefabRowSpawnConfigured() => rowCardPrefab != null && rowCardsContent != null;
-
-        private static void DestroyImmediateChildren(RectTransform parent)
-        {
-            for (var i = parent.childCount - 1; i >= 0; i--)
-                Destroy(parent.GetChild(i).gameObject);
-        }
-
-        private void SpawnCardsFromPrefab()
-        {
-            DestroyImmediateChildren(rowCardsContent!);
-
-            if (catalog.Length == 0)
-            {
-                _resolvedRows = Array.Empty<BusinessListRowUI>();
-                return;
-            }
-
-            var buf = new List<BusinessListRowUI>(catalog.Length);
-            for (var i = 0; i < catalog.Length; i++)
-            {
-                var row = Instantiate(rowCardPrefab, rowCardsContent!, worldPositionStays: false);
-                row.gameObject.name = $"{rowCardPrefab!.name}_{i}";
-                row.AssignCatalogIndex(i);
-                row.ResolveButtonReferences();
-                buf.Add(row);
-            }
-
-            _resolvedRows = buf.ToArray();
-
-            Canvas.ForceUpdateCanvases();
-            LayoutRebuilder.ForceRebuildLayoutImmediate(rowCardsContent!);
-        }
-
-        private void ResolveEffectiveRows()
-        {
-            if (IsPrefabRowSpawnConfigured())
-            {
-                if (businessRowsParent != null || (listRows is { Length: > 0 }))
-                    Debug.LogWarning(
-                        "[Business] Режим префаба: поля Rows Parent и ручной список строк не используются.",
-                        this);
-
-                SpawnCardsFromPrefab();
-                WarnRowCatalogMismatch("(префаб)", _resolvedRows.Length, catalog?.Length ?? 0);
-                return;
-            }
-
-            if (rowCardPrefab != null || rowCardsContent != null)
-                Debug.LogWarning("[Business] Для автоспавна задайте и Row Card Prefab и Row Cards Content.", this);
-
-            if (businessRowsParent != null)
-            {
-                if (listRows is { Length: > 0 })
-                    Debug.LogWarning(
-                        "[Business] Заполнены и Rows Parent, и ручной список строк — используются только дочерние объекты у Rows Parent.",
-                        this);
-
-                var buf = new List<BusinessListRowUI>();
-                for (var i = 0; i < businessRowsParent.childCount; i++)
-                {
-                    var row = businessRowsParent.GetChild(i).GetComponent<BusinessListRowUI>();
-                    if (row == null)
-                        continue;
-
-                    row.ResolveButtonReferences();
-                    row.AssignCatalogIndex(buf.Count);
-                    buf.Add(row);
-                }
-
-                _resolvedRows = buf.ToArray();
-                WarnRowCatalogMismatch(" (Rows Parent)", _resolvedRows.Length, catalog?.Length ?? 0);
-                return;
-            }
-
-            if (listRows is { Length: > 0 })
-            {
-                var buf = new List<BusinessListRowUI>();
-                foreach (var row in listRows)
-                {
-                    if (row == null)
-                        continue;
-                    row.ResolveButtonReferences();
-                    row.AssignCatalogIndex(buf.Count);
-                    buf.Add(row);
-                }
-
-                _resolvedRows = buf.ToArray();
-                WarnRowCatalogMismatch(" (ручной список строк)", _resolvedRows.Length, catalog?.Length ?? 0);
-                return;
-            }
-
-            _resolvedRows = Array.Empty<BusinessListRowUI>();
-            if ((catalog?.Length ?? 0) > 0)
-                Debug.LogWarning(
-                    "[Business] Нет ни Rows Parent, ни карточек в списке — откройте экран только после добавления строк.",
-                    this);
-        }
-
         private void Awake()
         {
-            if (profile == null)
-                profile = FindAnyObjectByType<PlayerProfile>();
-
+            ResolveSceneReferences();
+            RebuildRuntimeBusinesses();
             EnsureArrays();
-            ResolveEffectiveRows();
+            ResolveRows();
+            BindRows();
             Load();
             ProcessOfflineCatchUp();
-            foreach (var row in _resolvedRows)
-            {
-                if (row == null)
-                    continue;
-
-                var captured = row.BusinessIndex;
-                row.BindSelect(() => SelectBusiness(captured));
-                row.BindPrimaryAction(() => PrimaryActionOnRow(captured));
-            }
 
             if (claimButton != null)
+            {
+                claimButton.onClick.RemoveListener(Claim);
                 claimButton.onClick.AddListener(Claim);
+            }
 
             if (skillPanel != null)
                 skillPanel.SetLaunchListener(TryLaunchSkillForSelection);
 
-            SelectBusiness(Mathf.Clamp(_selectedIndex, 0, Mathf.Max(0, catalog.Length - 1)));
+            SelectBusiness(_selectedIndex);
         }
 
         private void OnEnable()
         {
+            if (profile != null)
+                profile.RublesChanged += OnProfileRublesChanged;
+
             ProcessOfflineCatchUp();
             RefreshAllUi();
         }
 
         private void OnDisable()
         {
+            if (profile != null)
+                profile.RublesChanged -= OnProfileRublesChanged;
+
             SaveNow();
         }
 
@@ -311,9 +203,12 @@ namespace TraidingIDLE.Business
 
         private void Update()
         {
-            var dt = Time.unscaledDeltaTime;
+            var now = UtcNow();
+            RegenEnergy(now);
+            ClearTemporaryBuffIfExpired();
             SimulateTick(Time.deltaTime);
 
+            var dt = Time.unscaledDeltaTime;
             _displayAccumRubles += (_accumulatedRubles - _displayAccumRubles)
                 * (1d - Math.Exp(-accumulatedDisplayLerpPerSecond * dt));
 
@@ -327,12 +222,155 @@ namespace TraidingIDLE.Business
                 SaveNow();
         }
 
+        private void ResolveSceneReferences()
+        {
+            if (profile == null)
+                profile = FindAnyObjectByType<PlayerProfile>();
+            if (marketSimulation == null)
+                marketSimulation = FindAnyObjectByType<MarketSimulation>();
+            if (skillPanel == null)
+                skillPanel = FindAnyObjectByType<BusinessSkillPanelUI>();
+            if (detailCard == null)
+                detailCard = FindAnyObjectByType<BusinessDetailCardUI>();
+
+            if (detailCard == null)
+            {
+                var detailRoot = GameObject.Find("Big_card");
+                if (detailRoot != null)
+                    detailCard = detailRoot.GetComponent<BusinessDetailCardUI>()
+                        ?? detailRoot.AddComponent<BusinessDetailCardUI>();
+            }
+        }
+
+        private void RebuildRuntimeBusinesses()
+        {
+            _entries.Clear();
+
+            if (businesses == null)
+                return;
+
+            for (var i = 0; i < businesses.Length; i++)
+            {
+                var definition = businesses[i];
+                if (definition == null)
+                    continue;
+
+                _entries.Add(new RuntimeBusinessEntry
+                {
+                    saveId = definition.SaveId,
+                    displayName = definition.DisplayName,
+                    category = definition.Category,
+                    artwork = definition.Artwork,
+                    levels = CopyLevels(definition),
+                    skill = CloneSkill(definition.Skill),
+                });
+            }
+        }
+
+        private static BusinessLevelConfig[] CopyLevels(BusinessDefinition definition)
+        {
+            var levels = new BusinessLevelConfig[definition.MaxLevel];
+            for (var i = 0; i < levels.Length; i++)
+            {
+                var currentLevel = i + 1;
+                levels[i] = new BusinessLevelConfig
+                {
+                    incomeRublesPerHour = definition.GetIncomePerHour(currentLevel),
+                    upgradeRublesCost = definition.GetUpgradeCostFromLevel(i),
+                };
+            }
+
+            return levels;
+        }
+
+        private static BusinessSkillConfig CloneSkill(BusinessSkillConfig source)
+        {
+            if (source == null)
+                return new BusinessSkillConfig();
+
+            return new BusinessSkillConfig
+            {
+                unlockLevel = Mathf.Max(1, source.unlockLevel),
+                energyCost = Mathf.Max(0, source.energyCost),
+                icon = source.icon,
+                title = source.title,
+                description = source.description,
+                effect = source.effect,
+                instantRubles = Math.Max(0, source.instantRubles),
+                temporaryIncomeMultiplier = Mathf.Max(1f, source.temporaryIncomeMultiplier),
+                temporaryDurationSeconds = Mathf.Max(1f, source.temporaryDurationSeconds),
+                marketCurrency = source.marketCurrency,
+                marketGrowDurationSeconds = NormalizeRange(source.marketGrowDurationSeconds, 1f),
+                marketDumpDurationSeconds = NormalizeRange(source.marketDumpDurationSeconds, 0.25f),
+                marketGrowthPercent = NormalizeRange(source.marketGrowthPercent, 0.01f),
+                marketReturnTolerancePercent = Mathf.Clamp(source.marketReturnTolerancePercent, 0f, 0.3f),
+                lockedSkillFormat = source.lockedSkillFormat,
+                launchButtonIdleFormat = source.launchButtonIdleFormat,
+                temporarySkillActiveFormat = source.temporarySkillActiveFormat,
+            };
+        }
+
+        private static Vector2 NormalizeRange(Vector2 range, float min)
+        {
+            var x = Mathf.Max(min, range.x);
+            var y = Mathf.Max(min, range.y);
+            return new Vector2(Mathf.Min(x, y), Mathf.Max(x, y));
+        }
+
+        private void ResolveRows()
+        {
+            if (rowCardPrefab != null && rowCardsContent != null)
+            {
+                DestroyChildren(rowCardsContent);
+                var rows = new List<BusinessListRowUI>(_entries.Count);
+
+                for (var i = 0; i < _entries.Count; i++)
+                {
+                    var row = Instantiate(rowCardPrefab, rowCardsContent, false);
+                    row.gameObject.name = $"{rowCardPrefab.name}_{i + 1}";
+                    row.AssignBusinessIndex(i);
+                    row.ResolveButtonReferences();
+                    rows.Add(row);
+                }
+
+                _resolvedRows = rows.ToArray();
+                Canvas.ForceUpdateCanvases();
+                LayoutRebuilder.ForceRebuildLayoutImmediate(rowCardsContent);
+                return;
+            }
+
+            _resolvedRows = Array.Empty<BusinessListRowUI>();
+        }
+
+        private static void DestroyChildren(RectTransform parent)
+        {
+            for (var i = parent.childCount - 1; i >= 0; i--)
+                Destroy(parent.GetChild(i).gameObject);
+        }
+
+        private void BindRows()
+        {
+            for (var i = 0; i < _resolvedRows.Length; i++)
+            {
+                var row = _resolvedRows[i];
+                if (row == null)
+                    continue;
+
+                var captured = row.BusinessIndex;
+                row.BindSelect(() => SelectBusiness(captured));
+                row.BindPrimaryAction(() => BuyOrUpgrade(captured));
+            }
+        }
+
         private void SimulateTick(float dt)
         {
             if (dt <= 0f)
                 return;
 
             var perSecond = GetTotalBaseIncomePerHour() / 3600d * GetAccumulatedBusinessPassiveMultiplier();
+            if (perSecond <= 0d)
+                return;
+
             _accumulatedRubles += perSecond * dt;
             MarkDirty();
         }
@@ -347,48 +385,76 @@ namespace TraidingIDLE.Business
             }
 
             var elapsed = now - _lastSimUtcSeconds;
-            _lastSimUtcSeconds = now;
-            if (elapsed <= 0)
+            if (elapsed > 0)
             {
-                RegenEnergyOffline(now);
-                ClearTemporaryBuffIfExpired();
-                return;
+                var simulatedEnd = _lastSimUtcSeconds + Math.Min(elapsed, 86400);
+                AccumulatePassiveIncome(_lastSimUtcSeconds, simulatedEnd);
+                _lastSimUtcSeconds = now;
             }
 
-            SimulateTick((float)Math.Min(elapsed, 86400d));
-            RegenEnergyOffline(now);
+            RegenEnergy(now);
             ClearTemporaryBuffIfExpired();
         }
 
-        private void RegenEnergyOffline(long nowUtc)
+        private void AccumulatePassiveIncome(long startUtc, long endUtc)
+        {
+            var seconds = Math.Max(0, endUtc - startUtc);
+            if (seconds <= 0)
+                return;
+
+            var basePerSecond = GetTotalBaseIncomePerHour() / 3600d;
+            if (basePerSecond <= 0d)
+                return;
+
+            var boostedSeconds = 0d;
+            if (_tempKind == BusinessTemporaryBuffKind.AllBusinessIncome
+                && _tempMultiplier > 1f
+                && _tempBuffEndUtc > startUtc)
+            {
+                var boostedEnd = Math.Min(endUtc, _tempBuffEndUtc);
+                boostedSeconds = Math.Max(0, boostedEnd - startUtc);
+            }
+
+            var normalSeconds = seconds - boostedSeconds;
+            _accumulatedRubles += basePerSecond * normalSeconds;
+            _accumulatedRubles += basePerSecond * boostedSeconds * Math.Max(1d, _tempMultiplier);
+            MarkDirty();
+        }
+
+        private void RegenEnergy(long nowUtc)
         {
             if (energyMax <= 0)
                 return;
 
             if (_energy >= energyMax)
             {
-                _nextEnergyAtUtc = 0;
-                return;
-            }
+                if (_nextEnergyAtUtc != 0)
+                {
+                    _nextEnergyAtUtc = 0;
+                    MarkDirty();
+                }
 
-            if (_nextEnergyAtUtc <= 0)
-            {
-                _nextEnergyAtUtc = nowUtc + (long)Mathf.Max(1f, energyChunkRegenSeconds);
                 return;
             }
 
             var interval = (long)Mathf.Max(1f, energyChunkRegenSeconds);
+            if (_nextEnergyAtUtc <= 0)
+            {
+                _nextEnergyAtUtc = nowUtc + interval;
+                MarkDirty();
+                return;
+            }
+
+            var changed = false;
             while (_energy < energyMax && nowUtc >= _nextEnergyAtUtc)
             {
                 _energy++;
-                if (_energy >= energyMax)
-                {
-                    _nextEnergyAtUtc = 0;
-                    break;
-                }
-
-                _nextEnergyAtUtc += interval;
+                changed = true;
+                _nextEnergyAtUtc = _energy >= energyMax ? 0 : _nextEnergyAtUtc + interval;
             }
+
+            if (changed)
+                MarkDirty();
         }
 
         private void ClearTemporaryBuffIfExpired()
@@ -396,13 +462,13 @@ namespace TraidingIDLE.Business
             if (_tempKind == BusinessTemporaryBuffKind.None)
                 return;
 
-            if (UtcNow() >= _tempBuffEndUtc)
-            {
-                _tempKind = BusinessTemporaryBuffKind.None;
-                _tempBuffEndUtc = 0;
-                _tempMultiplier = 1f;
-                MarkDirty();
-            }
+            if (UtcNow() < _tempBuffEndUtc)
+                return;
+
+            _tempKind = BusinessTemporaryBuffKind.None;
+            _tempBuffEndUtc = 0;
+            _tempMultiplier = 1f;
+            MarkDirty();
         }
 
         private bool IsTemporaryBuffActive(out double secondsLeft)
@@ -426,72 +492,43 @@ namespace TraidingIDLE.Business
 
         private void SpendEnergy(int amount)
         {
+            if (amount <= 0)
+                return;
+
             var wasFull = _energy >= energyMax;
             _energy = Math.Max(0, _energy - amount);
+
             if (_energy < energyMax && (wasFull || _nextEnergyAtUtc <= 0))
                 _nextEnergyAtUtc = UtcNow() + (long)Mathf.Max(1f, energyChunkRegenSeconds);
 
             MarkDirty();
         }
 
-        private void PrimaryActionOnRow(int index)
+        private void BuyOrUpgrade(int index)
         {
             EnsureArrays();
-            if (index < 0 || index >= catalog.Length)
+            if (!IsValidIndex(index) || profile == null)
                 return;
 
-            var lvl = _levels[index];
-            if (lvl <= 0)
-                TryPurchase(index);
-            else
-                TryUpgrade(index);
-        }
+            SelectBusiness(index);
 
-        private void TryPurchase(int index)
-        {
-            if (profile == null)
+            var entry = _entries[index];
+            var currentLevel = _levels[index];
+            if (currentLevel >= entry.MaxLevel)
                 return;
 
-            var cost = GetTierCostForUpgradeFrom(index, 0);
+            var cost = entry.GetUpgradeCostFromLevel(currentLevel);
             if (cost <= 0 || !profile.TrySpendRubles(cost))
                 return;
 
-            _levels[index] = 1;
+            _levels[index] = Mathf.Clamp(currentLevel + 1, 0, entry.MaxLevel);
             MarkDirty();
             RefreshAllUi();
         }
 
-        private void TryUpgrade(int index)
+        private void BuyOrUpgradeSelected()
         {
-            if (profile == null)
-                return;
-
-            var lvl = _levels[index];
-            var tiers = catalog[index].tiers;
-            if (lvl <= 0 || tiers == null || lvl >= tiers.Length)
-                return;
-
-            var cost = GetTierCostForUpgradeFrom(index, lvl);
-            if (cost <= 0 || !profile.TrySpendRubles(cost))
-                return;
-
-            _levels[index] = lvl + 1;
-            MarkDirty();
-            RefreshAllUi();
-        }
-
-        private static long GetTierCostForUpgradeFrom(BusinessCatalogEntry entry, int currentLevel)
-        {
-            var tiers = entry.tiers;
-            if (tiers == null || currentLevel >= tiers.Length)
-                return 0;
-
-            return Math.Max(0, tiers[currentLevel].upgradeRublesCost);
-        }
-
-        private long GetTierCostForUpgradeFrom(int bizIndex, int currentLevel)
-        {
-            return GetTierCostForUpgradeFrom(catalog[bizIndex], currentLevel);
+            BuyOrUpgrade(_selectedIndex);
         }
 
         private void TryLaunchSkillForSelection()
@@ -499,59 +536,74 @@ namespace TraidingIDLE.Business
             TryLaunchSkill(_selectedIndex);
         }
 
-        /// <summary>Запуск навыка у выбранного бизнеса (кнопка «Запустить»).</summary>
-        private void TryLaunchSkill(int bizIndex)
+        private void TryLaunchSkill(int index)
         {
             EnsureArrays();
-            if (bizIndex < 0 || bizIndex >= catalog.Length)
+            if (!IsValidIndex(index))
                 return;
 
-            var entry = catalog[bizIndex];
-            var lvl = _levels[bizIndex];
-            if (lvl < entry.skillUnlockLevel)
+            var entry = _entries[index];
+            var skill = entry.skill;
+            if (_levels[index] < skill.unlockLevel || _energy < skill.energyCost)
                 return;
 
-            if (_energy < entry.skillEnergyCost)
-                return;
-
-            switch (entry.skillEffect)
+            switch (skill.effect)
             {
                 case BusinessSkillEffectKind.InstantRubles:
                     if (profile == null)
                         return;
-                    profile.AddRubles(Math.Max(0, entry.skillInstantRubles));
-                    SpendEnergy(entry.skillEnergyCost);
+
+                    profile.AddRubles(Math.Max(0, skill.instantRubles));
+                    SpendEnergy(skill.energyCost);
                     MarkDirty();
-                    RefreshSkillPanel();
+                    RefreshAllUi();
                     return;
 
                 case BusinessSkillEffectKind.TemporaryBoostAllBusinessIncome:
-                    if (!TryStartTemporaryBoost(BusinessTemporaryBuffKind.AllBusinessIncome, entry.skillEnergyCost, entry.temporaryIncomeMultiplier, entry.temporaryDurationSeconds))
+                    if (!TryStartTemporaryBoost(
+                            BusinessTemporaryBuffKind.AllBusinessIncome,
+                            skill.energyCost,
+                            skill.temporaryIncomeMultiplier,
+                            skill.temporaryDurationSeconds))
                         return;
 
-                    RefreshSkillPanel();
+                    RefreshAllUi();
                     return;
 
                 case BusinessSkillEffectKind.TemporaryBoostMiningIncome:
-                    if (!TryStartTemporaryBoost(BusinessTemporaryBuffKind.MiningIncome, entry.skillEnergyCost, entry.temporaryIncomeMultiplier, entry.temporaryDurationSeconds))
+                    if (!TryStartTemporaryBoost(
+                            BusinessTemporaryBuffKind.MiningIncome,
+                            skill.energyCost,
+                            skill.temporaryIncomeMultiplier,
+                            skill.temporaryDurationSeconds))
                         return;
 
-                    RefreshSkillPanel();
+                    RefreshAllUi();
                     return;
 
                 case BusinessSkillEffectKind.MarketManipulate:
-                    SpendEnergy(entry.skillEnergyCost);
-                    marketSimulation?.EnqueueBusinessSkillOverrideNextState(entry.marketSkillCurrency);
-                    MarkDirty();
-                    RefreshSkillPanel();
-                    return;
+                    if (marketSimulation == null)
+                        return;
 
-                default:
+                    SpendEnergy(skill.energyCost);
+                    marketSimulation.EnqueueBusinessSkillOverrideNextState(
+                        skill.marketCurrency,
+                        skill.marketGrowDurationSeconds,
+                        skill.marketDumpDurationSeconds,
+                        skill.marketGrowthPercent,
+                        skill.marketReturnTolerancePercent);
+
+                    MarkDirty();
+                    RefreshAllUi();
                     return;
             }
         }
 
-        private bool TryStartTemporaryBoost(BusinessTemporaryBuffKind kind, int energyCost, float multiplier, float durationSeconds)
+        private bool TryStartTemporaryBoost(
+            BusinessTemporaryBuffKind kind,
+            int energyCost,
+            float multiplier,
+            float durationSeconds)
         {
             if (IsGlobalTemporaryBuffBlocking())
                 return false;
@@ -583,127 +635,110 @@ namespace TraidingIDLE.Business
         private void SelectBusiness(int index)
         {
             EnsureArrays();
-            _selectedIndex = Mathf.Clamp(index, 0, catalog.Length - 1);
-            MarkDirty();
-
-            foreach (var row in _resolvedRows)
+            if (_entries.Count == 0)
             {
-                if (row == null)
-                    continue;
-
-                var i = Mathf.Clamp(row.BusinessIndex, 0, catalog.Length - 1);
-                var lvl = _levels.Length > i ? _levels[i] : 0;
-                row.RefreshAppearance(i == _selectedIndex, lvl > 0);
+                RefreshAllUi();
+                return;
             }
 
-            RefreshDetailAndSkill();
+            _selectedIndex = Mathf.Clamp(index, 0, _entries.Count - 1);
+            MarkDirty();
+            RefreshAllUi();
         }
 
         private double GetTotalBaseIncomePerHour()
         {
             var sum = 0d;
-            for (var i = 0; i < catalog.Length; i++)
+            for (var i = 0; i < _entries.Count; i++)
             {
-                var lvl = _levels.Length > i ? _levels[i] : 0;
-                sum += GetIncomePerHour(i, lvl);
+                var level = _levels.Length > i ? _levels[i] : 0;
+                sum += _entries[i].GetIncomePerHour(level);
             }
 
             return sum;
-        }
-
-        private double GetIncomePerHour(int bizIndex, int level)
-        {
-            if (level <= 0)
-                return 0;
-
-            var tiers = catalog[bizIndex].tiers;
-            if (tiers == null || tiers.Length == 0)
-                return 0;
-
-            var idx = Mathf.Clamp(level - 1, 0, tiers.Length - 1);
-            return Math.Max(0d, tiers[idx].incomeRublesPerHour);
         }
 
         private void RefreshAllUi()
         {
             EnsureArrays();
 
-            foreach (var row in _resolvedRows)
+            for (var i = 0; i < _resolvedRows.Length; i++)
             {
+                var row = _resolvedRows[i];
                 if (row == null)
                     continue;
 
-                var i = Mathf.Clamp(row.BusinessIndex, 0, catalog.Length - 1);
-                RefreshRowUi(row, i);
+                var index = row.BusinessIndex;
+                if (IsValidIndex(index))
+                    RefreshRowUi(row, index);
             }
 
-            RefreshDetailAndSkill();
-
-            if (totalIncomePerHourText != null)
-            {
-                var total = GetTotalBaseIncomePerHour() * GetAccumulatedBusinessPassiveMultiplier();
-                totalIncomePerHourText.text = $"{FormatNumberCompact(total)}{rublesCurrencySuffix} в час";
-            }
-
+            RefreshDetailCard();
+            RefreshTopStaticUi();
             RefreshSkillPanel();
+            RefreshDynamicUi();
         }
 
         private void RefreshRowUi(BusinessListRowUI row, int index)
         {
-            var entry = catalog[index];
-            var lvl = _levels[index];
-
-            var incomeHr = lvl > 0 ? GetIncomePerHour(index, lvl) : 0d;
-            string incomeLine = lvl > 0
-                ? $"{FormatNumberMoney(incomeHr)}{rublesCurrencySuffix} в час"
-                : "—";
-
-            string levelLine;
-            string priceLine;
-            bool showPrimary;
-            bool primaryInteractable;
-            string primaryVerb = "";
-            if (lvl <= 0)
-            {
-                levelLine = "Не куплено";
-                var c = Math.Max(0, entry.tiers[0].upgradeRublesCost);
-                priceLine = c > 0 ? FormatNumberMoney(c) : "";
-                showPrimary = true;
-                primaryInteractable = c > 0;
-                primaryVerb = rowPrimaryBuyCaption;
-            }
-            else if (lvl >= entry.tiers.Length)
-            {
-                levelLine = $"Уровень {lvl} (макс.)";
-                priceLine = "";
-                showPrimary = false;
-                primaryInteractable = false;
-            }
-            else
-            {
-                levelLine = $"Уровень {lvl}";
-                var c = GetTierCostForUpgradeFrom(index, lvl);
-                priceLine = c > 0 ? FormatNumberMoney(c) : "";
-                showPrimary = c > 0;
-                primaryInteractable = c > 0;
-                primaryVerb = rowPrimaryUpgradeCaption;
-            }
+            var entry = _entries[index];
+            var level = _levels[index];
+            var nextLevel = GetNextLevel(index);
+            var displayIncome = level > 0 ? entry.GetIncomePerHour(level) : entry.GetIncomePerHour(nextLevel);
+            var cost = entry.GetUpgradeCostFromLevel(level);
+            var canUpgrade = level < entry.MaxLevel && cost > 0;
 
             row.RefreshRow(
+                entry.artwork,
                 entry.displayName,
                 entry.category,
-                incomeLine,
-                levelLine,
-                priceLine,
-                primaryVerb,
-                showPrimary,
-                primaryInteractable);
-            row.RefreshAppearance(index == _selectedIndex, lvl > 0);
+                $"{FormatRublesAmount(displayIncome)} в час",
+                level > 0 ? string.Format(rowLevelFormat, level) : string.Format(rowNextLevelFormat, nextLevel),
+                canUpgrade ? FormatNumberMoney(cost) : "",
+                level <= 0 ? rowPrimaryBuyCaption : rowPrimaryUpgradeCaption,
+                canUpgrade,
+                canUpgrade && CanSpendRubles(cost));
+
+            row.RefreshAppearance(index == _selectedIndex, level > 0);
         }
 
-        private void RefreshDetailAndSkill()
+        private void RefreshDetailCard()
         {
-            RefreshSkillPanel();
+            if (detailCard == null || !IsValidIndex(_selectedIndex))
+                return;
+
+            var entry = _entries[_selectedIndex];
+            var level = _levels[_selectedIndex];
+            var nextLevel = GetNextLevel(_selectedIndex);
+            var currentIncome = entry.GetIncomePerHour(level);
+            var nextIncome = entry.GetIncomePerHour(nextLevel);
+            var cost = entry.GetUpgradeCostFromLevel(level);
+            var canUpgrade = level < entry.MaxLevel && cost > 0;
+
+            detailCard.Configure(
+                entry.artwork,
+                entry.displayName,
+                FormatNumberMoney(level),
+                FormatNumberMoney(nextLevel),
+                FormatNumberMoney(currentIncome),
+                FormatNumberMoney(nextIncome),
+                canUpgrade,
+                level <= 0 ? rowPrimaryBuyCaption : canUpgrade ? rowPrimaryUpgradeCaption : maxLevelCaption,
+                canUpgrade ? FormatNumberMoney(cost) : "",
+                canUpgrade,
+                canUpgrade && CanSpendRubles(cost),
+                BuyOrUpgradeSelected);
+        }
+
+        private void RefreshTopStaticUi()
+        {
+            if (totalIncomePerHourText != null)
+            {
+                var total = GetTotalBaseIncomePerHour() * GetAccumulatedBusinessPassiveMultiplier();
+                totalIncomePerHourText.text = string.Format(
+                    totalIncomePerHourFormat,
+                    FormatRublesAmount(total));
+            }
         }
 
         private void RefreshDynamicUi()
@@ -716,107 +751,93 @@ namespace TraidingIDLE.Business
                 if (_energy >= energyMax || _nextEnergyAtUtc <= 0)
                     energyTimerText.text = "";
                 else
-                {
-                    var left = Math.Max(0, _nextEnergyAtUtc - UtcNow());
-                    energyTimerText.text = FormatCountdown(left);
-                }
+                    energyTimerText.text = FormatCountdown(Math.Max(0, _nextEnergyAtUtc - UtcNow()));
             }
 
             if (accumulatedAbbrevText != null)
                 accumulatedAbbrevText.text = AbbreviateRubles(_displayAccumRubles);
+
+            if (claimButton != null)
+                claimButton.interactable = profile != null && Math.Floor(_accumulatedRubles) > 0d;
 
             RefreshSkillPanel();
         }
 
         private void RefreshSkillPanel()
         {
-            if (skillPanel == null)
+            if (skillPanel == null || !IsValidIndex(_selectedIndex))
                 return;
 
-            EnsureArrays();
-            var entry = catalog[_selectedIndex];
-            var lvl = _levels[_selectedIndex];
+            var entry = _entries[_selectedIndex];
+            var skill = entry.skill;
+            var level = _levels[_selectedIndex];
 
-            if (lvl < entry.skillUnlockLevel)
+            if (level < skill.unlockLevel)
             {
-                skillPanel.PresentLocked(entry.skillUnlockLevel, entry.lockedSkillFormat);
+                skillPanel.PresentLocked(skill.unlockLevel, SafeFormat(skill.lockedSkillFormat, "Улучши до {0} уровня чтобы открыть"));
                 skillPanel.SetLaunchListener(null);
                 return;
             }
 
             ClearTemporaryBuffIfExpired();
 
-            var energyOk = _energy >= entry.skillEnergyCost;
-            var skillIsTemporaryBoost = entry.skillEffect is BusinessSkillEffectKind.TemporaryBoostAllBusinessIncome
+            var energyOk = _energy >= skill.energyCost;
+            var isTemporary = skill.effect is BusinessSkillEffectKind.TemporaryBoostAllBusinessIncome
                 or BusinessSkillEffectKind.TemporaryBoostMiningIncome;
 
-            var blockingGlobalTemporary = skillIsTemporaryBoost && IsGlobalTemporaryBuffBlocking();
+            var temporaryBlocking = isTemporary && IsGlobalTemporaryBuffBlocking();
+            var launchLabel = string.Format(SafeFormat(skill.launchButtonIdleFormat, "Запустить ⚡{0}"), skill.energyCost);
+            var interactable = energyOk && !temporaryBlocking;
 
-            string launchLabel;
-            bool interactable;
-            if (skillIsTemporaryBoost && blockingGlobalTemporary && IsTemporaryBuffActive(out var secLeft))
+            if (temporaryBlocking && IsTemporaryBuffActive(out var secondsLeft))
             {
-                launchLabel = string.Format(entry.temporarySkillActiveFormat, FormatCountdown(secLeft));
+                launchLabel = string.Format(
+                    SafeFormat(skill.temporarySkillActiveFormat, "навык активен {0}"),
+                    FormatCountdown(secondsLeft));
                 interactable = false;
             }
-            else
-            {
-                launchLabel = string.Format(entry.launchButtonIdleFormat, entry.skillEnergyCost);
-                interactable = energyOk && !blockingGlobalTemporary;
-            }
 
-            skillPanel.PresentUnlocked(entry.skillIcon, entry.skillTitle, entry.skillDescription, interactable, launchLabel);
+            skillPanel.PresentUnlocked(skill.icon, skill.title, skill.description, interactable, launchLabel);
             skillPanel.SetLaunchListener(TryLaunchSkillForSelection);
         }
 
-        private string FormatCountdown(double secondsTotal)
+        private int GetNextLevel(int index)
         {
-            secondsTotal = Math.Max(0, secondsTotal);
-            var totalMinutes = (int)(secondsTotal / 60d);
-            var secs = (int)(secondsTotal % 60d);
-            return $"{totalMinutes:00}:{secs:00}";
+            if (!IsValidIndex(index))
+                return 0;
+
+            var entry = _entries[index];
+            var current = _levels[index];
+            return Mathf.Clamp(current + 1, 0, entry.MaxLevel);
         }
 
-        private string FormatNumberMoney(double v)
+        private bool CanSpendRubles(long amount)
         {
-            return Math.Max(0, v)
-                .ToString("N0", CultureInfo.InvariantCulture)
-                .Replace(",", thousandSep);
+            return profile != null && amount >= 0 && profile.Rubles >= amount;
         }
 
-        private string FormatNumberCompact(double v)
+        private bool IsValidIndex(int index)
         {
-            return Math.Max(0, v)
-                .ToString("N0", CultureInfo.InvariantCulture)
-                .Replace(",", thousandSep);
-        }
-
-        private string AbbreviateRubles(double value)
-        {
-            value = Math.Max(0, value);
-            if (value >= 1_000_000_000d)
-                return (value / 1_000_000_000d).ToString("0.0", CultureInfo.InvariantCulture) + billionSuffix;
-            if (value >= 1_000_000d)
-                return (value / 1_000_000d).ToString("0.0", CultureInfo.InvariantCulture) + millionSuffix;
-            if (value >= 1000d)
-                return (value / 1000d).ToString("0.0", CultureInfo.InvariantCulture) + " тыс";
-
-            return FormatNumberMoney(value);
+            return index >= 0 && index < _entries.Count && index < _levels.Length;
         }
 
         private void EnsureArrays()
         {
-            var n = Mathf.Max(1, catalog?.Length ?? 0);
-            if (_levels == null || _levels.Length != n)
+            var count = _entries.Count;
+            if (_levels == null || _levels.Length != count)
             {
-                var next = new int[n];
+                var next = new int[count];
                 if (_levels != null)
-                    Array.Copy(_levels, next, Math.Min(_levels.Length, n));
+                    Array.Copy(_levels, next, Math.Min(_levels.Length, count));
 
                 _levels = next;
             }
 
-            _selectedIndex = Mathf.Clamp(_selectedIndex, 0, n - 1);
+            for (var i = 0; i < _levels.Length; i++)
+                _levels[i] = Mathf.Clamp(_levels[i], 0, _entries[i].MaxLevel);
+
+            _selectedIndex = count <= 0 ? 0 : Mathf.Clamp(_selectedIndex, 0, count - 1);
+            _energy = Mathf.Clamp(_energy, 0, Mathf.Max(1, energyMax));
         }
 
         private void MarkDirty()
@@ -829,9 +850,20 @@ namespace TraidingIDLE.Business
         private void SaveNow()
         {
             EnsureArrays();
+
+            var levelSaves = new BusinessLevelSave[_entries.Count];
+            for (var i = 0; i < _entries.Count; i++)
+            {
+                levelSaves[i] = new BusinessLevelSave
+                {
+                    id = _entries[i].saveId,
+                    level = _levels[i],
+                };
+            }
+
             var data = new SaveData
             {
-                levels = (int[])_levels.Clone(),
+                businessLevels = levelSaves,
                 accumulatedRubles = _accumulatedRubles,
                 energyCurrent = _energy,
                 lastSimUtcSeconds = UtcNow(),
@@ -851,7 +883,6 @@ namespace TraidingIDLE.Business
         private void Load()
         {
             EnsureArrays();
-
             _energy = energyMax;
 
             if (!SaveStorage.TryLoadJson(SaveKey, out SaveData data))
@@ -866,22 +897,85 @@ namespace TraidingIDLE.Business
             _lastSimUtcSeconds = data.lastSimUtcSeconds > 0 ? data.lastSimUtcSeconds : UtcNow();
             _nextEnergyAtUtc = data.nextEnergyAtUtc;
 
-            if (_energy < energyMax && _nextEnergyAtUtc <= 0)
-                _nextEnergyAtUtc = UtcNow() + (long)Mathf.Max(1f, energyChunkRegenSeconds);
+            if (data.businessLevels != null && data.businessLevels.Length > 0)
+                LoadLevelsById(data.businessLevels);
 
             _tempKind = Enum.IsDefined(typeof(BusinessTemporaryBuffKind), data.tempKind)
                 ? (BusinessTemporaryBuffKind)data.tempKind
                 : BusinessTemporaryBuffKind.None;
-
             _tempBuffEndUtc = Math.Max(0, data.tempBuffEndUtc);
             _tempMultiplier = Mathf.Max(1f, data.tempMultiplierHeld);
-
-            if (data.levels != null && data.levels.Length == _levels.Length)
-                Array.Copy(data.levels, _levels, _levels.Length);
-
-            _selectedIndex = Mathf.Clamp(data.selectedBusinessIndex, 0, catalog.Length - 1);
+            _selectedIndex = _entries.Count <= 0 ? 0 : Mathf.Clamp(data.selectedBusinessIndex, 0, _entries.Count - 1);
             _displayAccumRubles = _accumulatedRubles;
+
+            if (_energy < energyMax && _nextEnergyAtUtc <= 0)
+                _nextEnergyAtUtc = UtcNow() + (long)Mathf.Max(1f, energyChunkRegenSeconds);
+
+            EnsureArrays();
             ClearTemporaryBuffIfExpired();
+        }
+
+        private void LoadLevelsById(BusinessLevelSave[] saved)
+        {
+            var map = new Dictionary<string, int>(StringComparer.Ordinal);
+            for (var i = 0; i < saved.Length; i++)
+            {
+                var item = saved[i];
+                if (item == null || string.IsNullOrEmpty(item.id))
+                    continue;
+
+                map[item.id] = item.level;
+            }
+
+            for (var i = 0; i < _entries.Count; i++)
+            {
+                if (map.TryGetValue(_entries[i].saveId, out var level))
+                    _levels[i] = level;
+            }
+        }
+
+        private void OnProfileRublesChanged(long _)
+        {
+            RefreshAllUi();
+        }
+
+        private string FormatCountdown(double secondsTotal)
+        {
+            secondsTotal = Math.Max(0, secondsTotal);
+            var totalMinutes = (int)(secondsTotal / 60d);
+            var seconds = (int)(secondsTotal % 60d);
+            return $"{totalMinutes:00}:{seconds:00}";
+        }
+
+        private string FormatNumberMoney(double value)
+        {
+            return Math.Max(0, value)
+                .ToString("N0", CultureInfo.InvariantCulture)
+                .Replace(",", thousandSep);
+        }
+
+        private string FormatRublesAmount(double value)
+        {
+            var separator = rublesCurrencySuffix != null && rublesCurrencySuffix.Length > 1 ? " " : "";
+            return $"{FormatNumberMoney(value)}{separator}{rublesCurrencySuffix}";
+        }
+
+        private string AbbreviateRubles(double value)
+        {
+            value = Math.Max(0, value);
+            if (value >= 1_000_000_000d)
+                return (value / 1_000_000_000d).ToString("0.0", CultureInfo.InvariantCulture) + billionSuffix;
+            if (value >= 1_000_000d)
+                return (value / 1_000_000d).ToString("0.0", CultureInfo.InvariantCulture) + millionSuffix;
+            if (value >= 1000d)
+                return (value / 1000d).ToString("0.0", CultureInfo.InvariantCulture) + thousandSuffix;
+
+            return FormatNumberMoney(value);
+        }
+
+        private static string SafeFormat(string value, string fallback)
+        {
+            return string.IsNullOrWhiteSpace(value) ? fallback : value;
         }
 
         private static long UtcNow() => DateTimeOffset.UtcNow.ToUnixTimeSeconds();

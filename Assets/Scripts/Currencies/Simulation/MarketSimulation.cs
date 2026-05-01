@@ -20,6 +20,10 @@ namespace TraidingIDLE.Currencies.Simulation
         {
             public MarketStateType type;
             public float durationSeconds;
+            public float businessGrowDurationSeconds;
+            public float businessDumpDurationSeconds;
+            public float businessGrowthPercent;
+            public float businessReturnTolerancePercent;
         }
 
         private enum SpikeDumpPhase
@@ -129,6 +133,18 @@ namespace TraidingIDLE.Currencies.Simulation
             public float deadFlatDumpTimeLeft;
             public bool deadFlatDumpStarted;
             public bool deadFlatDumpInitialized;
+
+            public float businessSkillBasePrice;
+            public float businessSkillGrowStartPrice;
+            public float businessSkillTargetPrice;
+            public float businessSkillDumpStartPrice;
+            public float businessSkillReturnPrice;
+            public float businessSkillGrowDuration;
+            public float businessSkillGrowTimeLeft;
+            public float businessSkillDumpDuration;
+            public float businessSkillDumpTimeLeft;
+            public bool businessSkillDumpStarted;
+            public bool businessSkillInitialized;
 
             public int seed;
             public float time;
@@ -446,8 +462,11 @@ namespace TraidingIDLE.Currencies.Simulation
                 }
             }
 
-            ArmCrashIfNeeded(r);
-            ForceCrashIfThresholdReached(r);
+            if (r.currentState != MarketStateType.BusinessSkillPumpDump)
+            {
+                ArmCrashIfNeeded(r);
+                ForceCrashIfThresholdReached(r);
+            }
 
             var nextRaw = SimulateNextRawPrice(r, dt);
             nextRaw = Mathf.Max(0f, nextRaw);
@@ -503,6 +522,8 @@ namespace TraidingIDLE.Currencies.Simulation
                     return SimulateDeadFlatThenRocketPump(r, dt, noise, range);
                 case MarketStateType.DeadFlatThenRocketDump:
                     return SimulateDeadFlatThenRocketDump(r, dt, noise, range);
+                case MarketStateType.BusinessSkillPumpDump:
+                    return SimulateBusinessSkillPumpDump(r, dt, noise, range);
                 case MarketStateType.Flat:
                     desiredPos = Mathf.Clamp01(0.5f + noise * 0.05f);
                     impulse = -0.05f;
@@ -1527,6 +1548,111 @@ namespace TraidingIDLE.Currencies.Simulation
             r.deadFlatDumpInitialized = false;
         }
 
+        private float SimulateBusinessSkillPumpDump(CoinRuntime r, float dt, float noise, float range)
+        {
+            if (!r.businessSkillInitialized)
+                StartBusinessSkillPumpDump(r, default);
+
+            if (!r.businessSkillDumpStarted)
+            {
+                var elapsed = Mathf.Clamp(
+                    r.businessSkillGrowDuration - r.businessSkillGrowTimeLeft,
+                    0f,
+                    r.businessSkillGrowDuration);
+                var progress = Mathf.Clamp01((elapsed + dt) / Mathf.Max(0.0001f, r.businessSkillGrowDuration));
+                var curve = SmoothStep01(progress);
+                var scheduledPrice = Mathf.Lerp(r.businessSkillGrowStartPrice, r.businessSkillTargetPrice, curve);
+                var maxCatchupDelta = Mathf.Abs(r.businessSkillTargetPrice - r.businessSkillGrowStartPrice)
+                    / Mathf.Max(0.5f, r.businessSkillGrowDuration)
+                    * dt
+                    * 2.4f;
+
+                var guidedDelta = Mathf.Clamp(scheduledPrice - r.rawPrice, 0f, maxCatchupDelta);
+                var noiseDelta = noise * range * 0.035f * dt;
+                noiseDelta = Mathf.Clamp(noiseDelta, -maxCatchupDelta * 0.15f, maxCatchupDelta * 0.15f);
+                var next = r.rawPrice + guidedDelta + noiseDelta;
+
+                r.corridorAnchor = Mathf.Lerp(r.corridorAnchor, r.businessSkillTargetPrice, 0.08f);
+                RebuildCorridor(r, next, force: false);
+
+                r.businessSkillGrowTimeLeft -= dt;
+                if (r.businessSkillGrowTimeLeft <= 0f || next >= r.businessSkillTargetPrice * 0.995f)
+                    StartBusinessSkillDumpPhase(r);
+
+                return next;
+            }
+
+            var dumpElapsed = Mathf.Clamp(
+                r.businessSkillDumpDuration - r.businessSkillDumpTimeLeft,
+                0f,
+                r.businessSkillDumpDuration);
+            var dumpProgress = Mathf.Clamp01((dumpElapsed + dt) / Mathf.Max(0.0001f, r.businessSkillDumpDuration));
+            var dumpCurve = 1f - Mathf.Pow(1f - dumpProgress, 3f);
+            var dumpScheduledPrice = Mathf.Lerp(r.businessSkillDumpStartPrice, r.businessSkillReturnPrice, dumpCurve);
+            var dumpDistance = Mathf.Abs(r.businessSkillDumpStartPrice - r.businessSkillReturnPrice);
+            var dumpMaxCatchupDelta = dumpDistance / Mathf.Max(0.25f, r.businessSkillDumpDuration) * dt * 3.5f;
+
+            var dumpGuidedDelta = Mathf.Clamp(dumpScheduledPrice - r.rawPrice, -dumpMaxCatchupDelta, dumpMaxCatchupDelta);
+            var dumpNext = r.rawPrice + dumpGuidedDelta;
+
+            r.corridorAnchor = Mathf.Lerp(r.corridorAnchor, r.businessSkillReturnPrice, 0.18f);
+            RebuildCorridor(r, dumpNext, force: false);
+
+            r.businessSkillDumpTimeLeft -= dt;
+            if (r.businessSkillDumpTimeLeft <= 0f
+                || Mathf.Abs(dumpNext - r.businessSkillReturnPrice) <= Mathf.Max(0.000001f, r.businessSkillReturnPrice * 0.01f))
+                r.stateTimeLeft = 0f;
+
+            return dumpNext;
+        }
+
+        private void StartBusinessSkillPumpDump(CoinRuntime r, PlannedState planned)
+        {
+            var growDuration = planned.businessGrowDurationSeconds > 0f
+                ? planned.businessGrowDurationSeconds
+                : 15f;
+            var dumpDuration = planned.businessDumpDurationSeconds > 0f
+                ? planned.businessDumpDurationSeconds
+                : 7f;
+            var growthPercent = planned.businessGrowthPercent > 0f
+                ? planned.businessGrowthPercent
+                : 0.35f;
+            var tolerance = Mathf.Clamp(planned.businessReturnTolerancePercent, 0f, 0.3f);
+            var returnJitter = UnityEngine.Random.Range(-tolerance, tolerance);
+
+            r.businessSkillBasePrice = Mathf.Max(0.000001f, r.rawPrice);
+            r.businessSkillGrowStartPrice = r.businessSkillBasePrice;
+            r.businessSkillTargetPrice = r.businessSkillBasePrice * (1f + growthPercent);
+            r.businessSkillReturnPrice = Mathf.Max(0.000001f, r.businessSkillBasePrice * (1f + returnJitter));
+            r.businessSkillGrowDuration = Mathf.Max(1f, growDuration);
+            r.businessSkillGrowTimeLeft = r.businessSkillGrowDuration;
+            r.businessSkillDumpDuration = Mathf.Max(0.25f, dumpDuration);
+            r.businessSkillDumpTimeLeft = r.businessSkillDumpDuration;
+            r.businessSkillDumpStarted = false;
+            r.businessSkillInitialized = true;
+        }
+
+        private static void StartBusinessSkillDumpPhase(CoinRuntime r)
+        {
+            r.businessSkillDumpStartPrice = Mathf.Max(0.000001f, r.rawPrice);
+            r.businessSkillDumpStarted = true;
+        }
+
+        private static void ResetBusinessSkillPumpDump(CoinRuntime r)
+        {
+            r.businessSkillBasePrice = 0f;
+            r.businessSkillGrowStartPrice = 0f;
+            r.businessSkillTargetPrice = 0f;
+            r.businessSkillDumpStartPrice = 0f;
+            r.businessSkillReturnPrice = 0f;
+            r.businessSkillGrowDuration = 0f;
+            r.businessSkillGrowTimeLeft = 0f;
+            r.businessSkillDumpDuration = 0f;
+            r.businessSkillDumpTimeLeft = 0f;
+            r.businessSkillDumpStarted = false;
+            r.businessSkillInitialized = false;
+        }
+
         private void StartNewChopPhase(CoinRuntime r, int direction)
         {
             r.chopDirection = direction >= 0 ? 1 : -1;
@@ -1606,6 +1732,7 @@ namespace TraidingIDLE.Currencies.Simulation
                 MarketStateType.LongDowntrend => cfg.longDowntrendMaxPriceChangePerTick01,
                 MarketStateType.DeadFlatThenRocketPump => cfg.deadFlatRocketMaxPriceChangePerTick01,
                 MarketStateType.DeadFlatThenRocketDump => cfg.deadFlatDumpMaxPriceChangePerTick01,
+                MarketStateType.BusinessSkillPumpDump => cfg.pumpMaxPriceChangePerTick01,
                 MarketStateType.Calm => cfg.calmMaxPriceChangePerTick01,
                 _ => cfg.normalMaxPriceChangePerTick01,
             };
@@ -1625,6 +1752,7 @@ namespace TraidingIDLE.Currencies.Simulation
                 MarketStateType.MarketCrash => cfg.crashTickSpeedMultiplier,
                 MarketStateType.SlowUpThenPumpAndDump => cfg.pumpTickSpeedMultiplier,
                 MarketStateType.SlowUpThenDump => cfg.pumpTickSpeedMultiplier,
+                MarketStateType.BusinessSkillPumpDump => cfg.pumpTickSpeedMultiplier,
                 _ => cfg.normalTickSpeedMultiplier,
             };
         }
@@ -1752,13 +1880,25 @@ namespace TraidingIDLE.Currencies.Simulation
             EnsurePlannedStates(r);
 
             var next = r.plan.Dequeue();
-            EnterState(r, next.type, next.durationSeconds, changeCorridor: true);
+            EnterState(r, next, changeCorridor: true);
         }
 
         private void EnterState(CoinRuntime r, MarketStateType state, float durationSeconds, bool changeCorridor)
         {
-            r.currentState = state;
-            r.stateTimeLeft = Mathf.Max(1f, durationSeconds);
+            EnterState(
+                r,
+                new PlannedState
+                {
+                    type = state,
+                    durationSeconds = durationSeconds,
+                },
+                changeCorridor);
+        }
+
+        private void EnterState(CoinRuntime r, PlannedState planned, bool changeCorridor)
+        {
+            r.currentState = planned.type;
+            r.stateTimeLeft = Mathf.Max(1f, planned.durationSeconds);
 
             if (r.currentState == MarketStateType.ChopInCorridor)
                 ResetChopInCorridor(r);
@@ -1771,9 +1911,14 @@ namespace TraidingIDLE.Currencies.Simulation
             ResetDipPump(r);
             ResetDeadFlatRocket(r);
             ResetDeadFlatDump(r);
+            ResetBusinessSkillPumpDump(r);
+
+            if (r.currentState == MarketStateType.BusinessSkillPumpDump)
+                StartBusinessSkillPumpDump(r, planned);
+
             ConfigureCorridorForState(r, r.currentState);
 
-            // Legacy/random corridor jumps are only kept for old generic flat-like behavior.
+            // Random corridor jumps are only kept for generic flat-like behavior.
             if (changeCorridor
                 && r.currentState == MarketStateType.Flat
                 && UnityEngine.Random.value <= corridorChangeChanceOnStateChange)
@@ -1810,6 +1955,7 @@ namespace TraidingIDLE.Currencies.Simulation
                 MarketStateType.SlowUpThenPumpAndDump => cfg.scenarioCorridorWidth,
                 MarketStateType.DeadFlatThenRocketPump => cfg.deadFlatCorridorWidth,
                 MarketStateType.DeadFlatThenRocketDump => cfg.deadFlatCorridorWidth,
+                MarketStateType.BusinessSkillPumpDump => cfg.scenarioCorridorWidth,
                 MarketStateType.MarketCrash => cfg.crashCorridorWidth,
                 _ => Mathf.Lerp(cfg.corridorWidthAtLowPrice, cfg.corridorWidthAtHighPrice, 0.5f),
             };
@@ -1827,6 +1973,7 @@ namespace TraidingIDLE.Currencies.Simulation
                 MarketStateType.SlowUpThenPumpAndDump => cfg.scenarioCorridorPullStrength,
                 MarketStateType.DeadFlatThenRocketPump => cfg.deadFlatCorridorPullStrength,
                 MarketStateType.DeadFlatThenRocketDump => cfg.deadFlatCorridorPullStrength,
+                MarketStateType.BusinessSkillPumpDump => cfg.scenarioCorridorPullStrength,
                 MarketStateType.MarketCrash => cfg.crashCorridorPullStrength,
                 _ => 0.35f,
             };
@@ -2334,11 +2481,53 @@ namespace TraidingIDLE.Currencies.Simulation
             return false;
         }
 
-        /// <summary>Запланировать бизнес-навык, подменяющий следующее рыночное состояние (реализация будет добавлена позже).</summary>
-        public void EnqueueBusinessSkillOverrideNextState(CurrencyId currency)
+        public void EnqueueBusinessSkillOverrideNextState(
+            CurrencyId currency,
+            Vector2 growDurationSeconds,
+            Vector2 dumpDurationSeconds,
+            Vector2 growthPercent,
+            float returnTolerancePercent)
         {
-            Debug.Log($"[{nameof(MarketSimulation)}] Бизнес-навык рынка для {currency} — точка входа зарезервирована.", this);
+            if (!_runtime.TryGetValue(currency, out var runtime))
+            {
+                Debug.LogWarning($"[{nameof(MarketSimulation)}] No runtime market for {currency}.", this);
+                return;
+            }
+
+            EnsurePlannedStates(runtime);
+
+            var growDuration = PickRange(growDurationSeconds, 1f);
+            var dumpDuration = PickRange(dumpDurationSeconds, 0.25f);
+            var growth = PickRange(growthPercent, 0.01f);
+            var planned = new PlannedState
+            {
+                type = MarketStateType.BusinessSkillPumpDump,
+                durationSeconds = growDuration + dumpDuration + 1f,
+                businessGrowDurationSeconds = growDuration,
+                businessDumpDurationSeconds = dumpDuration,
+                businessGrowthPercent = growth,
+                businessReturnTolerancePercent = Mathf.Clamp(returnTolerancePercent, 0f, 0.3f),
+            };
+
+            var existing = runtime.plan.ToArray();
+            runtime.plan.Clear();
+            runtime.plan.Enqueue(planned);
+
+            for (var i = 1; i < existing.Length; i++)
+                runtime.plan.Enqueue(existing[i]);
+
+            EnsurePlannedStates(runtime);
+            Debug.Log(
+                $"[{nameof(MarketSimulation)}] Business skill queued for {currency}: " +
+                $"growth={growth:P0}, grow={growDuration:0.0}s, dump={dumpDuration:0.0}s.",
+                this);
+        }
+
+        private static float PickRange(Vector2 range, float minValue)
+        {
+            var min = Mathf.Max(minValue, Mathf.Min(range.x, range.y));
+            var max = Mathf.Max(min, Mathf.Max(range.x, range.y));
+            return UnityEngine.Random.Range(min, max);
         }
     }
 }
-
