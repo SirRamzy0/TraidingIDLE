@@ -15,17 +15,21 @@ namespace TraidingIDLE.Business
         [Header("Level")]
         [SerializeField] private TMP_Text currentLevelText;
         [SerializeField] private TMP_Text nextLevelText;
+        [SerializeField] private string currentLevelPreviewFormat = "{0} -";
+        [SerializeField] private string nextLevelPreviewFormat = " {0}";
 
         [Header("Income")]
         [SerializeField] private TMP_Text currentIncomeText;
         [SerializeField] private TMP_Text nextIncomeText;
+        [SerializeField] private string currentIncomePreviewFormat = "{0} -";
+        [SerializeField] private string nextIncomePreviewFormat = " {0}";
 
         [Header("Action")]
         [SerializeField] private Button actionButton;
         [SerializeField] private TMP_Text actionLabelText;
         [SerializeField] private string actionLabelFormat = "{0}\n{1}";
         [SerializeField] private Graphic actionButtonGraphic;
-        [SerializeField] private Color actionButtonEnabledColor = Color.white;
+        [SerializeField] private Color actionButtonEnabledColor = new(0.08f, 0.45f, 0.28f, 1f);
         [SerializeField] private Color actionButtonDisabledColor = new(0.35f, 0.35f, 0.35f, 0.75f);
 
         private Action _action;
@@ -69,14 +73,22 @@ namespace TraidingIDLE.Business
                 nameText.text = businessName;
 
             if (currentLevelText != null)
-                currentLevelText.text = currentLevelLine;
+                currentLevelText.text = showUpgradePreview
+                    ? FormatOne(currentLevelPreviewFormat, "{0} -", currentLevelLine)
+                    : currentLevelLine;
             if (nextLevelText != null)
-                nextLevelText.text = showUpgradePreview ? nextLevelLine : "";
+                nextLevelText.text = showUpgradePreview
+                    ? FormatOne(nextLevelPreviewFormat, " {0}", nextLevelLine)
+                    : "";
 
             if (currentIncomeText != null)
-                currentIncomeText.text = currentIncomeLine;
+                currentIncomeText.text = showUpgradePreview
+                    ? FormatOne(currentIncomePreviewFormat, "{0} -", currentIncomeLine)
+                    : currentIncomeLine;
             if (nextIncomeText != null)
-                nextIncomeText.text = showUpgradePreview ? nextIncomeLine : "";
+                nextIncomeText.text = showUpgradePreview
+                    ? FormatOne(nextIncomePreviewFormat, " {0}", nextIncomeLine)
+                    : "";
 
             _action = action;
 
@@ -89,7 +101,7 @@ namespace TraidingIDLE.Business
             if (actionLabelText != null)
             {
                 actionLabelText.text = actionVisible
-                    ? string.Format(SafeFormat(actionLabelFormat, "{0}\n{1}"), actionVerb, actionPrice)
+                    ? FormatTwo(actionLabelFormat, "{0}\n{1}", actionVerb, actionPrice)
                     : "";
             }
 
@@ -111,9 +123,6 @@ namespace TraidingIDLE.Business
 
             if (actionButtonGraphic == null && actionButton != null)
                 actionButtonGraphic = actionButton.targetGraphic;
-
-            if (actionButtonGraphic != null && actionButtonEnabledColor == Color.white)
-                actionButtonEnabledColor = actionButtonGraphic.color;
 
             var texts = GetComponentsInChildren<TMP_Text>(true);
             var contentTexts = new List<TMP_Text>(texts.Length);
@@ -173,6 +182,32 @@ namespace TraidingIDLE.Business
         private static string SafeFormat(string value, string fallback)
         {
             return string.IsNullOrWhiteSpace(value) ? fallback : value;
+        }
+
+        private static string FormatTwo(string format, string fallback, object arg0, object arg1)
+        {
+            var safe = SafeFormat(format, fallback);
+            try
+            {
+                return string.Format(safe, arg0, arg1);
+            }
+            catch (FormatException)
+            {
+                return string.Format(fallback, arg0, arg1);
+            }
+        }
+
+        private static string FormatOne(string format, string fallback, object arg)
+        {
+            var safe = SafeFormat(format, fallback);
+            try
+            {
+                return string.Format(safe, arg);
+            }
+            catch (FormatException)
+            {
+                return string.Format(fallback, arg);
+            }
         }
     }
 }

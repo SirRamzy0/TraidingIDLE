@@ -25,7 +25,7 @@ namespace TraidingIDLE.Business
                 skillAvatar.enabled = false;
         }
 
-        public void PresentLocked(int requiredLevel, string lockedFormat)
+        public void PresentLocked(string lockedText)
         {
             if (skillLockedRoot != null)
                 skillLockedRoot.SetActive(true);
@@ -33,7 +33,7 @@ namespace TraidingIDLE.Business
                 skillUnlockedRoot.SetActive(false);
 
             if (lockedHintText != null)
-                lockedHintText.text = string.Format(lockedFormat, requiredLevel);
+                lockedHintText.text = lockedText;
         }
 
         public void PresentUnlocked(

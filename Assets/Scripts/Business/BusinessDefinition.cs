@@ -38,8 +38,6 @@ namespace TraidingIDLE.Business
 
         [Header("Texts")]
         public string lockedSkillFormat = "Улучши до {0} уровня чтобы открыть";
-        public string launchButtonIdleFormat = "Запустить ⚡{0}";
-        public string temporarySkillActiveFormat = "навык активен {0}";
     }
 
     [CreateAssetMenu(menuName = "TraidingIDLE/Business Definition", fileName = "BusinessDefinition")]

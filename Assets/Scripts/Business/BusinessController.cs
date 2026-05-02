@@ -72,6 +72,10 @@ namespace TraidingIDLE.Business
         [SerializeField] private BusinessListRowUI rowCardPrefab;
         [SerializeField] private RectTransform rowCardsContent;
 
+        [Header("Filters")]
+        [SerializeField] private BusinessFilterButtonUI allFilterButton;
+        [SerializeField] private BusinessFilterButtonUI[] categoryFilterButtons = Array.Empty<BusinessFilterButtonUI>();
+
         [Header("Selected business")]
         [SerializeField] private BusinessDetailCardUI detailCard;
         [SerializeField] private BusinessSkillPanelUI skillPanel;
@@ -120,6 +124,7 @@ namespace TraidingIDLE.Business
         private long _tempBuffEndUtc;
         private float _tempMultiplier = 1f;
         private int _selectedIndex;
+        private string _activeCategoryFilter = "";
         private float _saveTimer;
         private bool _dirty;
 
@@ -158,6 +163,7 @@ namespace TraidingIDLE.Business
             EnsureArrays();
             ResolveRows();
             BindRows();
+            BindFilterButtons();
             Load();
             ProcessOfflineCatchUp();
 
@@ -305,8 +311,6 @@ namespace TraidingIDLE.Business
                 marketGrowthPercent = NormalizeRange(source.marketGrowthPercent, 0.01f),
                 marketReturnTolerancePercent = Mathf.Clamp(source.marketReturnTolerancePercent, 0f, 0.3f),
                 lockedSkillFormat = source.lockedSkillFormat,
-                launchButtonIdleFormat = source.launchButtonIdleFormat,
-                temporarySkillActiveFormat = source.temporarySkillActiveFormat,
             };
         }
 
@@ -359,6 +363,24 @@ namespace TraidingIDLE.Business
                 var captured = row.BusinessIndex;
                 row.BindSelect(() => SelectBusiness(captured));
                 row.BindPrimaryAction(() => BuyOrUpgrade(captured));
+            }
+        }
+
+        private void BindFilterButtons()
+        {
+            if (allFilterButton != null)
+                allFilterButton.Bind(_ => SelectCategoryFilter(""));
+
+            if (categoryFilterButtons == null)
+                return;
+
+            for (var i = 0; i < categoryFilterButtons.Length; i++)
+            {
+                var filterButton = categoryFilterButtons[i];
+                if (filterButton == null)
+                    continue;
+
+                filterButton.Bind(SelectCategoryFilter);
             }
         }
 
@@ -646,6 +668,29 @@ namespace TraidingIDLE.Business
             RefreshAllUi();
         }
 
+        private void SelectCategoryFilter(string category)
+        {
+            _activeCategoryFilter = NormalizeCategory(category);
+            EnsureSelectedBusinessVisible();
+            RefreshAllUi();
+        }
+
+        private void EnsureSelectedBusinessVisible()
+        {
+            if (IsValidIndex(_selectedIndex) && MatchesActiveCategoryFilter(_selectedIndex))
+                return;
+
+            for (var i = 0; i < _entries.Count; i++)
+            {
+                if (!MatchesActiveCategoryFilter(i))
+                    continue;
+
+                _selectedIndex = i;
+                MarkDirty();
+                return;
+            }
+        }
+
         private double GetTotalBaseIncomePerHour()
         {
             var sum = 0d;
@@ -661,6 +706,7 @@ namespace TraidingIDLE.Business
         private void RefreshAllUi()
         {
             EnsureArrays();
+            EnsureSelectedBusinessVisible();
 
             for (var i = 0; i < _resolvedRows.Length; i++)
             {
@@ -669,7 +715,10 @@ namespace TraidingIDLE.Business
                     continue;
 
                 var index = row.BusinessIndex;
-                if (IsValidIndex(index))
+                var visible = IsValidIndex(index) && MatchesActiveCategoryFilter(index);
+                row.gameObject.SetActive(visible);
+
+                if (visible)
                     RefreshRowUi(row, index);
             }
 
@@ -677,6 +726,10 @@ namespace TraidingIDLE.Business
             RefreshTopStaticUi();
             RefreshSkillPanel();
             RefreshDynamicUi();
+            RefreshFilterButtons();
+
+            if (rowCardsContent != null)
+                LayoutRebuilder.ForceRebuildLayoutImmediate(rowCardsContent);
         }
 
         private void RefreshRowUi(BusinessListRowUI row, int index)
@@ -687,16 +740,19 @@ namespace TraidingIDLE.Business
             var displayIncome = level > 0 ? entry.GetIncomePerHour(level) : entry.GetIncomePerHour(nextLevel);
             var cost = entry.GetUpgradeCostFromLevel(level);
             var canUpgrade = level < entry.MaxLevel && cost > 0;
+            var isMaxLevel = entry.MaxLevel > 0 && level >= entry.MaxLevel;
 
             row.RefreshRow(
                 entry.artwork,
                 entry.displayName,
                 entry.category,
                 $"{FormatRublesAmount(displayIncome)} в час",
-                level > 0 ? string.Format(rowLevelFormat, level) : string.Format(rowNextLevelFormat, nextLevel),
+                level > 0
+                    ? FormatOne(rowLevelFormat, "Уровень {0}", level)
+                    : FormatOne(rowNextLevelFormat, "+{0}", nextLevel),
                 canUpgrade ? FormatNumberMoney(cost) : "",
-                level <= 0 ? rowPrimaryBuyCaption : rowPrimaryUpgradeCaption,
-                canUpgrade,
+                isMaxLevel ? maxLevelCaption : level <= 0 ? rowPrimaryBuyCaption : rowPrimaryUpgradeCaption,
+                canUpgrade || isMaxLevel,
                 canUpgrade && CanSpendRubles(cost));
 
             row.RefreshAppearance(index == _selectedIndex, level > 0);
@@ -714,6 +770,7 @@ namespace TraidingIDLE.Business
             var nextIncome = entry.GetIncomePerHour(nextLevel);
             var cost = entry.GetUpgradeCostFromLevel(level);
             var canUpgrade = level < entry.MaxLevel && cost > 0;
+            var isMaxLevel = entry.MaxLevel > 0 && level >= entry.MaxLevel;
 
             detailCard.Configure(
                 entry.artwork,
@@ -723,9 +780,9 @@ namespace TraidingIDLE.Business
                 FormatNumberMoney(currentIncome),
                 FormatNumberMoney(nextIncome),
                 canUpgrade,
-                level <= 0 ? rowPrimaryBuyCaption : canUpgrade ? rowPrimaryUpgradeCaption : maxLevelCaption,
+                isMaxLevel ? maxLevelCaption : level <= 0 ? rowPrimaryBuyCaption : rowPrimaryUpgradeCaption,
                 canUpgrade ? FormatNumberMoney(cost) : "",
-                canUpgrade,
+                canUpgrade || isMaxLevel,
                 canUpgrade && CanSpendRubles(cost),
                 BuyOrUpgradeSelected);
         }
@@ -735,8 +792,9 @@ namespace TraidingIDLE.Business
             if (totalIncomePerHourText != null)
             {
                 var total = GetTotalBaseIncomePerHour() * GetAccumulatedBusinessPassiveMultiplier();
-                totalIncomePerHourText.text = string.Format(
+                totalIncomePerHourText.text = FormatOne(
                     totalIncomePerHourFormat,
+                    "{0} в час",
                     FormatRublesAmount(total));
             }
         }
@@ -774,7 +832,10 @@ namespace TraidingIDLE.Business
 
             if (level < skill.unlockLevel)
             {
-                skillPanel.PresentLocked(skill.unlockLevel, SafeFormat(skill.lockedSkillFormat, "Улучши до {0} уровня чтобы открыть"));
+                skillPanel.PresentLocked(FormatOne(
+                    skill.lockedSkillFormat,
+                    "Улучши до {0} уровня чтобы открыть",
+                    skill.unlockLevel));
                 skillPanel.SetLaunchListener(null);
                 return;
             }
@@ -786,16 +847,8 @@ namespace TraidingIDLE.Business
                 or BusinessSkillEffectKind.TemporaryBoostMiningIncome;
 
             var temporaryBlocking = isTemporary && IsGlobalTemporaryBuffBlocking();
-            var launchLabel = string.Format(SafeFormat(skill.launchButtonIdleFormat, "Запустить ⚡{0}"), skill.energyCost);
+            var launchLabel = FormatNumberMoney(skill.energyCost);
             var interactable = energyOk && !temporaryBlocking;
-
-            if (temporaryBlocking && IsTemporaryBuffActive(out var secondsLeft))
-            {
-                launchLabel = string.Format(
-                    SafeFormat(skill.temporarySkillActiveFormat, "навык активен {0}"),
-                    FormatCountdown(secondsLeft));
-                interactable = false;
-            }
 
             skillPanel.PresentUnlocked(skill.icon, skill.title, skill.description, interactable, launchLabel);
             skillPanel.SetLaunchListener(TryLaunchSkillForSelection);
@@ -819,6 +872,46 @@ namespace TraidingIDLE.Business
         private bool IsValidIndex(int index)
         {
             return index >= 0 && index < _entries.Count && index < _levels.Length;
+        }
+
+        private bool MatchesActiveCategoryFilter(int index)
+        {
+            if (string.IsNullOrEmpty(_activeCategoryFilter))
+                return true;
+
+            if (!IsValidIndex(index))
+                return false;
+
+            return string.Equals(
+                NormalizeCategory(_entries[index].category),
+                _activeCategoryFilter,
+                StringComparison.OrdinalIgnoreCase);
+        }
+
+        private void RefreshFilterButtons()
+        {
+            if (allFilterButton != null)
+                allFilterButton.SetSelected(string.IsNullOrEmpty(_activeCategoryFilter));
+
+            if (categoryFilterButtons == null)
+                return;
+
+            for (var i = 0; i < categoryFilterButtons.Length; i++)
+            {
+                var filterButton = categoryFilterButtons[i];
+                if (filterButton == null)
+                    continue;
+
+                filterButton.SetSelected(string.Equals(
+                    NormalizeCategory(filterButton.CategoryKey),
+                    _activeCategoryFilter,
+                    StringComparison.OrdinalIgnoreCase));
+            }
+        }
+
+        private static string NormalizeCategory(string value)
+        {
+            return string.IsNullOrWhiteSpace(value) ? "" : value.Trim();
         }
 
         private void EnsureArrays()
@@ -976,6 +1069,19 @@ namespace TraidingIDLE.Business
         private static string SafeFormat(string value, string fallback)
         {
             return string.IsNullOrWhiteSpace(value) ? fallback : value;
+        }
+
+        private static string FormatOne(string format, string fallback, object arg)
+        {
+            var safe = SafeFormat(format, fallback);
+            try
+            {
+                return string.Format(safe, arg);
+            }
+            catch (FormatException)
+            {
+                return string.Format(fallback, arg);
+            }
         }
 
         private static long UtcNow() => DateTimeOffset.UtcNow.ToUnixTimeSeconds();
