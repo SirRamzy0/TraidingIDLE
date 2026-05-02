@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Globalization;
 using TMPro;
+using TraidingIDLE.Collections;
 using TraidingIDLE.Currencies.Simulation;
 using TraidingIDLE.Player;
 using TraidingIDLE.Saves;
@@ -67,6 +68,7 @@ namespace TraidingIDLE.Business
         [Header("Refs")]
         [SerializeField] private PlayerProfile profile;
         [SerializeField] private MarketSimulation marketSimulation;
+        [SerializeField] private CollectionController collectionController;
 
         [Header("Business list")]
         [SerializeField] private BusinessListRowUI rowCardPrefab;
@@ -156,6 +158,11 @@ namespace TraidingIDLE.Business
             return Math.Max(1d, _tempMultiplier);
         }
 
+        public void RefreshIncomeFromExternalBonuses()
+        {
+            RefreshAllUi();
+        }
+
         private void Awake()
         {
             ResolveSceneReferences();
@@ -234,6 +241,8 @@ namespace TraidingIDLE.Business
                 profile = FindAnyObjectByType<PlayerProfile>();
             if (marketSimulation == null)
                 marketSimulation = FindAnyObjectByType<MarketSimulation>();
+            if (collectionController == null)
+                collectionController = FindAnyObjectByType<CollectionController>();
             if (skillPanel == null)
                 skillPanel = FindAnyObjectByType<BusinessSkillPanelUI>();
             if (detailCard == null)
@@ -697,7 +706,7 @@ namespace TraidingIDLE.Business
             for (var i = 0; i < _entries.Count; i++)
             {
                 var level = _levels.Length > i ? _levels[i] : 0;
-                sum += _entries[i].GetIncomePerHour(level);
+                sum += _entries[i].GetIncomePerHour(level) * GetCollectionIncomeMultiplier(_entries[i].category);
             }
 
             return sum;
@@ -737,7 +746,9 @@ namespace TraidingIDLE.Business
             var entry = _entries[index];
             var level = _levels[index];
             var nextLevel = GetNextLevel(index);
-            var displayIncome = level > 0 ? entry.GetIncomePerHour(level) : entry.GetIncomePerHour(nextLevel);
+            var collectionMultiplier = GetCollectionIncomeMultiplier(entry.category);
+            var displayIncome = (level > 0 ? entry.GetIncomePerHour(level) : entry.GetIncomePerHour(nextLevel))
+                * collectionMultiplier;
             var cost = entry.GetUpgradeCostFromLevel(level);
             var canUpgrade = level < entry.MaxLevel && cost > 0;
             var isMaxLevel = entry.MaxLevel > 0 && level >= entry.MaxLevel;
@@ -766,8 +777,9 @@ namespace TraidingIDLE.Business
             var entry = _entries[_selectedIndex];
             var level = _levels[_selectedIndex];
             var nextLevel = GetNextLevel(_selectedIndex);
-            var currentIncome = entry.GetIncomePerHour(level);
-            var nextIncome = entry.GetIncomePerHour(nextLevel);
+            var collectionMultiplier = GetCollectionIncomeMultiplier(entry.category);
+            var currentIncome = entry.GetIncomePerHour(level) * collectionMultiplier;
+            var nextIncome = entry.GetIncomePerHour(nextLevel) * collectionMultiplier;
             var cost = entry.GetUpgradeCostFromLevel(level);
             var canUpgrade = level < entry.MaxLevel && cost > 0;
             var isMaxLevel = entry.MaxLevel > 0 && level >= entry.MaxLevel;
@@ -867,6 +879,16 @@ namespace TraidingIDLE.Business
         private bool CanSpendRubles(long amount)
         {
             return profile != null && amount >= 0 && profile.Rubles >= amount;
+        }
+
+        private double GetCollectionIncomeMultiplier(string businessCategory)
+        {
+            if (collectionController == null)
+                collectionController = FindAnyObjectByType<CollectionController>();
+
+            return collectionController != null
+                ? collectionController.GetBusinessIncomeMultiplier(businessCategory)
+                : 1d;
         }
 
         private bool IsValidIndex(int index)
