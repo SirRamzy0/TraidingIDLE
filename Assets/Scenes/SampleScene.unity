@@ -5139,7 +5139,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: a2b8f5b6c4de4bd0b9d89c4df0b5a631, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::TraidingIDLE.Business.BusinessFilterButtonUI
-  showAll: 0
   categoryKey: "\u0428\u0438\u0448\u043A\u0430"
   button: {fileID: 212795631}
   backgroundImage: {fileID: 212795632}
@@ -5151,6 +5150,7 @@ MonoBehaviour:
   hoverTint: {r: 1, g: 1, b: 1, a: 0.9}
   selectedTextColor: {r: 1, g: 1, b: 1, a: 1}
   normalTextColor: {r: 1, g: 1, b: 1, a: 1}
+  showAll: 0
 --- !u!114 &212795631
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -6460,6 +6460,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::TraidingIDLE.Business.BusinessController
   profile: {fileID: 1555327066}
   marketSimulation: {fileID: 1136403798}
+  collectionController: {fileID: 0}
   rowCardPrefab: {fileID: 8310662471427272394, guid: dee0fa7a87b2b2545947ad772d276af5, type: 3}
   rowCardsContent: {fileID: 1458098227}
   allFilterButton: {fileID: 2139644203}
@@ -8922,7 +8923,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: a2b8f5b6c4de4bd0b9d89c4df0b5a631, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::TraidingIDLE.Business.BusinessFilterButtonUI
-  showAll: 0
   categoryKey: "\u041D\u0435\u0434\u0432\u0438\u0436\u043A\u0430"
   button: {fileID: 389322568}
   backgroundImage: {fileID: 389322569}
@@ -8934,6 +8934,7 @@ MonoBehaviour:
   hoverTint: {r: 1, g: 1, b: 1, a: 0.9}
   selectedTextColor: {r: 1, g: 1, b: 1, a: 1}
   normalTextColor: {r: 1, g: 1, b: 1, a: 1}
+  showAll: 0
 --- !u!114 &389322568
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -17141,8 +17142,8 @@ MonoBehaviour:
   m_TargetGraphic: {fileID: 1924885207}
   m_HandleRect: {fileID: 1924885206}
   m_Direction: 2
-  m_Value: 1
-  m_Size: 0.9069998
+  m_Value: 1.0000013
+  m_Size: 0.9069999
   m_NumberOfSteps: 0
   m_OnValueChanged:
     m_PersistentCalls:
@@ -19297,7 +19298,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: a2b8f5b6c4de4bd0b9d89c4df0b5a631, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::TraidingIDLE.Business.BusinessFilterButtonUI
-  showAll: 0
   categoryKey: "\u041D\u0435\u0434\u0432\u0438\u0436\u043A\u0430"
   button: {fileID: 864335057}
   backgroundImage: {fileID: 864335058}
@@ -19309,6 +19309,7 @@ MonoBehaviour:
   hoverTint: {r: 1, g: 1, b: 1, a: 0.9}
   selectedTextColor: {r: 1, g: 1, b: 1, a: 1}
   normalTextColor: {r: 1, g: 1, b: 1, a: 1}
+  showAll: 0
 --- !u!114 &864335057
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -21347,7 +21348,7 @@ MonoBehaviour:
   m_TargetGraphic: {fileID: 12641074}
   m_HandleRect: {fileID: 12641073}
   m_Direction: 0
-  m_Value: 1
+  m_Value: 0
   m_Size: 1
   m_NumberOfSteps: 0
   m_OnValueChanged:
@@ -29562,6 +29563,7 @@ GameObject:
   - component: {fileID: 1349737124}
   - component: {fileID: 1349737123}
   - component: {fileID: 1349737122}
+  - component: {fileID: 1349737126}
   m_Layer: 5
   m_Name: Button (1)
   m_TagString: Untagged
@@ -29691,6 +29693,25 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1349737120}
   m_CullTransparentMesh: 1
+--- !u!114 &1349737126
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1349737120}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: b486f9bbef9a4574b9fbd761f7795ce2, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::TraidingIDLE.UI.TimedDialogToggle
+  toggleButton: {fileID: 1349737123}
+  closeButton: {fileID: 2098247963}
+  dialogRoot: {fileID: 1809664308}
+  autoOpenEnabled: 1
+  autoOpenDelaySeconds: 180
+  useUnscaledTime: 0
+  manualOpenConsumesAutoOpen: 1
 --- !u!1 &1353515279
 GameObject:
   m_ObjectHideFlags: 0
@@ -31978,7 +31999,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: a2b8f5b6c4de4bd0b9d89c4df0b5a631, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::TraidingIDLE.Business.BusinessFilterButtonUI
-  showAll: 0
   categoryKey: "\u041D\u0435\u0434\u0432\u0438\u0436\u043A\u0430"
   button: {fileID: 1416777172}
   backgroundImage: {fileID: 1416777173}
@@ -31990,6 +32010,7 @@ MonoBehaviour:
   hoverTint: {r: 1, g: 1, b: 1, a: 0.9}
   selectedTextColor: {r: 1, g: 1, b: 1, a: 1}
   normalTextColor: {r: 1, g: 1, b: 1, a: 1}
+  showAll: 0
 --- !u!114 &1416777172
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -46099,7 +46120,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: a2b8f5b6c4de4bd0b9d89c4df0b5a631, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::TraidingIDLE.Business.BusinessFilterButtonUI
-  showAll: 0
   categoryKey: "\u041D\u0435\u0434\u0432\u0438\u0436\u043A\u0430"
   button: {fileID: 1985604249}
   backgroundImage: {fileID: 1985604250}
@@ -46111,6 +46131,7 @@ MonoBehaviour:
   hoverTint: {r: 1, g: 1, b: 1, a: 0.9}
   selectedTextColor: {r: 1, g: 1, b: 1, a: 1}
   normalTextColor: {r: 1, g: 1, b: 1, a: 1}
+  showAll: 0
 --- !u!114 &1985604249
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -49835,7 +49856,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: a2b8f5b6c4de4bd0b9d89c4df0b5a631, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::TraidingIDLE.Business.BusinessFilterButtonUI
-  showAll: 1
   categoryKey: 
   button: {fileID: 2139644200}
   backgroundImage: {fileID: 2139644201}
@@ -49847,6 +49867,7 @@ MonoBehaviour:
   hoverTint: {r: 1, g: 1, b: 1, a: 0.9}
   selectedTextColor: {r: 1, g: 1, b: 1, a: 1}
   normalTextColor: {r: 1, g: 1, b: 1, a: 1}
+  showAll: 1
 --- !u!1001 &508759606542380603
 PrefabInstance:
   m_ObjectHideFlags: 0

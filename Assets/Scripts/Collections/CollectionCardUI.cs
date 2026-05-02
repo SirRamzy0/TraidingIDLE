@@ -1,5 +1,6 @@
 using System;
 using TMPro;
+using TraidingIDLE.UI;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -80,7 +81,9 @@ namespace TraidingIDLE.Collections
             }
 
             if (buyButtonLabel != null)
-                buyButtonLabel.text = bought ? boughtCaption : FormatOne(buyButtonFormat, "Купить\n{0}", price);
+                buyButtonLabel.text = bought
+                    ? boughtCaption
+                    : GameTextFormatter.Format(buyButtonFormat, "Купить\n{0}", price);
 
             if (buyButtonGraphic != null)
                 buyButtonGraphic.color = !bought && canBuy ? buyButtonEnabledColor : buyButtonDisabledColor;
@@ -103,17 +106,5 @@ namespace TraidingIDLE.Collections
                 buyButtonLabel = buyButton.GetComponentInChildren<TMP_Text>(true);
         }
 
-        private static string FormatOne(string format, string fallback, object arg)
-        {
-            var safe = string.IsNullOrWhiteSpace(format) ? fallback : format;
-            try
-            {
-                return string.Format(safe, arg);
-            }
-            catch (FormatException)
-            {
-                return string.Format(fallback, arg);
-            }
-        }
     }
 }

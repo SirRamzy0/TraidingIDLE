@@ -1,10 +1,10 @@
 using System;
 using System.Collections.Generic;
-using System.Globalization;
 using TMPro;
 using TraidingIDLE.Business;
 using TraidingIDLE.Player;
 using TraidingIDLE.Saves;
+using TraidingIDLE.UI;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -106,7 +106,7 @@ namespace TraidingIDLE.Collections
         private readonly List<RuntimeCollection> _runtime = new();
         private CollectionCardUI[] _cardRows = Array.Empty<CollectionCardUI>();
         private CollectionBonusMilestoneRowUI[] _resolvedBonusRows = Array.Empty<CollectionBonusMilestoneRowUI>();
-        private int _spawnedCardsForIndex = -1;
+        private int _spawnedCardCount = -1;
         private int _spawnedBonusRowCount = -1;
         private int _activeIndex;
         private float _saveTimer;
@@ -204,7 +204,7 @@ namespace TraidingIDLE.Collections
                 profile = FindAnyObjectByType<PlayerProfile>();
 
             if (businessController == null)
-                businessController = FindAnyObjectByType<BusinessController>();
+                businessController = FindAnyObjectByType<BusinessController>(FindObjectsInactive.Include);
         }
 
         private void RebuildRuntimeCollections()
@@ -336,10 +336,13 @@ namespace TraidingIDLE.Collections
             }
 
             if (progressText != null)
-                progressText.text = FormatTwo(progressFormat, "Собрано {0}/{1}", owned, total);
+                progressText.text = GameTextFormatter.Format(progressFormat, "Собрано {0}/{1}", owned, total);
 
             if (totalBonusText != null)
-                totalBonusText.text = FormatOne(totalBonusFormat, "Общий бонус: {0}%", FormatPercent(GetUnlockedBonusPercent(active)));
+                totalBonusText.text = GameTextFormatter.Format(
+                    totalBonusFormat,
+                    "Общий бонус: {0}%",
+                    GameTextFormatter.Percent(GetUnlockedBonusPercent(active)));
 
             RefreshCards(active);
             RefreshBonusRows(active);
@@ -384,24 +387,23 @@ namespace TraidingIDLE.Collections
                     () => BuyCard(captured));
             }
 
-            if (cardsContent != null)
-                LayoutRebuilder.ForceRebuildLayoutImmediate(cardsContent);
+            UiTransformUtility.RebuildLayout(cardsContent);
         }
 
         private void EnsureCardRows(RuntimeCollection active)
         {
-            if (_spawnedCardsForIndex == _activeIndex && _cardRows.Length == active.CardCount)
+            if (_spawnedCardCount == active.CardCount && _cardRows.Length == active.CardCount)
                 return;
-
-            _spawnedCardsForIndex = _activeIndex;
 
             if (cardsContent == null || cardPrefab == null)
             {
+                _spawnedCardCount = -1;
                 _cardRows = Array.Empty<CollectionCardUI>();
                 return;
             }
 
-            DestroyChildren(cardsContent);
+            _spawnedCardCount = active.CardCount;
+            UiTransformUtility.DestroyChildren(cardsContent);
             var rows = new CollectionCardUI[active.CardCount];
             for (var i = 0; i < rows.Length; i++)
             {
@@ -439,13 +441,19 @@ namespace TraidingIDLE.Collections
 
                 var reached = active.OwnedCount >= milestone.requiredOwnedCount;
                 row.Configure(
-                    FormatTwo(bonusConditionFormat, "{0}/{1} куплено", milestone.requiredOwnedCount, active.CardCount),
-                    FormatOne(bonusValueFormat, "+ {0}% к доходу", FormatPercent(milestone.bonusPercent)),
+                    GameTextFormatter.Format(
+                        bonusConditionFormat,
+                        "{0}/{1} куплено",
+                        milestone.requiredOwnedCount,
+                        active.CardCount),
+                    GameTextFormatter.Format(
+                        bonusValueFormat,
+                        "+ {0}% к доходу",
+                        GameTextFormatter.Percent(milestone.bonusPercent)),
                     reached);
             }
 
-            if (bonusRowsContent != null)
-                LayoutRebuilder.ForceRebuildLayoutImmediate(bonusRowsContent);
+            UiTransformUtility.RebuildLayout(bonusRowsContent);
         }
 
         private void EnsureBonusRows(int count)
@@ -456,7 +464,7 @@ namespace TraidingIDLE.Collections
                     return;
 
                 _spawnedBonusRowCount = count;
-                DestroyChildren(bonusRowsContent);
+                UiTransformUtility.DestroyChildren(bonusRowsContent);
                 var rows = new CollectionBonusMilestoneRowUI[count];
                 for (var i = 0; i < count; i++)
                 {
@@ -544,7 +552,7 @@ namespace TraidingIDLE.Collections
         private void NotifyBusinessBonusesChanged()
         {
             if (businessController == null)
-                businessController = FindAnyObjectByType<BusinessController>();
+                businessController = FindAnyObjectByType<BusinessController>(FindObjectsInactive.Include);
 
             if (businessController != null)
                 businessController.RefreshIncomeFromExternalBonuses();
@@ -644,46 +652,7 @@ namespace TraidingIDLE.Collections
 
         private string FormatNumberMoney(double value)
         {
-            return Math.Max(0, value)
-                .ToString("N0", CultureInfo.InvariantCulture)
-                .Replace(",", thousandSep);
-        }
-
-        private static string FormatPercent(double value)
-        {
-            return Math.Max(0d, value).ToString("0.#", CultureInfo.InvariantCulture);
-        }
-
-        private static string FormatOne(string format, string fallback, object arg)
-        {
-            var safe = string.IsNullOrWhiteSpace(format) ? fallback : format;
-            try
-            {
-                return string.Format(safe, arg);
-            }
-            catch (FormatException)
-            {
-                return string.Format(fallback, arg);
-            }
-        }
-
-        private static string FormatTwo(string format, string fallback, object arg0, object arg1)
-        {
-            var safe = string.IsNullOrWhiteSpace(format) ? fallback : format;
-            try
-            {
-                return string.Format(safe, arg0, arg1);
-            }
-            catch (FormatException)
-            {
-                return string.Format(fallback, arg0, arg1);
-            }
-        }
-
-        private static void DestroyChildren(RectTransform parent)
-        {
-            for (var i = parent.childCount - 1; i >= 0; i--)
-                Destroy(parent.GetChild(i).gameObject);
+            return GameTextFormatter.WholeNumber(value, thousandSep);
         }
 
         private static string NormalizeKey(string value)

@@ -443,6 +443,9 @@ namespace TraidingIDLE.Mining
 
         private void ActivateAdSpeedBoost()
         {
+            if (_adSpeedTimeLeft > 0f)
+                return;
+
             _adSpeedTimeLeft = adSpeedDurationSeconds;
             MarkDirty();
             RefreshAll();
@@ -450,6 +453,9 @@ namespace TraidingIDLE.Mining
 
         private void ActivateGemSpeedBoost()
         {
+            if (_gemSpeedTimeLeft > 0f)
+                return;
+
             if (profile == null)
                 return;
 
@@ -463,6 +469,9 @@ namespace TraidingIDLE.Mining
 
         private void ActivateCoinIncomeBoost()
         {
+            if (_coinIncomeTimeLeft > 0f)
+                return;
+
             if (profile == null)
                 return;
 
@@ -643,6 +652,7 @@ namespace TraidingIDLE.Mining
         {
             if (adSpeedBoostCard != null)
             {
+                var isActive = _adSpeedTimeLeft > 0f;
                 var activeText = _adSpeedTimeLeft > 0f
                     ? FormatOne(adSpeedBoostText.activeButtonFormat, "Активно {0}", FormatTimer(_adSpeedTimeLeft))
                     : SafeFormat(adSpeedBoostText.inactiveButtonFormat, "Активировать");
@@ -651,13 +661,14 @@ namespace TraidingIDLE.Mining
                     FormatOne(adSpeedBoostText.levelFormat, "x{0} скорости", FormatMultiplier(adSpeedMultiplier)),
                     FormatOne(adSpeedBoostText.descriptionFormat, "На {0}", FormatDuration(adSpeedDurationSeconds)),
                     activeText,
-                    true,
+                    !isActive,
                     ActivateAdSpeedBoost);
             }
 
             if (gemSpeedBoostCard != null)
             {
-                var activeText = _gemSpeedTimeLeft > 0f
+                var isActive = _gemSpeedTimeLeft > 0f;
+                var activeText = isActive
                     ? FormatOne(gemSpeedBoostText.activeButtonFormat, "Активно {0}", FormatTimer(_gemSpeedTimeLeft))
                     : FormatOne(gemSpeedBoostText.inactiveButtonFormat, "За {0} гемов", FormatRubles(gemSpeedCost));
                 gemSpeedBoostCard.Configure(
@@ -665,14 +676,15 @@ namespace TraidingIDLE.Mining
                     FormatOne(gemSpeedBoostText.levelFormat, "x{0} скорости", FormatMultiplier(gemSpeedMultiplier)),
                     FormatOne(gemSpeedBoostText.descriptionFormat, "На {0}", FormatDuration(gemSpeedDurationSeconds)),
                     activeText,
-                    profile != null && profile.Gems >= gemSpeedCost,
+                    !isActive && profile != null && profile.Gems >= gemSpeedCost,
                     ActivateGemSpeedBoost);
             }
 
             if (coinIncomeBoostCard != null)
             {
                 var cost = GetCoinIncomeBoostCost();
-                var activeText = _coinIncomeTimeLeft > 0f
+                var isActive = _coinIncomeTimeLeft > 0f;
+                var activeText = isActive
                     ? FormatOne(coinIncomeBoostText.activeButtonFormat, "Активно {0}", FormatTimer(_coinIncomeTimeLeft))
                     : FormatTwo(coinIncomeBoostText.inactiveButtonFormat, "За {0} {1}", FormatRubles(cost), FormatBoostCostCurrency(coinIncomeCostCurrency));
                 coinIncomeBoostCard.Configure(
@@ -680,7 +692,7 @@ namespace TraidingIDLE.Mining
                     FormatOne(coinIncomeBoostText.levelFormat, "x{0} дохода", FormatMultiplier(coinIncomeMultiplier)),
                     FormatOne(coinIncomeBoostText.descriptionFormat, "На {0}", FormatDuration(coinIncomeDurationSeconds)),
                     activeText,
-                    CanSpendBoostCost(coinIncomeCostCurrency, cost),
+                    !isActive && CanSpendBoostCost(coinIncomeCostCurrency, cost),
                     ActivateCoinIncomeBoost);
             }
 

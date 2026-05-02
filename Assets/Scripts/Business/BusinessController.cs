@@ -6,6 +6,7 @@ using TraidingIDLE.Collections;
 using TraidingIDLE.Currencies.Simulation;
 using TraidingIDLE.Player;
 using TraidingIDLE.Saves;
+using TraidingIDLE.UI;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -242,7 +243,7 @@ namespace TraidingIDLE.Business
             if (marketSimulation == null)
                 marketSimulation = FindAnyObjectByType<MarketSimulation>();
             if (collectionController == null)
-                collectionController = FindAnyObjectByType<CollectionController>();
+                collectionController = FindAnyObjectByType<CollectionController>(FindObjectsInactive.Include);
             if (skillPanel == null)
                 skillPanel = FindAnyObjectByType<BusinessSkillPanelUI>();
             if (detailCard == null)
@@ -334,7 +335,7 @@ namespace TraidingIDLE.Business
         {
             if (rowCardPrefab != null && rowCardsContent != null)
             {
-                DestroyChildren(rowCardsContent);
+                UiTransformUtility.DestroyChildren(rowCardsContent);
                 var rows = new List<BusinessListRowUI>(_entries.Count);
 
                 for (var i = 0; i < _entries.Count; i++)
@@ -347,18 +348,11 @@ namespace TraidingIDLE.Business
                 }
 
                 _resolvedRows = rows.ToArray();
-                Canvas.ForceUpdateCanvases();
-                LayoutRebuilder.ForceRebuildLayoutImmediate(rowCardsContent);
+                UiTransformUtility.RebuildLayout(rowCardsContent);
                 return;
             }
 
             _resolvedRows = Array.Empty<BusinessListRowUI>();
-        }
-
-        private static void DestroyChildren(RectTransform parent)
-        {
-            for (var i = parent.childCount - 1; i >= 0; i--)
-                Destroy(parent.GetChild(i).gameObject);
         }
 
         private void BindRows()
@@ -733,12 +727,10 @@ namespace TraidingIDLE.Business
 
             RefreshDetailCard();
             RefreshTopStaticUi();
-            RefreshSkillPanel();
             RefreshDynamicUi();
             RefreshFilterButtons();
 
-            if (rowCardsContent != null)
-                LayoutRebuilder.ForceRebuildLayoutImmediate(rowCardsContent);
+            UiTransformUtility.RebuildLayout(rowCardsContent);
         }
 
         private void RefreshRowUi(BusinessListRowUI row, int index)
@@ -759,8 +751,8 @@ namespace TraidingIDLE.Business
                 entry.category,
                 $"{FormatRublesAmount(displayIncome)} в час",
                 level > 0
-                    ? FormatOne(rowLevelFormat, "Уровень {0}", level)
-                    : FormatOne(rowNextLevelFormat, "+{0}", nextLevel),
+                    ? GameTextFormatter.Format(rowLevelFormat, "Уровень {0}", level)
+                    : GameTextFormatter.Format(rowNextLevelFormat, "+{0}", nextLevel),
                 canUpgrade ? FormatNumberMoney(cost) : "",
                 isMaxLevel ? maxLevelCaption : level <= 0 ? rowPrimaryBuyCaption : rowPrimaryUpgradeCaption,
                 canUpgrade || isMaxLevel,
@@ -804,7 +796,7 @@ namespace TraidingIDLE.Business
             if (totalIncomePerHourText != null)
             {
                 var total = GetTotalBaseIncomePerHour() * GetAccumulatedBusinessPassiveMultiplier();
-                totalIncomePerHourText.text = FormatOne(
+                totalIncomePerHourText.text = GameTextFormatter.Format(
                     totalIncomePerHourFormat,
                     "{0} в час",
                     FormatRublesAmount(total));
@@ -821,7 +813,7 @@ namespace TraidingIDLE.Business
                 if (_energy >= energyMax || _nextEnergyAtUtc <= 0)
                     energyTimerText.text = "";
                 else
-                    energyTimerText.text = FormatCountdown(Math.Max(0, _nextEnergyAtUtc - UtcNow()));
+                    energyTimerText.text = GameTextFormatter.CountdownMinutes(Math.Max(0, _nextEnergyAtUtc - UtcNow()));
             }
 
             if (accumulatedAbbrevText != null)
@@ -844,7 +836,7 @@ namespace TraidingIDLE.Business
 
             if (level < skill.unlockLevel)
             {
-                skillPanel.PresentLocked(FormatOne(
+                skillPanel.PresentLocked(GameTextFormatter.Format(
                     skill.lockedSkillFormat,
                     "Улучши до {0} уровня чтобы открыть",
                     skill.unlockLevel));
@@ -884,7 +876,7 @@ namespace TraidingIDLE.Business
         private double GetCollectionIncomeMultiplier(string businessCategory)
         {
             if (collectionController == null)
-                collectionController = FindAnyObjectByType<CollectionController>();
+                collectionController = FindAnyObjectByType<CollectionController>(FindObjectsInactive.Include);
 
             return collectionController != null
                 ? collectionController.GetBusinessIncomeMultiplier(businessCategory)
@@ -1054,19 +1046,9 @@ namespace TraidingIDLE.Business
             RefreshAllUi();
         }
 
-        private string FormatCountdown(double secondsTotal)
-        {
-            secondsTotal = Math.Max(0, secondsTotal);
-            var totalMinutes = (int)(secondsTotal / 60d);
-            var seconds = (int)(secondsTotal % 60d);
-            return $"{totalMinutes:00}:{seconds:00}";
-        }
-
         private string FormatNumberMoney(double value)
         {
-            return Math.Max(0, value)
-                .ToString("N0", CultureInfo.InvariantCulture)
-                .Replace(",", thousandSep);
+            return GameTextFormatter.WholeNumber(value, thousandSep);
         }
 
         private string FormatRublesAmount(double value)
@@ -1086,24 +1068,6 @@ namespace TraidingIDLE.Business
                 return (value / 1000d).ToString("0.0", CultureInfo.InvariantCulture) + thousandSuffix;
 
             return FormatNumberMoney(value);
-        }
-
-        private static string SafeFormat(string value, string fallback)
-        {
-            return string.IsNullOrWhiteSpace(value) ? fallback : value;
-        }
-
-        private static string FormatOne(string format, string fallback, object arg)
-        {
-            var safe = SafeFormat(format, fallback);
-            try
-            {
-                return string.Format(safe, arg);
-            }
-            catch (FormatException)
-            {
-                return string.Format(fallback, arg);
-            }
         }
 
         private static long UtcNow() => DateTimeOffset.UtcNow.ToUnixTimeSeconds();

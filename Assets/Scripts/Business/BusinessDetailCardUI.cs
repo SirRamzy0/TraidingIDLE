@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using TMPro;
+using TraidingIDLE.UI;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -74,20 +75,20 @@ namespace TraidingIDLE.Business
 
             if (currentLevelText != null)
                 currentLevelText.text = showUpgradePreview
-                    ? FormatOne(currentLevelPreviewFormat, "{0} -", currentLevelLine)
+                    ? GameTextFormatter.Format(currentLevelPreviewFormat, "{0} -", currentLevelLine)
                     : currentLevelLine;
             if (nextLevelText != null)
                 nextLevelText.text = showUpgradePreview
-                    ? FormatOne(nextLevelPreviewFormat, " {0}", nextLevelLine)
+                    ? GameTextFormatter.Format(nextLevelPreviewFormat, " {0}", nextLevelLine)
                     : "";
 
             if (currentIncomeText != null)
                 currentIncomeText.text = showUpgradePreview
-                    ? FormatOne(currentIncomePreviewFormat, "{0} -", currentIncomeLine)
+                    ? GameTextFormatter.Format(currentIncomePreviewFormat, "{0} -", currentIncomeLine)
                     : currentIncomeLine;
             if (nextIncomeText != null)
                 nextIncomeText.text = showUpgradePreview
-                    ? FormatOne(nextIncomePreviewFormat, " {0}", nextIncomeLine)
+                    ? GameTextFormatter.Format(nextIncomePreviewFormat, " {0}", nextIncomeLine)
                     : "";
 
             _action = action;
@@ -101,7 +102,7 @@ namespace TraidingIDLE.Business
             if (actionLabelText != null)
             {
                 actionLabelText.text = actionVisible
-                    ? FormatTwo(actionLabelFormat, "{0}\n{1}", actionVerb, actionPrice)
+                    ? GameTextFormatter.Format(actionLabelFormat, "{0}\n{1}", actionVerb, actionPrice)
                     : "";
             }
 
@@ -179,35 +180,5 @@ namespace TraidingIDLE.Business
             }
         }
 
-        private static string SafeFormat(string value, string fallback)
-        {
-            return string.IsNullOrWhiteSpace(value) ? fallback : value;
-        }
-
-        private static string FormatTwo(string format, string fallback, object arg0, object arg1)
-        {
-            var safe = SafeFormat(format, fallback);
-            try
-            {
-                return string.Format(safe, arg0, arg1);
-            }
-            catch (FormatException)
-            {
-                return string.Format(fallback, arg0, arg1);
-            }
-        }
-
-        private static string FormatOne(string format, string fallback, object arg)
-        {
-            var safe = SafeFormat(format, fallback);
-            try
-            {
-                return string.Format(safe, arg);
-            }
-            catch (FormatException)
-            {
-                return string.Format(fallback, arg);
-            }
-        }
     }
 }
