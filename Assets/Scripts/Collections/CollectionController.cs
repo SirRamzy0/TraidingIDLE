@@ -379,6 +379,7 @@ namespace TraidingIDLE.Collections
 
                 row.gameObject.SetActive(true);
                 row.Configure(
+                    card.background,
                     card.artwork,
                     card.title,
                     FormatNumberMoney(cost),
@@ -490,6 +491,7 @@ namespace TraidingIDLE.Collections
             var cost = Math.Max(0, finalItem.priceRubles);
 
             finalItemUi.Configure(
+                finalItem.background,
                 finalItem.artwork,
                 finalItem.title,
                 FormatNumberMoney(cost),

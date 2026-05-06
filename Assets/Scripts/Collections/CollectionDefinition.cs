@@ -8,6 +8,7 @@ namespace TraidingIDLE.Collections
     {
         public string saveId = "";
         public string title = "Item";
+        public Sprite background;
         public Sprite artwork;
         [Min(0)] public long priceRubles;
     }
@@ -24,6 +25,7 @@ namespace TraidingIDLE.Collections
     {
         public string saveId = "final";
         public string title = "Final item";
+        public Sprite background;
         public Sprite artwork;
         [Min(0)] public long priceRubles;
     }

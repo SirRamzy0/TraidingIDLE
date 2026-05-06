@@ -278,7 +278,7 @@ MonoBehaviour:
   m_faceColor:
     serializedVersion: 2
     rgba: 4294967295
-  m_fontSize: 24
+  m_fontSize: 12
   m_fontSizeBase: 36
   m_fontWeight: 400
   m_enableAutoSizing: 1
@@ -336,6 +336,7 @@ GameObject:
   - component: {fileID: 2204024428056867637}
   - component: {fileID: 384499005051360151}
   - component: {fileID: 8686721970619367140}
+  - component: {fileID: 6236039617837283844}
   m_Layer: 5
   m_Name: Card
   m_TagString: Untagged
@@ -449,6 +450,34 @@ MonoBehaviour:
   m_ChildScaleWidth: 0
   m_ChildScaleHeight: 0
   m_ReverseArrangement: 0
+--- !u!114 &6236039617837283844
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2406818285665054824}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7a69eb5a6c15436f88306604a1cba217, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::TraidingIDLE.Collections.CollectionCardUI
+  backgroundImage: {fileID: 2204024428056867637}
+  artworkImage: {fileID: 5032343105631830040}
+  titleText: {fileID: 6314732977176970855}
+  dimRoot: {fileID: 0}
+  boughtRoot: {fileID: 0}
+  boughtText: {fileID: 0}
+  cardGraphic: {fileID: 0}
+  notBoughtColor: {r: 1, g: 1, b: 1, a: 0.65}
+  boughtColor: {r: 1, g: 1, b: 1, a: 1}
+  buyButton: {fileID: 1508801720947207550}
+  buyButtonLabel: {fileID: 4142480986576433246}
+  buyButtonGraphic: {fileID: 0}
+  buyButtonFormat: "\u041A\u0443\u043F\u0438\u0442\u044C\n{0}"
+  boughtCaption: "\u041A\u0443\u043F\u043B\u0435\u043D\u043E"
+  buyButtonEnabledColor: {r: 0.08, g: 0.45, b: 0.28, a: 1}
+  buyButtonDisabledColor: {r: 0.35, g: 0.35, b: 0.35, a: 0.75}
 --- !u!1 &2564256033120554537
 GameObject:
   m_ObjectHideFlags: 0
@@ -634,7 +663,7 @@ MonoBehaviour:
   m_faceColor:
     serializedVersion: 2
     rgba: 4294967295
-  m_fontSize: 14
+  m_fontSize: 8
   m_fontSizeBase: 24
   m_fontWeight: 400
   m_enableAutoSizing: 1
@@ -771,7 +800,7 @@ MonoBehaviour:
   m_faceColor:
     serializedVersion: 2
     rgba: 4294967295
-  m_fontSize: 14
+  m_fontSize: 8
   m_fontSizeBase: 24
   m_fontWeight: 400
   m_enableAutoSizing: 1

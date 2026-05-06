@@ -9,6 +9,7 @@ namespace TraidingIDLE.Collections
     public sealed class CollectionFinalItemUI : MonoBehaviour
     {
         [Header("Content")]
+        [SerializeField] private Image backgroundImage;
         [SerializeField] private Image artworkImage;
         [SerializeField] private TMP_Text titleText;
 
@@ -46,6 +47,7 @@ namespace TraidingIDLE.Collections
         }
 
         public void Configure(
+            Sprite background,
             Sprite artwork,
             string title,
             string price,
@@ -55,6 +57,12 @@ namespace TraidingIDLE.Collections
             Action buyClicked)
         {
             AutoResolveReferences();
+
+            if (backgroundImage != null)
+            {
+                backgroundImage.sprite = background;
+                backgroundImage.enabled = background != null;
+            }
 
             if (artworkImage != null)
             {
