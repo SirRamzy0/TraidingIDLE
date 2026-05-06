@@ -36,8 +36,8 @@ namespace TraidingIDLE.Player
         [SerializeField] private CoinHolding[] holdings =
         {
             new() { id = CurrencyId.SHT, amount = 0, cap = 1000 },
-            new() { id = CurrencyId.ETH, amount = 0, cap = 100 },
-            new() { id = CurrencyId.BTC, amount = 0, cap = 0 },
+            new() { id = CurrencyId.ETH, amount = 0, cap = 150 },
+            new() { id = CurrencyId.BTC, amount = 0, cap = 50 },
         };
 
         public event Action<long>? RublesChanged;
@@ -367,8 +367,8 @@ namespace TraidingIDLE.Player
             holdings ??= Array.Empty<CoinHolding>();
 
             EnsureHolding(CurrencyId.SHT, 1000);
-            EnsureHolding(CurrencyId.ETH, 100);
-            EnsureHolding(CurrencyId.BTC, 0);
+            EnsureHolding(CurrencyId.ETH, 150);
+            EnsureHolding(CurrencyId.BTC, 50);
 
             for (var i = 0; i < holdings.Length; i++)
             {

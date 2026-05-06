@@ -31,9 +31,9 @@ namespace TraidingIDLE.Currencies
         [Header("Prices")]
         [SerializeField] private CurrencyPrice[] prices =
         {
-            new() { id = CurrencyId.SHT, price = 1f },
-            new() { id = CurrencyId.ETH, price = 2500f },
-            new() { id = CurrencyId.BTC, price = 65000f },
+            new() { id = CurrencyId.SHT, price = 5000f },
+            new() { id = CurrencyId.ETH, price = 100000f },
+            new() { id = CurrencyId.BTC, price = 2500000f },
         };
 
         public CurrencyId ActiveCurrency => activeCurrency;
@@ -219,9 +219,9 @@ namespace TraidingIDLE.Currencies
         {
             prices ??= Array.Empty<CurrencyPrice>();
 
-            EnsurePrice(CurrencyId.SHT, 1f);
-            EnsurePrice(CurrencyId.ETH, 2500f);
-            EnsurePrice(CurrencyId.BTC, 65000f);
+            EnsurePrice(CurrencyId.SHT, 5000f);
+            EnsurePrice(CurrencyId.ETH, 100000f);
+            EnsurePrice(CurrencyId.BTC, 2500000f);
         }
 
         private void EnsurePrice(CurrencyId id, float defaultPrice)
@@ -246,4 +246,3 @@ namespace TraidingIDLE.Currencies
         }
     }
 }
-

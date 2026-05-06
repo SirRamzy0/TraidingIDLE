@@ -27,6 +27,7 @@ namespace TraidingIDLE.UI
         [SerializeField] private GameObject dealAnalysisDialog = null!;
         [SerializeField] private GameObject dealSuccessDialog = null!;
         [SerializeField] private GameObject dealFailDialog = null!;
+        [SerializeField] private GameObject dealWaitingDialog = null!;
 
         [Header("Offer UI")]
         [SerializeField] private TMP_Text offerChanceText = null!;
@@ -58,6 +59,10 @@ namespace TraidingIDLE.UI
         [SerializeField, Min(1f)] private float offerDurationSeconds = 120f;
         [Tooltip("Analysis duration after bet window ends (or immediately after bet).")]
         [SerializeField, Min(1f)] private float analysisDurationSeconds = 30f;
+        [Tooltip("How long success/fail result stays visible before the widget returns to waiting-for-deal state.")]
+        [SerializeField, Min(1f)] private float resultVisibleSeconds = 10f;
+        [Tooltip("Delay before the first next offer after the first completed risky deal cycle.")]
+        [SerializeField, Min(1f)] private float firstRestartDelaySeconds = 20f;
         [Tooltip("If true, the very first cycle starts immediately in Offer (no initial wait).")]
         [SerializeField] private bool startWithImmediateOffer = true;
 
@@ -99,6 +104,7 @@ namespace TraidingIDLE.UI
             public int idleVisibleDialog;
             public float stateTimeLeft;
             public float nextOfferTimeLeft;
+            public bool firstRestartDelayUsed;
             public bool betPlaced;
             public bool fomoNoBet;
             public bool claimTaken;
@@ -112,6 +118,7 @@ namespace TraidingIDLE.UI
         private float _stateTimeLeft;
         private float _nextOfferTimeLeft;
         private State _idleVisibleDialog;
+        private bool _firstRestartDelayUsed;
 
         private bool _betPlaced;
         private bool _fomoNoBet;
@@ -143,8 +150,8 @@ namespace TraidingIDLE.UI
                 return;
             }
 
-            ScheduleNextOffer();
-            _idleVisibleDialog = State.Fail;
+            ScheduleNextOffer(useFirstRestartDelay: false);
+            _idleVisibleDialog = State.IdleBetweenOffers;
             SetState(State.IdleBetweenOffers, force: true);
             RefreshAllTexts();
             UpdateButtons();
@@ -177,13 +184,9 @@ namespace TraidingIDLE.UI
             switch (_state)
             {
                 case State.IdleBetweenOffers:
-                    // If player has a real win to claim, keep success visible forever until claim click.
-                    if (!(_idleVisibleDialog == State.Success && _betPlaced && !_claimTaken))
-                    {
-                        _nextOfferTimeLeft -= dt;
-                        if (_nextOfferTimeLeft <= 0f)
-                            StartNewOffer();
-                    }
+                    _nextOfferTimeLeft -= dt;
+                    if (_nextOfferTimeLeft <= 0f)
+                        StartNewOffer();
                     break;
 
                 case State.Offer:
@@ -203,6 +206,14 @@ namespace TraidingIDLE.UI
 
                 case State.Success:
                 case State.Fail:
+                    _stateTimeLeft -= dt;
+                    if (_stateTimeLeft <= 0f)
+                    {
+                        if (_state == State.Success && IsSuccessClaimable() && !_claimTaken && !TryAutoClaimSuccess())
+                            break;
+
+                        EnterWaitingForDeal();
+                    }
                     break;
             }
 
@@ -214,8 +225,15 @@ namespace TraidingIDLE.UI
                 SaveToStorage();
         }
 
-        private void ScheduleNextOffer()
+        private void ScheduleNextOffer(bool useFirstRestartDelay = true)
         {
+            if (useFirstRestartDelay && !_firstRestartDelayUsed)
+            {
+                _firstRestartDelayUsed = true;
+                _nextOfferTimeLeft = firstRestartDelaySeconds;
+                return;
+            }
+
             _nextOfferTimeLeft = UnityEngine.Random.Range(
                 Mathf.Min(offerIntervalMinSeconds, offerIntervalMaxSeconds),
                 Mathf.Max(offerIntervalMinSeconds, offerIntervalMaxSeconds));
@@ -262,11 +280,9 @@ namespace TraidingIDLE.UI
                     : RollPayoutMultiplierWeighted();
                 _profitRubles = Math.Max(0, _stakeRubles * (payoutMultiplier - 1));
                 _displayStakeRubles = _betPlaced ? _stakeRubles : 0;
-                // Start next-cycle timer only if there is no reward to claim.
-                if (!_betPlaced)
-                    ScheduleNextOffer();
-                _idleVisibleDialog = State.Success;
-                SetState(State.IdleBetweenOffers);
+
+                _stateTimeLeft = resultVisibleSeconds;
+                SetState(State.Success);
                 UpdateButtons();
                 RefreshAllTexts();
                 SaveToStorage();
@@ -275,9 +291,8 @@ namespace TraidingIDLE.UI
 
             _profitRubles = 0;
             _displayStakeRubles = _betPlaced ? _stakeRubles : 0;
-            ScheduleNextOffer();
-            _idleVisibleDialog = State.Fail;
-            SetState(State.IdleBetweenOffers);
+            _stateTimeLeft = resultVisibleSeconds;
+            SetState(State.Fail);
 
             if (failClaimButton != null)
                 failClaimButton.interactable = false;
@@ -335,17 +350,44 @@ namespace TraidingIDLE.UI
             SetSuccessClaimButtonLabel(successClaimedLabel);
             if (successClaimButton != null)
                 successClaimButton.interactable = false;
-            ScheduleNextOffer();
+
             UpdateButtons();
             SaveToStorage();
         }
 
         private bool IsSuccessClaimable()
         {
-            if (_state == State.Success)
+            return _state == State.Success;
+        }
+
+        private bool TryAutoClaimSuccess()
+        {
+            if (!_betPlaced || _claimTaken)
                 return true;
 
-            return _state == State.IdleBetweenOffers && _idleVisibleDialog == State.Success;
+            if (profile == null)
+                return false;
+
+            var payout = _stakeRubles + _profitRubles;
+            profile.AddRubles(payout);
+
+            _claimTaken = true;
+            SetSuccessClaimButtonLabel(successClaimedLabel);
+
+            return true;
+        }
+
+        private void EnterWaitingForDeal()
+        {
+            if (_nextOfferTimeLeft <= 0f)
+                ScheduleNextOffer();
+
+            _stateTimeLeft = 0f;
+            _idleVisibleDialog = State.IdleBetweenOffers;
+            SetState(State.IdleBetweenOffers);
+            RefreshAllTexts();
+            UpdateButtons();
+            SaveToStorage();
         }
 
         private void SetState(State s, bool force = false)
@@ -361,13 +403,15 @@ namespace TraidingIDLE.UI
         {
             var showOffer = _state == State.Offer;
             var showAnalysis = _state == State.Analysis;
-            var showSuccess = _state == State.Success || (_state == State.IdleBetweenOffers && _idleVisibleDialog == State.Success);
-            var showFail = _state == State.Fail || (_state == State.IdleBetweenOffers && _idleVisibleDialog == State.Fail);
+            var showSuccess = _state == State.Success;
+            var showFail = _state == State.Fail;
+            var showWaiting = _state == State.IdleBetweenOffers;
 
             SetActiveSafe(dealOfferDialog, showOffer);
             SetActiveSafe(dealAnalysisDialog, showAnalysis);
             SetActiveSafe(dealSuccessDialog, showSuccess);
             SetActiveSafe(dealFailDialog, showFail);
+            SetActiveSafe(dealWaitingDialog, showWaiting);
         }
 
         private void UpdateButtons()
@@ -563,6 +607,7 @@ namespace TraidingIDLE.UI
                 idleVisibleDialog = (int)_idleVisibleDialog,
                 stateTimeLeft = _stateTimeLeft,
                 nextOfferTimeLeft = _nextOfferTimeLeft,
+                firstRestartDelayUsed = _firstRestartDelayUsed,
                 betPlaced = _betPlaced,
                 fomoNoBet = _fomoNoBet,
                 claimTaken = _claimTaken,
@@ -583,6 +628,7 @@ namespace TraidingIDLE.UI
             _idleVisibleDialog = ClampState(data.idleVisibleDialog);
             _stateTimeLeft = Mathf.Max(0f, data.stateTimeLeft);
             _nextOfferTimeLeft = Mathf.Max(0f, data.nextOfferTimeLeft);
+            _firstRestartDelayUsed = data.firstRestartDelayUsed;
             _betPlaced = data.betPlaced;
             _fomoNoBet = data.fomoNoBet;
             _claimTaken = data.claimTaken;
@@ -590,6 +636,14 @@ namespace TraidingIDLE.UI
             _displayStakeRubles = Math.Max(0, data.displayStakeRubles);
             _chance01 = Mathf.Clamp01(data.chance01);
             _profitRubles = Math.Max(0, data.profitRubles);
+
+            // v1 saves could keep success/fail visible while internally idling. Migrate that to the
+            // explicit timed result state so the player can still claim before the waiting placeholder.
+            if (_state == State.IdleBetweenOffers && _idleVisibleDialog == State.Success && _betPlaced && !_claimTaken)
+            {
+                _state = State.Success;
+                _stateTimeLeft = resultVisibleSeconds;
+            }
 
             return true;
         }
@@ -619,4 +673,3 @@ namespace TraidingIDLE.UI
         }
     }
 }
-
