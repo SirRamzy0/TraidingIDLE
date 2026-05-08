@@ -29,8 +29,8 @@ namespace TraidingIDLE.Business
         [SerializeField] private TMP_Text primaryActionVerbText;
         [SerializeField] private TMP_Text actionPriceText;
         [SerializeField] private Graphic primaryActionGraphic;
-        [SerializeField] private Color actionEnabledColor = Color.white;
-        [SerializeField] private Color actionDisabledColor = new(0.35f, 0.35f, 0.35f, 0.75f);
+        [SerializeField] private Color actionEnabledColor = new(0.25f, 0.95f, 0.52f, 1f);
+        [SerializeField] private Color actionDisabledColor = new(0.55f, 0.57f, 0.62f, 1f);
 
         public int BusinessIndex => businessIndex;
 
@@ -58,9 +58,6 @@ namespace TraidingIDLE.Business
 
             if (primaryActionGraphic == null && primaryActionButton != null)
                 primaryActionGraphic = primaryActionButton.targetGraphic;
-
-            if (primaryActionGraphic != null && actionEnabledColor == Color.white)
-                actionEnabledColor = primaryActionGraphic.color;
 
             if (artworkImage == null)
             {

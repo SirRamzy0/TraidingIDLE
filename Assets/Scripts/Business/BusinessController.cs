@@ -41,26 +41,22 @@ namespace TraidingIDLE.Business
             public string displayName = "";
             public string category = "";
             public Sprite artwork;
-            public BusinessLevelConfig[] levels = Array.Empty<BusinessLevelConfig>();
+            public BusinessProgressionConfig progression = new();
             public BusinessSkillConfig skill = new();
 
-            public int MaxLevel => Mathf.Max(0, levels?.Length ?? 0);
+            public bool HasUnlockRequirement =>
+                progression != null
+                && !string.IsNullOrWhiteSpace(progression.requiredBusinessSaveId)
+                && progression.requiredBusinessLevel > 0;
 
             public double GetIncomePerHour(int level)
             {
-                if (levels == null || levels.Length == 0 || level <= 0)
-                    return 0d;
-
-                var index = Mathf.Clamp(level - 1, 0, levels.Length - 1);
-                return Math.Max(0d, levels[index].incomeRublesPerHour);
+                return progression?.GetIncomePerHour(level) ?? 0d;
             }
 
             public long GetUpgradeCostFromLevel(int currentLevel)
             {
-                if (levels == null || levels.Length == 0 || currentLevel < 0 || currentLevel >= levels.Length)
-                    return 0;
-
-                return Math.Max(0, levels[currentLevel].upgradeRublesCost);
+                return progression?.GetUpgradeCostFromLevel(currentLevel) ?? 0;
             }
         }
 
@@ -103,7 +99,8 @@ namespace TraidingIDLE.Business
         [Header("Texts")]
         [SerializeField] private string rowPrimaryBuyCaption = "Купить";
         [SerializeField] private string rowPrimaryUpgradeCaption = "Улучшить";
-        [SerializeField] private string maxLevelCaption = "Макс.";
+        [SerializeField] private string lockedCaption = "Закрыто";
+        [SerializeField] private string unlockRequirementFormat = "{0}: уровень {1}";
         [SerializeField] private string rowLevelFormat = "Уровень {0}";
         [SerializeField] private string rowNextLevelFormat = "+{0}";
         [SerializeField] private string totalIncomePerHourFormat = "{0} в час";
@@ -277,26 +274,10 @@ namespace TraidingIDLE.Business
                     displayName = definition.DisplayName,
                     category = definition.Category,
                     artwork = definition.Artwork,
-                    levels = CopyLevels(definition),
+                    progression = definition.Progression.Clone(),
                     skill = CloneSkill(definition.Skill),
                 });
             }
-        }
-
-        private static BusinessLevelConfig[] CopyLevels(BusinessDefinition definition)
-        {
-            var levels = new BusinessLevelConfig[definition.MaxLevel];
-            for (var i = 0; i < levels.Length; i++)
-            {
-                var currentLevel = i + 1;
-                levels[i] = new BusinessLevelConfig
-                {
-                    incomeRublesPerHour = definition.GetIncomePerHour(currentLevel),
-                    upgradeRublesCost = definition.GetUpgradeCostFromLevel(i),
-                };
-            }
-
-            return levels;
         }
 
         private static BusinessSkillConfig CloneSkill(BusinessSkillConfig source)
@@ -539,14 +520,14 @@ namespace TraidingIDLE.Business
 
             var entry = _entries[index];
             var currentLevel = _levels[index];
-            if (currentLevel >= entry.MaxLevel)
+            if (!IsBusinessUnlocked(index) || currentLevel >= int.MaxValue)
                 return;
 
             var cost = entry.GetUpgradeCostFromLevel(currentLevel);
             if (cost <= 0 || !profile.TrySpendRubles(cost))
                 return;
 
-            _levels[index] = Mathf.Clamp(currentLevel + 1, 0, entry.MaxLevel);
+            _levels[index] = currentLevel + 1;
             MarkDirty();
             RefreshAllUi();
         }
@@ -569,7 +550,7 @@ namespace TraidingIDLE.Business
 
             var entry = _entries[index];
             var skill = entry.skill;
-            if (_levels[index] < skill.unlockLevel || _energy < skill.energyCost)
+            if (!IsBusinessUnlocked(index) || _levels[index] < skill.unlockLevel || _energy < skill.energyCost)
                 return;
 
             switch (skill.effect)
@@ -700,6 +681,9 @@ namespace TraidingIDLE.Business
             for (var i = 0; i < _entries.Count; i++)
             {
                 var level = _levels.Length > i ? _levels[i] : 0;
+                if (level <= 0 || !IsBusinessUnlocked(i))
+                    continue;
+
                 sum += _entries[i].GetIncomePerHour(level) * GetCollectionIncomeMultiplier(_entries[i].category);
             }
 
@@ -738,24 +722,26 @@ namespace TraidingIDLE.Business
             var entry = _entries[index];
             var level = _levels[index];
             var nextLevel = GetNextLevel(index);
+            var unlocked = IsBusinessUnlocked(index);
             var collectionMultiplier = GetCollectionIncomeMultiplier(entry.category);
-            var displayIncome = (level > 0 ? entry.GetIncomePerHour(level) : entry.GetIncomePerHour(nextLevel))
+            var displayIncome = (unlocked && level > 0 ? entry.GetIncomePerHour(level) : entry.GetIncomePerHour(nextLevel))
                 * collectionMultiplier;
             var cost = entry.GetUpgradeCostFromLevel(level);
-            var canUpgrade = level < entry.MaxLevel && cost > 0;
-            var isMaxLevel = entry.MaxLevel > 0 && level >= entry.MaxLevel;
+            var canUpgrade = unlocked && cost > 0;
 
             row.RefreshRow(
                 entry.artwork,
                 entry.displayName,
                 entry.category,
-                $"{FormatRublesAmount(displayIncome)} в час",
-                level > 0
+                unlocked ? $"{FormatRublesAmount(displayIncome)} в час" : "-",
+                !unlocked
+                    ? GameTextFormatter.Format(rowLevelFormat, "Уровень {0}", 0)
+                    : level > 0
                     ? GameTextFormatter.Format(rowLevelFormat, "Уровень {0}", level)
                     : GameTextFormatter.Format(rowNextLevelFormat, "+{0}", nextLevel),
-                canUpgrade ? FormatNumberMoney(cost) : "",
-                isMaxLevel ? maxLevelCaption : level <= 0 ? rowPrimaryBuyCaption : rowPrimaryUpgradeCaption,
-                canUpgrade || isMaxLevel,
+                !unlocked ? lockedCaption : canUpgrade ? FormatReadableMoney(cost) : "",
+                !unlocked || level <= 0 ? rowPrimaryBuyCaption : rowPrimaryUpgradeCaption,
+                canUpgrade || !unlocked,
                 canUpgrade && CanSpendRubles(cost));
 
             row.RefreshAppearance(index == _selectedIndex, level > 0);
@@ -769,24 +755,24 @@ namespace TraidingIDLE.Business
             var entry = _entries[_selectedIndex];
             var level = _levels[_selectedIndex];
             var nextLevel = GetNextLevel(_selectedIndex);
+            var unlocked = IsBusinessUnlocked(_selectedIndex);
             var collectionMultiplier = GetCollectionIncomeMultiplier(entry.category);
-            var currentIncome = entry.GetIncomePerHour(level) * collectionMultiplier;
+            var currentIncome = (unlocked ? entry.GetIncomePerHour(level) : 0d) * collectionMultiplier;
             var nextIncome = entry.GetIncomePerHour(nextLevel) * collectionMultiplier;
             var cost = entry.GetUpgradeCostFromLevel(level);
-            var canUpgrade = level < entry.MaxLevel && cost > 0;
-            var isMaxLevel = entry.MaxLevel > 0 && level >= entry.MaxLevel;
+            var canUpgrade = unlocked && cost > 0;
 
             detailCard.Configure(
                 entry.artwork,
                 entry.displayName,
                 FormatNumberMoney(level),
                 FormatNumberMoney(nextLevel),
-                FormatNumberMoney(currentIncome),
-                FormatNumberMoney(nextIncome),
+                FormatReadableMoney(currentIncome),
+                FormatReadableMoney(nextIncome),
                 canUpgrade,
-                isMaxLevel ? maxLevelCaption : level <= 0 ? rowPrimaryBuyCaption : rowPrimaryUpgradeCaption,
-                canUpgrade ? FormatNumberMoney(cost) : "",
-                canUpgrade || isMaxLevel,
+                !unlocked ? lockedCaption : level <= 0 ? rowPrimaryBuyCaption : rowPrimaryUpgradeCaption,
+                !unlocked ? GetUnlockRequirementText(_selectedIndex) : canUpgrade ? FormatReadableMoney(cost) : "",
+                canUpgrade || !unlocked,
                 canUpgrade && CanSpendRubles(cost),
                 BuyOrUpgradeSelected);
         }
@@ -834,6 +820,16 @@ namespace TraidingIDLE.Business
             var skill = entry.skill;
             var level = _levels[_selectedIndex];
 
+            if (!IsBusinessUnlocked(_selectedIndex))
+            {
+                skillPanel.PresentLocked(GameTextFormatter.Format(
+                    skill.lockedSkillFormat,
+                    "Улучши до {0} уровня чтобы открыть",
+                    skill.unlockLevel));
+                skillPanel.SetLaunchListener(null);
+                return;
+            }
+
             if (level < skill.unlockLevel)
             {
                 skillPanel.PresentLocked(GameTextFormatter.Format(
@@ -865,12 +861,62 @@ namespace TraidingIDLE.Business
 
             var entry = _entries[index];
             var current = _levels[index];
-            return Mathf.Clamp(current + 1, 0, entry.MaxLevel);
+            return current >= int.MaxValue ? int.MaxValue : current + 1;
         }
 
         private bool CanSpendRubles(long amount)
         {
             return profile != null && amount >= 0 && profile.Rubles >= amount;
+        }
+
+        private bool IsBusinessUnlocked(int index)
+        {
+            if (!IsValidIndex(index))
+                return false;
+
+            var entry = _entries[index];
+            if (!entry.HasUnlockRequirement)
+                return true;
+
+            var requiredIndex = FindBusinessIndexBySaveId(entry.progression.requiredBusinessSaveId);
+            return requiredIndex >= 0
+                && requiredIndex < _levels.Length
+                && _levels[requiredIndex] >= entry.progression.requiredBusinessLevel;
+        }
+
+        private int FindBusinessIndexBySaveId(string saveId)
+        {
+            if (string.IsNullOrWhiteSpace(saveId))
+                return -1;
+
+            for (var i = 0; i < _entries.Count; i++)
+            {
+                if (string.Equals(_entries[i].saveId, saveId, StringComparison.Ordinal))
+                    return i;
+            }
+
+            return -1;
+        }
+
+        private string GetUnlockRequirementText(int index)
+        {
+            if (!IsValidIndex(index))
+                return "";
+
+            var entry = _entries[index];
+            if (!entry.HasUnlockRequirement)
+                return "";
+
+            var requiredIndex = FindBusinessIndexBySaveId(entry.progression.requiredBusinessSaveId);
+            var requiredName = requiredIndex >= 0
+                ? _entries[requiredIndex].displayName
+                : entry.progression.requiredBusinessSaveId;
+
+            return GameTextFormatter.Format(
+                unlockRequirementFormat,
+                "{0}: уровень {1}",
+                requiredName,
+                entry.progression.requiredBusinessLevel);
         }
 
         private double GetCollectionIncomeMultiplier(string businessCategory)
@@ -941,7 +987,7 @@ namespace TraidingIDLE.Business
             }
 
             for (var i = 0; i < _levels.Length; i++)
-                _levels[i] = Mathf.Clamp(_levels[i], 0, _entries[i].MaxLevel);
+                _levels[i] = Math.Max(0, _levels[i]);
 
             _selectedIndex = count <= 0 ? 0 : Mathf.Clamp(_selectedIndex, 0, count - 1);
             _energy = Mathf.Clamp(_energy, 0, Mathf.Max(1, energyMax));
@@ -1051,10 +1097,15 @@ namespace TraidingIDLE.Business
             return GameTextFormatter.WholeNumber(value, thousandSep);
         }
 
+        private string FormatReadableMoney(double value)
+        {
+            return GameTextFormatter.WholeNumber(RoundToReadableMoney(value), thousandSep);
+        }
+
         private string FormatRublesAmount(double value)
         {
             var separator = rublesCurrencySuffix != null && rublesCurrencySuffix.Length > 1 ? " " : "";
-            return $"{FormatNumberMoney(value)}{separator}{rublesCurrencySuffix}";
+            return $"{FormatReadableMoney(value)}{separator}{rublesCurrencySuffix}";
         }
 
         private string AbbreviateRubles(double value)
@@ -1071,5 +1122,25 @@ namespace TraidingIDLE.Business
         }
 
         private static long UtcNow() => DateTimeOffset.UtcNow.ToUnixTimeSeconds();
+
+        private static double RoundToReadableMoney(double value)
+        {
+            if (double.IsNaN(value) || double.IsInfinity(value) || value <= 0d)
+                return 0d;
+
+            var step = value switch
+            {
+                < 1_000d => 1d,
+                < 10_000d => 1_000d,
+                < 250_000d => 5_000d,
+                < 1_000_000d => 10_000d,
+                < 10_000_000d => 50_000d,
+                < 100_000_000d => 100_000d,
+                < 1_000_000_000d => 500_000d,
+                _ => 5_000_000d,
+            };
+
+            return Math.Max(step, Math.Round(value / step, MidpointRounding.AwayFromZero) * step);
+        }
     }
 }

@@ -1,0 +1,87 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 03b839997c9046f5a24748fc1476eb3d, type: 3}
+  m_Name: Collection_Branded_Clothes
+  m_EditorClassIdentifier: Assembly-CSharp::TraidingIDLE.Collections.CollectionDefinition
+  saveId: branded_clothes
+  displayName: "\u0411\u0440\u0435\u043D\u0434\u043E\u0432\u0430\u044F \u043E\u0434\u0435\u0436\u0434\u0430"
+  collectionCategory: "\u0422\u043E\u0432\u0430\u0440\u043D\u044B\u0439 \u0431\u0438\u0437\u043D\u0435\u0441"
+  targetBusinessCategory: "\u0422\u043E\u0432\u0430\u0440\u043D\u044B\u0439 \u0431\u0438\u0437\u043D\u0435\u0441"
+  description: "\u041A\u043E\u043B\u043B\u0435\u043A\u0446\u0438\u044F \u0431\u0440\u0435\u043D\u0434\u043E\u0432\u043E\u0439
+    \u043E\u0434\u0435\u0436\u0434\u044B \u0443\u0441\u0438\u043B\u0438\u0432\u0430\u0435\u0442
+    \u0434\u043E\u0445\u043E\u0434 \u0442\u043E\u0432\u0430\u0440\u043D\u043E\u0433\u043E
+    \u0431\u0438\u0437\u043D\u0435\u0441\u0430."
+  cards:
+  - saveId: branded_clothes_card_01
+    title: "\u0421\u0443\u043F\u0440\u0438\u043C \u0411\u043E\u043A\u0441 \u041B\u043E\u0433\u043E"
+    background: {fileID: 21300000, guid: 30f061215691c6f4fadfd8a62d6b037a, type: 3}
+    artwork: {fileID: 0}
+    priceRubles: 60000
+  - saveId: branded_clothes_card_02
+    title: "\u0414\u0430\u043D\u043A\u0438"
+    background: {fileID: 21300000, guid: 30f061215691c6f4fadfd8a62d6b037a, type: 3}
+    artwork: {fileID: 0}
+    priceRubles: 70000
+  - saveId: branded_clothes_card_03
+    title: "\u041E\u0444\u0444-\u0412\u0430\u0439\u0442 \u0425\u0443\u0434\u0438"
+    background: {fileID: 21300000, guid: 30f061215691c6f4fadfd8a62d6b037a, type: 3}
+    artwork: {fileID: 0}
+    priceRubles: 90000
+  - saveId: branded_clothes_card_04
+    title: "\u0418\u0437\u0438 350"
+    background: {fileID: 21300000, guid: 18210976a5efb00449593b44eadcf5f6, type: 3}
+    artwork: {fileID: 0}
+    priceRubles: 100000
+  - saveId: branded_clothes_card_05
+    title: "\u0422\u0440\u0438\u043F\u043B \u042D\u0441"
+    background: {fileID: 21300000, guid: 18210976a5efb00449593b44eadcf5f6, type: 3}
+    artwork: {fileID: 0}
+    priceRubles: 120000
+  - saveId: branded_clothes_card_06
+    title: "\u041C\u043E\u043D\u043A\u043B\u0435\u0440 \u041C\u0430\u0439\u044F"
+    background: {fileID: 21300000, guid: 75f00f6a96c1bb64da30f3f404f04088, type: 3}
+    artwork: {fileID: 0}
+    priceRubles: 200000
+  - saveId: branded_clothes_card_07
+    title: "\u0413\u0443\u0447\u0447\u0438 \u041B\u0435\u0437\u0435\u0440"
+    background: {fileID: 21300000, guid: 75f00f6a96c1bb64da30f3f404f04088, type: 3}
+    artwork: {fileID: 0}
+    priceRubles: 600000
+  - saveId: branded_clothes_card_08
+    title: "\u041F\u0440\u0430\u0434\u0430 \u041A\u0430\u0448\u0435\u043C\u0438\u0440"
+    background: {fileID: 21300000, guid: 75f00f6a96c1bb64da30f3f404f04088, type: 3}
+    artwork: {fileID: 0}
+    priceRubles: 700000
+  - saveId: branded_clothes_card_09
+    title: "\u0414\u0438\u043E\u0440 \u0421\u044C\u044E\u0442"
+    background: {fileID: 21300000, guid: aff2564508024c44d93bc98c16251325, type: 3}
+    artwork: {fileID: 0}
+    priceRubles: 800000
+  - saveId: branded_clothes_card_10
+    title: "\u041B\u0443\u0438 \u0420\u0430\u043D\u0432\u0435\u0439"
+    background: {fileID: 21300000, guid: aff2564508024c44d93bc98c16251325, type: 3}
+    artwork: {fileID: 0}
+    priceRubles: 1500000
+  bonusMilestones:
+  - requiredOwnedCount: 3
+    bonusPercent: 5
+  - requiredOwnedCount: 5
+    bonusPercent: 10
+  - requiredOwnedCount: 10
+    bonusPercent: 15
+  finalItem:
+    saveId: branded_clothes_final
+    title: "\u0428\u0430\u043D\u0435\u043B\u044C \u041A\u0443\u0442\u044E\u0440"
+    background: {fileID: 21300000, guid: 4402f6f78273b734daf824afdfc1f623, type: 3}
+    artwork: {fileID: 0}
+    priceRubles: 25000000
+    bonusPercent: 20

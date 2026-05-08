@@ -12,6 +12,7 @@ namespace TraidingIDLE.Collections
         [SerializeField] private Image backgroundImage;
         [SerializeField] private Image artworkImage;
         [SerializeField] private TMP_Text titleText;
+        [SerializeField] private TMP_Text bonusText;
 
         [Header("Locked")]
         [SerializeField] private GameObject lockedRoot;
@@ -28,10 +29,12 @@ namespace TraidingIDLE.Collections
         [SerializeField] private TMP_Text buyButtonLabel;
         [SerializeField] private Graphic buyButtonGraphic;
         [SerializeField] private string buyButtonFormat = "Купить\n{0}";
-        [SerializeField] private Color buyButtonEnabledColor = new(0.08f, 0.45f, 0.28f, 1f);
-        [SerializeField] private Color buyButtonDisabledColor = new(0.35f, 0.35f, 0.35f, 0.75f);
+        [SerializeField] private Color buyButtonEnabledColor = new(0.25f, 0.95f, 0.52f, 1f);
+        [SerializeField] private Color buyButtonDisabledColor = new(0.55f, 0.57f, 0.62f, 1f);
+        [SerializeField] private Color buyButtonBoughtColor = new(0.68f, 0.83f, 0.79f, 1f);
 
         private Action _buyClicked;
+        private TransparentActionButtonStyle _buyButtonStyle;
 
         private void Awake()
         {
@@ -50,6 +53,7 @@ namespace TraidingIDLE.Collections
             Sprite background,
             Sprite artwork,
             string title,
+            string bonus,
             string price,
             bool unlocked,
             bool bought,
@@ -72,6 +76,8 @@ namespace TraidingIDLE.Collections
 
             if (titleText != null)
                 titleText.text = title;
+            if (bonusText != null)
+                bonusText.text = bonus;
 
             if (lockedRoot != null)
                 lockedRoot.SetActive(!unlocked);
@@ -79,7 +85,7 @@ namespace TraidingIDLE.Collections
                 lockedText.text = lockedMessage;
 
             if (boughtRoot != null)
-                boughtRoot.SetActive(unlocked && bought);
+                boughtRoot.SetActive(false);
             if (boughtText != null)
                 boughtText.text = boughtCaption;
 
@@ -87,17 +93,16 @@ namespace TraidingIDLE.Collections
 
             if (buyButton != null)
             {
-                buyButton.gameObject.SetActive(unlocked && !bought);
+                buyButton.gameObject.SetActive(unlocked);
                 buyButton.interactable = unlocked && !bought && canBuy;
             }
 
             if (buyButtonLabel != null)
-                buyButtonLabel.text = GameTextFormatter.Format(buyButtonFormat, "Купить\n{0}", price);
+                buyButtonLabel.text = bought
+                    ? boughtCaption
+                    : GameTextFormatter.Format(buyButtonFormat, "Купить\n{0}", price);
 
-            if (buyButtonGraphic != null)
-                buyButtonGraphic.color = unlocked && !bought && canBuy
-                    ? buyButtonEnabledColor
-                    : buyButtonDisabledColor;
+            ApplyBuyButtonStyle(bought, unlocked && !bought && canBuy);
         }
 
         private void OnBuyClicked()
@@ -115,6 +120,25 @@ namespace TraidingIDLE.Collections
 
             if (buyButtonLabel == null && buyButton != null)
                 buyButtonLabel = buyButton.GetComponentInChildren<TMP_Text>(true);
+        }
+
+        private void ApplyBuyButtonStyle(bool bought, bool canUse)
+        {
+            if (buyButton == null)
+                return;
+
+            _buyButtonStyle = TransparentActionButtonStyle.Attach(buyButton, buyButtonGraphic, buyButtonLabel);
+            if (_buyButtonStyle == null)
+                return;
+
+            if (bought)
+            {
+                _buyButtonStyle.SetColor(buyButtonBoughtColor);
+            }
+            else
+            {
+                _buyButtonStyle.SetState(canUse, buyButtonEnabledColor, buyButtonDisabledColor);
+            }
         }
 
     }

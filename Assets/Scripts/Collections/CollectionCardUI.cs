@@ -27,10 +27,12 @@ namespace TraidingIDLE.Collections
         [SerializeField] private Graphic buyButtonGraphic;
         [SerializeField] private string buyButtonFormat = "Купить\n{0}";
         [SerializeField] private string boughtCaption = "Куплено";
-        [SerializeField] private Color buyButtonEnabledColor = new(0.08f, 0.45f, 0.28f, 1f);
-        [SerializeField] private Color buyButtonDisabledColor = new(0.35f, 0.35f, 0.35f, 0.75f);
+        [SerializeField] private Color buyButtonEnabledColor = new(0.25f, 0.95f, 0.52f, 1f);
+        [SerializeField] private Color buyButtonDisabledColor = new(0.55f, 0.57f, 0.62f, 1f);
+        [SerializeField] private Color buyButtonBoughtColor = new(0.68f, 0.83f, 0.79f, 1f);
 
         private Action _buyClicked;
+        private TransparentActionButtonStyle _buyButtonStyle;
 
         private void Awake()
         {
@@ -84,7 +86,7 @@ namespace TraidingIDLE.Collections
 
             if (buyButton != null)
             {
-                buyButton.gameObject.SetActive(!bought);
+                buyButton.gameObject.SetActive(true);
                 buyButton.interactable = !bought && canBuy;
             }
 
@@ -93,8 +95,7 @@ namespace TraidingIDLE.Collections
                     ? boughtCaption
                     : GameTextFormatter.Format(buyButtonFormat, "Купить\n{0}", price);
 
-            if (buyButtonGraphic != null)
-                buyButtonGraphic.color = !bought && canBuy ? buyButtonEnabledColor : buyButtonDisabledColor;
+            ApplyBuyButtonStyle(bought, !bought && canBuy);
         }
 
         private void OnBuyClicked()
@@ -112,6 +113,25 @@ namespace TraidingIDLE.Collections
 
             if (buyButtonLabel == null && buyButton != null)
                 buyButtonLabel = buyButton.GetComponentInChildren<TMP_Text>(true);
+        }
+
+        private void ApplyBuyButtonStyle(bool bought, bool canUse)
+        {
+            if (buyButton == null)
+                return;
+
+            _buyButtonStyle = TransparentActionButtonStyle.Attach(buyButton, buyButtonGraphic, buyButtonLabel);
+            if (_buyButtonStyle == null)
+                return;
+
+            if (bought)
+            {
+                _buyButtonStyle.SetColor(buyButtonBoughtColor);
+            }
+            else
+            {
+                _buyButtonStyle.SetState(canUse, buyButtonEnabledColor, buyButtonDisabledColor);
+            }
         }
 
     }

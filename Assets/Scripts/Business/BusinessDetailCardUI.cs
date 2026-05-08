@@ -30,8 +30,8 @@ namespace TraidingIDLE.Business
         [SerializeField] private TMP_Text actionLabelText;
         [SerializeField] private string actionLabelFormat = "{0}\n{1}";
         [SerializeField] private Graphic actionButtonGraphic;
-        [SerializeField] private Color actionButtonEnabledColor = new(0.08f, 0.45f, 0.28f, 1f);
-        [SerializeField] private Color actionButtonDisabledColor = new(0.35f, 0.35f, 0.35f, 0.75f);
+        [SerializeField] private Color actionButtonEnabledColor = new(0.25f, 0.95f, 0.52f, 1f);
+        [SerializeField] private Color actionButtonDisabledColor = new(0.55f, 0.57f, 0.62f, 1f);
 
         private Action _action;
 

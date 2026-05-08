@@ -106,26 +106,26 @@ namespace TraidingIDLE.Mining
         [Header("Rig Levels (same for every rig)")]
         [SerializeField] private RigLevelSettings[] rigLevels =
         {
-            new() { costToReachLevelRubles = 0, shtPerHour = 10f, ethPerHour = 1f, btcPerHour = 0.05f },
-            new() { costToReachLevelRubles = 50_000, shtPerHour = 24f, ethPerHour = 2.2f, btcPerHour = 0.11f },
-            new() { costToReachLevelRubles = 180_000, shtPerHour = 48f, ethPerHour = 4.6f, btcPerHour = 0.24f },
-            new() { costToReachLevelRubles = 650_000, shtPerHour = 92f, ethPerHour = 9.2f, btcPerHour = 0.50f },
-            new() { costToReachLevelRubles = 2_500_000, shtPerHour = 170f, ethPerHour = 17f, btcPerHour = 0.95f },
-            new() { costToReachLevelRubles = 6_000_000, shtPerHour = 285f, ethPerHour = 29f, btcPerHour = 1.65f },
-            new() { costToReachLevelRubles = 12_000_000, shtPerHour = 440f, ethPerHour = 46f, btcPerHour = 2.70f },
-            new() { costToReachLevelRubles = 23_000_000, shtPerHour = 650f, ethPerHour = 70f, btcPerHour = 4.15f },
-            new() { costToReachLevelRubles = 40_000_000, shtPerHour = 920f, ethPerHour = 102f, btcPerHour = 6.10f },
-            new() { costToReachLevelRubles = 70_000_000, shtPerHour = 1_260f, ethPerHour = 145f, btcPerHour = 8.80f },
-            new() { costToReachLevelRubles = 115_000_000, shtPerHour = 1_700f, ethPerHour = 202f, btcPerHour = 12.50f },
-            new() { costToReachLevelRubles = 185_000_000, shtPerHour = 2_250f, ethPerHour = 275f, btcPerHour = 17.30f },
-            new() { costToReachLevelRubles = 290_000_000, shtPerHour = 2_950f, ethPerHour = 368f, btcPerHour = 23.50f },
-            new() { costToReachLevelRubles = 450_000_000, shtPerHour = 3_850f, ethPerHour = 485f, btcPerHour = 31.50f },
-            new() { costToReachLevelRubles = 680_000_000, shtPerHour = 5_000f, ethPerHour = 635f, btcPerHour = 42.00f },
-            new() { costToReachLevelRubles = 1_000_000_000, shtPerHour = 6_450f, ethPerHour = 820f, btcPerHour = 55.50f },
-            new() { costToReachLevelRubles = 1_450_000_000, shtPerHour = 8_250f, ethPerHour = 1_060f, btcPerHour = 73.00f },
-            new() { costToReachLevelRubles = 2_050_000_000, shtPerHour = 10_500f, ethPerHour = 1_360f, btcPerHour = 95.00f },
-            new() { costToReachLevelRubles = 2_850_000_000, shtPerHour = 13_300f, ethPerHour = 1_740f, btcPerHour = 123.00f },
-            new() { costToReachLevelRubles = 3_900_000_000, shtPerHour = 16_800f, ethPerHour = 2_200f, btcPerHour = 158.00f },
+            new() { costToReachLevelRubles = 0, shtPerHour = 6f, ethPerHour = 0.5f, btcPerHour = 0.02f },
+            new() { costToReachLevelRubles = 50_000, shtPerHour = 12f, ethPerHour = 1f, btcPerHour = 0.04f },
+            new() { costToReachLevelRubles = 180_000, shtPerHour = 22f, ethPerHour = 1.8f, btcPerHour = 0.07f },
+            new() { costToReachLevelRubles = 650_000, shtPerHour = 38f, ethPerHour = 2.8f, btcPerHour = 0.11f },
+            new() { costToReachLevelRubles = 2_500_000, shtPerHour = 60f, ethPerHour = 4f, btcPerHour = 0.17f },
+            new() { costToReachLevelRubles = 6_000_000, shtPerHour = 85f, ethPerHour = 5.6f, btcPerHour = 0.25f },
+            new() { costToReachLevelRubles = 12_000_000, shtPerHour = 115f, ethPerHour = 7.5f, btcPerHour = 0.36f },
+            new() { costToReachLevelRubles = 23_000_000, shtPerHour = 150f, ethPerHour = 9.8f, btcPerHour = 0.50f },
+            new() { costToReachLevelRubles = 40_000_000, shtPerHour = 190f, ethPerHour = 12.5f, btcPerHour = 0.70f },
+            new() { costToReachLevelRubles = 70_000_000, shtPerHour = 235f, ethPerHour = 16f, btcPerHour = 0.95f },
+            new() { costToReachLevelRubles = 115_000_000, shtPerHour = 285f, ethPerHour = 20f, btcPerHour = 1.25f },
+            new() { costToReachLevelRubles = 185_000_000, shtPerHour = 340f, ethPerHour = 25f, btcPerHour = 1.62f },
+            new() { costToReachLevelRubles = 290_000_000, shtPerHour = 400f, ethPerHour = 31f, btcPerHour = 2.05f },
+            new() { costToReachLevelRubles = 450_000_000, shtPerHour = 465f, ethPerHour = 38f, btcPerHour = 2.55f },
+            new() { costToReachLevelRubles = 680_000_000, shtPerHour = 535f, ethPerHour = 46f, btcPerHour = 3.15f },
+            new() { costToReachLevelRubles = 1_000_000_000, shtPerHour = 610f, ethPerHour = 55f, btcPerHour = 3.85f },
+            new() { costToReachLevelRubles = 1_450_000_000, shtPerHour = 690f, ethPerHour = 65f, btcPerHour = 4.65f },
+            new() { costToReachLevelRubles = 2_050_000_000, shtPerHour = 775f, ethPerHour = 76f, btcPerHour = 5.55f },
+            new() { costToReachLevelRubles = 2_850_000_000, shtPerHour = 865f, ethPerHour = 88f, btcPerHour = 6.55f },
+            new() { costToReachLevelRubles = 3_900_000_000, shtPerHour = 960f, ethPerHour = 102f, btcPerHour = 7.70f },
         };
 
         [Header("Rig Purchase")]
@@ -157,22 +157,22 @@ namespace TraidingIDLE.Mining
 
         [Header("Boost 1: Ad speed")]
         [SerializeField, Min(1f)] private float adSpeedMultiplier = 2f;
-        [SerializeField, Min(1f)] private float adSpeedDurationSeconds = 3600f;
+        [SerializeField, Min(1f)] private float adSpeedDurationSeconds = 1800f;
 
         [Header("Boost 2: Gems speed")]
-        [SerializeField, Min(1f)] private float gemSpeedMultiplier = 5f;
-        [SerializeField, Min(1f)] private float gemSpeedDurationSeconds = 86_400f;
+        [SerializeField, Min(1f)] private float gemSpeedMultiplier = 3f;
+        [SerializeField, Min(1f)] private float gemSpeedDurationSeconds = 7200f;
         [SerializeField, Min(0)] private long gemSpeedCost = 100;
 
         [Header("Boost 3: Coin income")]
         [SerializeField, Min(1f)] private float coinIncomeMultiplier = 2f;
         [SerializeField, Min(1f)] private float coinIncomeDurationSeconds = 1800f;
         [SerializeField] private BoostCostCurrency coinIncomeCostCurrency = BoostCostCurrency.SHT;
-        [SerializeField, Min(1)] private int coinIncomeBaseCost = 100;
-        [SerializeField, Min(1f)] private float coinIncomeCostMultiplier = 1.8f;
+        [SerializeField, Min(1)] private int coinIncomeBaseCost = 1_000_000;
+        [SerializeField, Min(1f)] private float coinIncomeCostMultiplier = 2.2f;
 
         [Header("Boost 4: Currency unlock")]
-        [SerializeField] private long[] currencyUnlockCostsRubles = { 1_000_000, 10_000_000 };
+        [SerializeField] private long[] currencyUnlockCostsRubles = { 12_000_000, 150_000_000 };
 
         [Header("Formats")]
         [SerializeField] private string totalIncomePerHourFormat = "{0} {1}";

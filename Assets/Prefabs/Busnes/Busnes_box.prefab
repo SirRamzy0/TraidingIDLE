@@ -424,7 +424,7 @@ MonoBehaviour:
   cardBackground: {fileID: 961457841157817271}
   normalColor: {r: 1, g: 1, b: 1, a: 0.95}
   selectedColor: {r: 0.6745283, g: 1, b: 0.75032693, a: 0.95}
-  notPurchasedColor: {r: 0.6226415, g: 0.6226415, b: 0.6226415, a: 0.95}
+  notPurchasedColor: {r: 0.5566038, g: 0.5566038, b: 0.5566038, a: 0.95}
   artworkImage: {fileID: 0}
   nameText: {fileID: 117413164757530520}
   categoryText: {fileID: 7876737795229772862}
@@ -433,9 +433,9 @@ MonoBehaviour:
   primaryActionButton: {fileID: 799942573756054730}
   primaryActionVerbText: {fileID: 2614707511528948827}
   actionPriceText: {fileID: 1158678523607034522}
-  primaryActionGraphic: {fileID: 0}
+  primaryActionGraphic: {fileID: 8649474058920124607}
   actionEnabledColor: {r: 1, g: 1, b: 1, a: 1}
-  actionDisabledColor: {r: 0.35, g: 0.35, b: 0.35, a: 0.75}
+  actionDisabledColor: {r: 0.55, g: 0.57, b: 0.62, a: 1}
 --- !u!114 &1241727738362586545
 MonoBehaviour:
   m_ObjectHideFlags: 0

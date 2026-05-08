@@ -35,7 +35,7 @@ namespace TraidingIDLE.Player
         [Header("Coin holdings")]
         [SerializeField] private CoinHolding[] holdings =
         {
-            new() { id = CurrencyId.SHT, amount = 0, cap = 1000 },
+            new() { id = CurrencyId.SHT, amount = 0, cap = 500 },
             new() { id = CurrencyId.ETH, amount = 0, cap = 150 },
             new() { id = CurrencyId.BTC, amount = 0, cap = 50 },
         };
@@ -313,7 +313,7 @@ namespace TraidingIDLE.Player
 
                 var current = holdings[index];
                 current.amount = Mathf.Max(0, saved.amount);
-                current.cap = Mathf.Max(0, saved.cap);
+                current.cap = Mathf.Max(0, current.cap);
                 current.investedRubles = Math.Max(0, saved.investedRubles);
 
                 if (current.amount > current.cap)
@@ -366,7 +366,7 @@ namespace TraidingIDLE.Player
         {
             holdings ??= Array.Empty<CoinHolding>();
 
-            EnsureHolding(CurrencyId.SHT, 1000);
+            EnsureHolding(CurrencyId.SHT, 500);
             EnsureHolding(CurrencyId.ETH, 150);
             EnsureHolding(CurrencyId.BTC, 50);
 

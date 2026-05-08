@@ -81,12 +81,18 @@ namespace TraidingIDLE.Collections
         [SerializeField] private Slider progressSlider;
         [SerializeField] private TMP_Text progressText;
         [SerializeField] private TMP_Text totalBonusText;
+        [SerializeField] private Color totalBonusReachedColor = new(0.25f, 0.95f, 0.52f, 1f);
+        [SerializeField] private Color totalBonusLockedColor = Color.white;
 
         [Header("Cards")]
         [SerializeField] private CollectionCardUI cardPrefab;
         [SerializeField] private RectTransform cardsContent;
 
         [Header("Bonus rows")]
+        [SerializeField] private TMP_Text bonusTargetTitleText;
+        [SerializeField] private string bonusTargetTitleFormat = "Бонусы к бизнесу с типом \"{0}\"";
+        [SerializeField] private TMP_Text bonusTargetDescriptionText;
+        [SerializeField] private string bonusTargetDescriptionFormat = "Сбор этой коллекции дает бонус к доходу всех ваших бизнесов с типом «{0}»";
         [SerializeField] private CollectionBonusMilestoneRowUI bonusRowPrefab;
         [SerializeField] private RectTransform bonusRowsContent;
         [SerializeField] private CollectionBonusMilestoneRowUI[] bonusRows = Array.Empty<CollectionBonusMilestoneRowUI>();
@@ -306,6 +312,7 @@ namespace TraidingIDLE.Collections
 
             active.finalItemOwned = true;
             MarkDirty();
+            NotifyBusinessBonusesChanged();
             RefreshAllUi();
         }
 
@@ -338,16 +345,47 @@ namespace TraidingIDLE.Collections
             if (progressText != null)
                 progressText.text = GameTextFormatter.Format(progressFormat, "Собрано {0}/{1}", owned, total);
 
+            var unlockedBonusPercent = GetUnlockedBonusPercent(active);
             if (totalBonusText != null)
+            {
                 totalBonusText.text = GameTextFormatter.Format(
                     totalBonusFormat,
                     "Общий бонус: {0}%",
-                    GameTextFormatter.Percent(GetUnlockedBonusPercent(active)));
+                    GameTextFormatter.Percent(unlockedBonusPercent));
+                totalBonusText.color = unlockedBonusPercent > 0d ? totalBonusReachedColor : totalBonusLockedColor;
+            }
 
             RefreshCards(active);
+            RefreshBonusTargetTexts(definition);
             RefreshBonusRows(active);
             RefreshFinalItem(active);
             RefreshFilterButtons();
+        }
+
+        private void RefreshBonusTargetTexts(CollectionDefinition definition)
+        {
+            if (definition == null)
+                return;
+
+            var targetBusinessCategory = string.IsNullOrWhiteSpace(definition.TargetBusinessCategory)
+                ? definition.CollectionCategory
+                : definition.TargetBusinessCategory;
+
+            if (bonusTargetTitleText != null)
+            {
+                bonusTargetTitleText.text = GameTextFormatter.Format(
+                    bonusTargetTitleFormat,
+                    "Бонусы к бизнесу с типом \"{0}\"",
+                    targetBusinessCategory);
+            }
+
+            if (bonusTargetDescriptionText != null)
+            {
+                bonusTargetDescriptionText.text = GameTextFormatter.Format(
+                    bonusTargetDescriptionFormat,
+                    "Сбор этой коллекции дает бонус к доходу всех ваших бизнесов с типом «{0}»",
+                    targetBusinessCategory);
+            }
         }
 
         private void RefreshCards(RuntimeCollection active)
@@ -489,11 +527,16 @@ namespace TraidingIDLE.Collections
             var finalItem = active.definition.FinalItem;
             var unlocked = IsFinalItemUnlocked(active);
             var cost = Math.Max(0, finalItem.priceRubles);
+            var bonusPercent = GetFinalItemBonusPercent(finalItem);
 
             finalItemUi.Configure(
                 finalItem.background,
                 finalItem.artwork,
                 finalItem.title,
+                GameTextFormatter.Format(
+                    bonusValueFormat,
+                    "+ {0}% к доходу",
+                    GameTextFormatter.Percent(bonusPercent)),
                 FormatNumberMoney(cost),
                 unlocked,
                 active.finalItemOwned,
@@ -538,7 +581,15 @@ namespace TraidingIDLE.Collections
                     bonus += Math.Max(0f, milestone.bonusPercent);
             }
 
+            if (active.finalItemOwned)
+                bonus += GetFinalItemBonusPercent(active.definition.FinalItem);
+
             return bonus;
+        }
+
+        private static float GetFinalItemBonusPercent(CollectionFinalItemConfig finalItem)
+        {
+            return finalItem == null ? 0f : Math.Max(0f, finalItem.bonusPercent);
         }
 
         private bool IsFinalItemUnlocked(RuntimeCollection active)

@@ -28,6 +28,7 @@ namespace TraidingIDLE.Collections
         public Sprite background;
         public Sprite artwork;
         [Min(0)] public long priceRubles;
+        [Min(0f)] public float bonusPercent = 20f;
     }
 
     [CreateAssetMenu(menuName = "TraidingIDLE/Collection Definition", fileName = "CollectionDefinition")]
