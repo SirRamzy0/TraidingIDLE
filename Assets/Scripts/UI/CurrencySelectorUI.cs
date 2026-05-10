@@ -1,5 +1,6 @@
 using TMPro;
 using TraidingIDLE.Currencies;
+using TraidingIDLE.Currencies.Simulation;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -9,6 +10,7 @@ namespace TraidingIDLE.UI
     {
         [Header("Market")]
         [SerializeField] private CurrencyMarket market = null!;
+        [SerializeField] private MarketSimulation marketSimulation = null!;
 
         [Header("Label")]
         [SerializeField] private TMP_Text activeCurrencyText = null!;
@@ -36,6 +38,8 @@ namespace TraidingIDLE.UI
         {
             if (market == null)
                 market = FindFirstObjectByType<CurrencyMarket>();
+            if (marketSimulation == null)
+                marketSimulation = FindFirstObjectByType<MarketSimulation>();
         }
 
         private void OnEnable()
@@ -62,20 +66,30 @@ namespace TraidingIDLE.UI
 
         private void OnShtClicked()
         {
-            if (market != null) market.SetActiveCurrency(CurrencyId.SHT);
-            ApplySelection(CurrencyId.SHT);
+            SelectCurrency(CurrencyId.SHT);
         }
 
         private void OnEthClicked()
         {
-            if (market != null) market.SetActiveCurrency(CurrencyId.ETH);
-            ApplySelection(CurrencyId.ETH);
+            SelectCurrency(CurrencyId.ETH);
         }
 
         private void OnBtcClicked()
         {
-            if (market != null) market.SetActiveCurrency(CurrencyId.BTC);
-            ApplySelection(CurrencyId.BTC);
+            SelectCurrency(CurrencyId.BTC);
+        }
+
+        private void SelectCurrency(CurrencyId id)
+        {
+            if (marketSimulation == null)
+                marketSimulation = FindFirstObjectByType<MarketSimulation>();
+
+            marketSimulation?.FlushPendingTicks();
+
+            if (market != null)
+                market.SetActiveCurrency(id);
+
+            ApplySelection(id);
         }
 
         private void OnActiveCurrencyChanged(CurrencyId id)

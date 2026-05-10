@@ -21,6 +21,12 @@ namespace TraidingIDLE.Collections
         [SerializeField] private Color notBoughtColor = new(1f, 1f, 1f, 0.65f);
         [SerializeField] private Color boughtColor = Color.white;
 
+        [Header("Image tint")]
+        [SerializeField] private Color boughtBackgroundColor = Color.white;
+        [SerializeField] private Color notBoughtBackgroundColor = new(0.45f, 0.45f, 0.5f, 1f);
+        [SerializeField] private Color boughtArtworkColor = Color.white;
+        [SerializeField] private Color notBoughtArtworkColor = new(0.55f, 0.55f, 0.6f, 1f);
+
         [Header("Action")]
         [SerializeField] private Button buyButton;
         [SerializeField] private TMP_Text buyButtonLabel;
@@ -62,12 +68,14 @@ namespace TraidingIDLE.Collections
             {
                 backgroundImage.sprite = background;
                 backgroundImage.enabled = background != null;
+                backgroundImage.color = bought ? boughtBackgroundColor : notBoughtBackgroundColor;
             }
 
             if (artworkImage != null)
             {
                 artworkImage.sprite = artwork;
                 artworkImage.enabled = artwork != null;
+                artworkImage.color = bought ? boughtArtworkColor : notBoughtArtworkColor;
             }
 
             if (titleText != null)

@@ -34,6 +34,8 @@ namespace TraidingIDLE.Business
             public float tempMultiplierHeld;
             public string tempCategory = "";
             public int selectedBusinessIndex;
+            public bool hasActiveCategoryFilter;
+            public string activeCategoryFilter = "";
         }
 
         private sealed class RuntimeBusinessEntry
@@ -76,6 +78,7 @@ namespace TraidingIDLE.Business
         [Header("Filters")]
         [SerializeField] private BusinessFilterButtonUI allFilterButton;
         [SerializeField] private BusinessFilterButtonUI[] categoryFilterButtons = Array.Empty<BusinessFilterButtonUI>();
+        [SerializeField] private string defaultCategoryFilter = "Товарный бизнес";
 
         [Header("Selected business")]
         [SerializeField] private BusinessDetailCardUI detailCard;
@@ -680,6 +683,7 @@ namespace TraidingIDLE.Business
         {
             _activeCategoryFilter = NormalizeCategory(category);
             EnsureSelectedBusinessVisible();
+            MarkDirty();
             RefreshAllUi();
         }
 
@@ -1235,6 +1239,8 @@ namespace TraidingIDLE.Business
                 tempMultiplierHeld = _tempMultiplier,
                 tempCategory = _tempCategory,
                 selectedBusinessIndex = _selectedIndex,
+                hasActiveCategoryFilter = true,
+                activeCategoryFilter = _activeCategoryFilter,
             };
 
             SaveStorage.SaveJson(SaveKey, data);
@@ -1250,6 +1256,8 @@ namespace TraidingIDLE.Business
 
             if (!SaveStorage.TryLoadJson(SaveKey, out SaveData data))
             {
+                _activeCategoryFilter = NormalizeCategory(defaultCategoryFilter);
+                EnsureSelectedBusinessVisible();
                 _lastSimUtcSeconds = UtcNow();
                 _displayAccumRubles = _accumulatedRubles;
                 return;
@@ -1270,6 +1278,10 @@ namespace TraidingIDLE.Business
             _tempMultiplier = Mathf.Max(1f, data.tempMultiplierHeld);
             _tempCategory = NormalizeCategory(data.tempCategory);
             _selectedIndex = _entries.Count <= 0 ? 0 : Mathf.Clamp(data.selectedBusinessIndex, 0, _entries.Count - 1);
+            _activeCategoryFilter = data.hasActiveCategoryFilter
+                ? NormalizeCategory(data.activeCategoryFilter)
+                : NormalizeCategory(defaultCategoryFilter);
+            EnsureSelectedBusinessVisible();
             _displayAccumRubles = _accumulatedRubles;
 
             if (_energy < energyMax && _nextEnergyAtUtc <= 0)

@@ -74,6 +74,8 @@ namespace TraidingIDLE.Collections
 
         [Header("Filters")]
         [SerializeField] private CollectionFilterButtonUI[] filterButtons = Array.Empty<CollectionFilterButtonUI>();
+        [SerializeField] private string defaultCollectionSaveId = "branded_clothes";
+        [SerializeField] private string defaultCollectionCategory = "Товарный бизнес";
 
         [Header("Progress")]
         [SerializeField] private TMP_Text collectionTitleText;
@@ -198,7 +200,8 @@ namespace TraidingIDLE.Collections
             ResolveSceneReferences();
             RebuildRuntimeCollections();
             BindFilterButtons();
-            Load();
+            if (!Load())
+                SelectDefaultCollection();
             _activeIndex = _runtime.Count <= 0 ? 0 : Mathf.Clamp(_activeIndex, 0, _runtime.Count - 1);
             _initialized = true;
             RefreshAllUi();
@@ -662,14 +665,14 @@ namespace TraidingIDLE.Collections
             return result.ToArray();
         }
 
-        private void Load()
+        private bool Load()
         {
             if (!SaveStorage.TryLoadJson(SaveKey, out SaveData data))
-                return;
+                return false;
 
             _activeIndex = _runtime.Count <= 0 ? 0 : Mathf.Clamp(data.activeCollectionIndex, 0, _runtime.Count - 1);
             if (data.collections == null)
-                return;
+                return true;
 
             var map = new Dictionary<string, CollectionSave>(StringComparer.Ordinal);
             for (var i = 0; i < data.collections.Length; i++)
@@ -688,6 +691,51 @@ namespace TraidingIDLE.Collections
                     continue;
 
                 LoadCollectionState(item, save);
+            }
+
+            return true;
+        }
+
+        private void SelectDefaultCollection()
+        {
+            var defaultSaveId = NormalizeKey(defaultCollectionSaveId);
+            if (!string.IsNullOrEmpty(defaultSaveId))
+            {
+                for (var i = 0; i < _runtime.Count; i++)
+                {
+                    var definition = _runtime[i].definition;
+                    if (definition == null)
+                        continue;
+
+                    if (!string.Equals(
+                            NormalizeKey(definition.SaveId),
+                            defaultSaveId,
+                            StringComparison.OrdinalIgnoreCase))
+                        continue;
+
+                    _activeIndex = i;
+                    return;
+                }
+            }
+
+            var defaultCategory = NormalizeKey(defaultCollectionCategory);
+            if (string.IsNullOrEmpty(defaultCategory))
+                return;
+
+            for (var i = 0; i < _runtime.Count; i++)
+            {
+                var definition = _runtime[i].definition;
+                if (definition == null)
+                    continue;
+
+                if (!string.Equals(
+                        NormalizeKey(definition.CollectionCategory),
+                        defaultCategory,
+                        StringComparison.OrdinalIgnoreCase))
+                    continue;
+
+                _activeIndex = i;
+                return;
             }
         }
 

@@ -31,11 +31,11 @@ namespace TraidingIDLE.UI.Charts
         [SerializeField] private bool useCurrencyRelativeViewportFloor = true;
 
         [Range(0f, 3f)]
-        [SerializeField] private float shtMinViewportRangeFromPrice01 = 0.85f;
+        [SerializeField] private float shtMinViewportRangeFromPrice01 = 0.72f;
         [Range(0f, 3f)]
-        [SerializeField] private float ethMinViewportRangeFromPrice01 = 0.35f;
+        [SerializeField] private float ethMinViewportRangeFromPrice01 = 0.24f;
         [Range(0f, 3f)]
-        [SerializeField] private float btcMinViewportRangeFromPrice01 = 0.22f;
+        [SerializeField] private float btcMinViewportRangeFromPrice01 = 0.14f;
 
         [Header("Sideways viewport zoom")]
         [SerializeField] private bool enableSidewaysViewportZoom = true;
@@ -43,11 +43,11 @@ namespace TraidingIDLE.UI.Charts
         [Range(0.05f, 1f)]
         [SerializeField] private float sidewaysZoomRangeThreshold01 = 0.65f;
         [Range(0f, 3f)]
-        [SerializeField] private float shtSidewaysMinViewportRangeFromPrice01 = 0.85f;
+        [SerializeField] private float shtSidewaysMinViewportRangeFromPrice01 = 0.42f;
         [Range(0f, 3f)]
-        [SerializeField] private float ethSidewaysMinViewportRangeFromPrice01 = 0.055f;
+        [SerializeField] private float ethSidewaysMinViewportRangeFromPrice01 = 0.070f;
         [Range(0f, 3f)]
-        [SerializeField] private float btcSidewaysMinViewportRangeFromPrice01 = 0.22f;
+        [SerializeField] private float btcSidewaysMinViewportRangeFromPrice01 = 0.075f;
 
         [Min(0f)]
         [SerializeField] private float maxViewportRange = 0f; // 0 = unlimited
@@ -105,11 +105,11 @@ namespace TraidingIDLE.UI.Charts
 
         [Header("Per-currency candle readability")]
         [Range(0.5f, 2.5f)]
-        [SerializeField] private float shtCandleVisualRangeMultiplier = 1f;
+        [SerializeField] private float shtCandleVisualRangeMultiplier = 1.45f;
         [Range(0.5f, 2.5f)]
-        [SerializeField] private float ethCandleVisualRangeMultiplier = 1.35f;
+        [SerializeField] private float ethCandleVisualRangeMultiplier = 1.55f;
         [Range(0.5f, 2.5f)]
-        [SerializeField] private float btcCandleVisualRangeMultiplier = 1f;
+        [SerializeField] private float btcCandleVisualRangeMultiplier = 1.35f;
 
         private readonly PriceHistoryBuffer _history = new();
         private readonly CandleHistoryBuffer _candles = new();
@@ -495,15 +495,33 @@ namespace TraidingIDLE.UI.Charts
             for (var i = 0; i < candlesCount; i++)
             {
                 var c = _candles[i];
+                var open01 = Mathf.InverseLerp(_viewMin, _viewMax, c.open);
+                var high01 = Mathf.InverseLerp(_viewMin, _viewMax, c.high);
+                var low01 = Mathf.InverseLerp(_viewMin, _viewMax, c.low);
+                var close01 = Mathf.InverseLerp(_viewMin, _viewMax, c.close);
 
                 _candles01[i] = new UICandlestickChartGraphic.Candle01
                 {
-                    open01 = Mathf.InverseLerp(_viewMin, _viewMax, c.open),
-                    high01 = Mathf.InverseLerp(_viewMin, _viewMax, c.high),
-                    low01 = Mathf.InverseLerp(_viewMin, _viewMax, c.low),
-                    close01 = Mathf.InverseLerp(_viewMin, _viewMax, c.close),
+                    open01 = open01,
+                    high01 = high01,
+                    low01 = low01,
+                    close01 = close01,
+                    visible = IsCandleInsideViewport01(open01, high01, low01, close01),
                 };
             }
+        }
+
+        private static bool IsCandleInsideViewport01(float open01, float high01, float low01, float close01)
+        {
+            return IsInside01(open01)
+                && IsInside01(high01)
+                && IsInside01(low01)
+                && IsInside01(close01);
+        }
+
+        private static bool IsInside01(float value)
+        {
+            return !float.IsNaN(value) && !float.IsInfinity(value) && value >= 0f && value <= 1f;
         }
 
         private CandleHistoryBuffer.Candle BuildCandle(float open, float close, float prevClose, int index)

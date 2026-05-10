@@ -13,5 +13,10 @@ namespace TraidingIDLE.Currencies.Simulation
         DeadFlatThenRocketPump = 8,
         DeadFlatThenRocketDump = 9,
         BusinessSkillPumpDump = 10,
+        StairUp = 11,
+        StairDown = 12,
+        CompressionBreakout = 13,
+        LowRangeRecovery = 14,
+        AccumulationRun = 15,
     }
 }

@@ -192,6 +192,7 @@ namespace TraidingIDLE.MiniGame
                     return;
 
                 _backgroundRunner._controllers.Remove(controller);
+                _backgroundRunner.DestroyIfEmpty();
             }
 
             private static BackgroundRunner GetOrCreate()
@@ -222,6 +223,28 @@ namespace TraidingIDLE.MiniGame
 
                     controller.AdvanceInBackground(dt);
                 }
+
+                DestroyIfEmpty();
+            }
+
+            private void OnDestroy()
+            {
+                if (_backgroundRunner == this)
+                    _backgroundRunner = null;
+            }
+
+            private void DestroyIfEmpty()
+            {
+                if (_controllers.Count > 0)
+                    return;
+
+                if (_backgroundRunner == this)
+                    _backgroundRunner = null;
+
+                if (Application.isPlaying)
+                    Destroy(gameObject);
+                else
+                    DestroyImmediate(gameObject);
             }
         }
 

@@ -106,26 +106,26 @@ namespace TraidingIDLE.Mining
         [Header("Rig Levels (same for every rig)")]
         [SerializeField] private RigLevelSettings[] rigLevels =
         {
-            new() { costToReachLevelRubles = 0, shtPerHour = 6f, ethPerHour = 0.5f, btcPerHour = 0.02f },
-            new() { costToReachLevelRubles = 50_000, shtPerHour = 12f, ethPerHour = 1f, btcPerHour = 0.04f },
-            new() { costToReachLevelRubles = 180_000, shtPerHour = 22f, ethPerHour = 1.8f, btcPerHour = 0.07f },
-            new() { costToReachLevelRubles = 650_000, shtPerHour = 38f, ethPerHour = 2.8f, btcPerHour = 0.11f },
-            new() { costToReachLevelRubles = 2_500_000, shtPerHour = 60f, ethPerHour = 4f, btcPerHour = 0.17f },
-            new() { costToReachLevelRubles = 6_000_000, shtPerHour = 85f, ethPerHour = 5.6f, btcPerHour = 0.25f },
-            new() { costToReachLevelRubles = 12_000_000, shtPerHour = 115f, ethPerHour = 7.5f, btcPerHour = 0.36f },
-            new() { costToReachLevelRubles = 23_000_000, shtPerHour = 150f, ethPerHour = 9.8f, btcPerHour = 0.50f },
-            new() { costToReachLevelRubles = 40_000_000, shtPerHour = 190f, ethPerHour = 12.5f, btcPerHour = 0.70f },
-            new() { costToReachLevelRubles = 70_000_000, shtPerHour = 235f, ethPerHour = 16f, btcPerHour = 0.95f },
-            new() { costToReachLevelRubles = 115_000_000, shtPerHour = 285f, ethPerHour = 20f, btcPerHour = 1.25f },
-            new() { costToReachLevelRubles = 185_000_000, shtPerHour = 340f, ethPerHour = 25f, btcPerHour = 1.62f },
-            new() { costToReachLevelRubles = 290_000_000, shtPerHour = 400f, ethPerHour = 31f, btcPerHour = 2.05f },
-            new() { costToReachLevelRubles = 450_000_000, shtPerHour = 465f, ethPerHour = 38f, btcPerHour = 2.55f },
-            new() { costToReachLevelRubles = 680_000_000, shtPerHour = 535f, ethPerHour = 46f, btcPerHour = 3.15f },
-            new() { costToReachLevelRubles = 1_000_000_000, shtPerHour = 610f, ethPerHour = 55f, btcPerHour = 3.85f },
-            new() { costToReachLevelRubles = 1_450_000_000, shtPerHour = 690f, ethPerHour = 65f, btcPerHour = 4.65f },
-            new() { costToReachLevelRubles = 2_050_000_000, shtPerHour = 775f, ethPerHour = 76f, btcPerHour = 5.55f },
-            new() { costToReachLevelRubles = 2_850_000_000, shtPerHour = 865f, ethPerHour = 88f, btcPerHour = 6.55f },
-            new() { costToReachLevelRubles = 3_900_000_000, shtPerHour = 960f, ethPerHour = 102f, btcPerHour = 7.70f },
+            new() { costToReachLevelRubles = 0, shtPerHour = 6f, ethPerHour = 0.5f, btcPerHour = 0.05f },
+            new() { costToReachLevelRubles = 50_000, shtPerHour = 12f, ethPerHour = 1f, btcPerHour = 0.08f },
+            new() { costToReachLevelRubles = 180_000, shtPerHour = 22f, ethPerHour = 1.8f, btcPerHour = 0.13f },
+            new() { costToReachLevelRubles = 650_000, shtPerHour = 38f, ethPerHour = 2.8f, btcPerHour = 0.20f },
+            new() { costToReachLevelRubles = 2_500_000, shtPerHour = 60f, ethPerHour = 4f, btcPerHour = 0.30f },
+            new() { costToReachLevelRubles = 6_000_000, shtPerHour = 85f, ethPerHour = 5.6f, btcPerHour = 0.42f },
+            new() { costToReachLevelRubles = 12_000_000, shtPerHour = 115f, ethPerHour = 7.5f, btcPerHour = 0.58f },
+            new() { costToReachLevelRubles = 23_000_000, shtPerHour = 150f, ethPerHour = 9.8f, btcPerHour = 0.78f },
+            new() { costToReachLevelRubles = 40_000_000, shtPerHour = 190f, ethPerHour = 12.5f, btcPerHour = 1.05f },
+            new() { costToReachLevelRubles = 70_000_000, shtPerHour = 235f, ethPerHour = 16f, btcPerHour = 1.35f },
+            new() { costToReachLevelRubles = 115_000_000, shtPerHour = 285f, ethPerHour = 20f, btcPerHour = 1.75f },
+            new() { costToReachLevelRubles = 185_000_000, shtPerHour = 340f, ethPerHour = 25f, btcPerHour = 2.20f },
+            new() { costToReachLevelRubles = 290_000_000, shtPerHour = 400f, ethPerHour = 31f, btcPerHour = 2.75f },
+            new() { costToReachLevelRubles = 450_000_000, shtPerHour = 465f, ethPerHour = 38f, btcPerHour = 3.40f },
+            new() { costToReachLevelRubles = 680_000_000, shtPerHour = 535f, ethPerHour = 46f, btcPerHour = 4.15f },
+            new() { costToReachLevelRubles = 1_000_000_000, shtPerHour = 610f, ethPerHour = 55f, btcPerHour = 5.00f },
+            new() { costToReachLevelRubles = 1_450_000_000, shtPerHour = 690f, ethPerHour = 65f, btcPerHour = 6.00f },
+            new() { costToReachLevelRubles = 2_050_000_000, shtPerHour = 775f, ethPerHour = 76f, btcPerHour = 7.10f },
+            new() { costToReachLevelRubles = 2_850_000_000, shtPerHour = 865f, ethPerHour = 88f, btcPerHour = 8.35f },
+            new() { costToReachLevelRubles = 3_900_000_000, shtPerHour = 960f, ethPerHour = 102f, btcPerHour = 9.80f },
         };
 
         [Header("Rig Purchase")]
@@ -599,7 +599,7 @@ namespace TraidingIDLE.Mining
             {
                 totalIncomePerHourText.text = string.Format(
                     SafeFormat(totalIncomePerHourFormat, "{0} {1}"),
-                    FormatAmount(GetTotalIncomePerHour()),
+                    FormatAmount(GetTotalIncomePerHour(), ActiveCurrency),
                     ActiveCurrency);
             }
 
@@ -607,7 +607,7 @@ namespace TraidingIDLE.Mining
             {
                 accumulatedText.text = string.Format(
                     SafeFormat(accumulatedFormat, "{0} {1}"),
-                    FormatAmount(Math.Floor(_accumulated)),
+                    FormatAmount(Math.Floor(_accumulated), ActiveCurrency),
                     ActiveCurrency);
             }
 
@@ -1057,11 +1057,12 @@ namespace TraidingIDLE.Mining
             return DateTimeOffset.UtcNow.ToUnixTimeSeconds();
         }
 
-        private static string FormatAmount(double value)
+        private static string FormatAmount(double value, CurrencyId currency)
         {
-            return Math.Max(0d, value)
-                .ToString("N0", CultureInfo.InvariantCulture)
-                .Replace(",", ".");
+            value = Math.Max(0d, value);
+            return currency == CurrencyId.BTC
+                ? value.ToString(value < 1d ? "0.##" : "N0", CultureInfo.InvariantCulture).Replace(",", ".")
+                : value.ToString("N0", CultureInfo.InvariantCulture).Replace(",", ".");
         }
 
         private static string FormatRubles(long value)

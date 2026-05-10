@@ -162,6 +162,7 @@ namespace TraidingIDLE.Currencies
             activeCurrency = id;
             _lastActiveCurrency = activeCurrency;
             ActiveCurrencyChanged?.Invoke(activeCurrency);
+            PriceChanged?.Invoke(activeCurrency, GetPrice(activeCurrency));
             MarkDirty();
         }
 

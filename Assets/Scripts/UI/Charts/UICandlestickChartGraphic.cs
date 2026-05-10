@@ -12,6 +12,7 @@ namespace TraidingIDLE.UI.Charts
             public float high01;
             public float low01;
             public float close01;
+            public bool visible;
         }
 
         [Header("Style")]
@@ -56,6 +57,8 @@ namespace TraidingIDLE.UI.Charts
             {
                 var c = _candles[i];
                 var xCenter = rect.xMin + slot * (i + 0.5f);
+                if (!c.visible)
+                    continue;
 
                 var openY = rect.yMin + Mathf.Clamp01(c.open01) * h;
                 var highY = rect.yMin + Mathf.Clamp01(c.high01) * h;

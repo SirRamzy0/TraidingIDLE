@@ -468,9 +468,13 @@ MonoBehaviour:
   dimRoot: {fileID: 0}
   boughtRoot: {fileID: 0}
   boughtText: {fileID: 0}
-  cardGraphic: {fileID: 0}
-  notBoughtColor: {r: 0.6509434, g: 0.6509434, b: 0.6509434, a: 0.65}
+  cardGraphic: {fileID: 2204024428056867637}
+  notBoughtColor: {r: 1, g: 1, b: 1, a: 1}
   boughtColor: {r: 1, g: 1, b: 1, a: 1}
+  boughtBackgroundColor: {r: 1, g: 1, b: 1, a: 1}
+  notBoughtBackgroundColor: {r: 1, g: 1, b: 1, a: 1}
+  boughtArtworkColor: {r: 1, g: 1, b: 1, a: 1}
+  notBoughtArtworkColor: {r: 0.32941177, g: 0.32941177, b: 0.32941177, a: 1}
   buyButton: {fileID: 1508801720947207550}
   buyButtonLabel: {fileID: 4142480986576433246}
   buyButtonGraphic: {fileID: 2144065533802558977}

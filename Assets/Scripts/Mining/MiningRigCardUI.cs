@@ -71,7 +71,7 @@ namespace TraidingIDLE.Mining
             {
                 incomePerHourText.text = string.Format(
                     SafeFormat(incomeFormat, "{0} {1} в час"),
-                    FormatAmount(incomePerHour),
+                    FormatAmount(incomePerHour, currency),
                     currency);
             }
 
@@ -107,11 +107,12 @@ namespace TraidingIDLE.Mining
             return string.IsNullOrEmpty(format) ? fallback : format;
         }
 
-        private static string FormatAmount(double value)
+        private static string FormatAmount(double value, CurrencyId currency)
         {
-            return Math.Max(0d, value)
-                .ToString("N0", CultureInfo.InvariantCulture)
-                .Replace(",", ".");
+            value = Math.Max(0d, value);
+            return currency == CurrencyId.BTC
+                ? value.ToString(value < 1d ? "0.##" : "N0", CultureInfo.InvariantCulture).Replace(",", ".")
+                : value.ToString("N0", CultureInfo.InvariantCulture).Replace(",", ".");
         }
 
         private static string FormatRubles(long value)

@@ -1,0 +1,23 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 0893b6d22e86fb54d8e87ba82846deee, type: 3}
+  m_Name: Temka_Fast
+  m_EditorClassIdentifier: Assembly-CSharp::TraidingIDLE.Temki.TemkaDefinition
+  saveId: temka_fast
+  displayName: "\u0411\u044B\u0441\u0442\u0440\u0430\u044F \u0442\u0435\u043C\u043A\u0430"
+  description: "\u041A\u043E\u0440\u043E\u0442\u043A\u0438\u0439 \u0440\u0438\u0441\u043A
+    \u0441 \u043D\u0435\u0431\u043E\u043B\u044C\u0448\u043E\u0439 \u0441\u0442\u0430\u0432\u043A\u043E\u0439."
+  artwork: {fileID: 21300000, guid: b762ce25882a0604cb766268f8b455b0, type: 3}
+  successChance: 0.62
+  rewardMultiplier: 1.7
+  durationSeconds: 180
+  stakeRubles: 150000
