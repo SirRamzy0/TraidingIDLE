@@ -12,12 +12,14 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 0893b6d22e86fb54d8e87ba82846deee, type: 3}
   m_Name: Temka_Street
   m_EditorClassIdentifier: Assembly-CSharp::TraidingIDLE.Temki.TemkaDefinition
-  saveId: temka_street
-  displayName: "\u0423\u043B\u0438\u0447\u043D\u0430\u044F \u0441\u0434\u0435\u043B\u043A\u0430"
-  description: "\u0421\u0440\u0435\u0434\u043D\u0438\u0439 \u0448\u0430\u043D\u0441
-    \u0438 \u0431\u044B\u0441\u0442\u0440\u044B\u0439 \u0440\u0435\u0437\u0443\u043B\u044C\u0442\u0430\u0442."
+  saveId: temka_car_run
+  displayName: "\u041F\u0435\u0440\u0435\u0433\u043D\u0430\u0442\u044C \u0442\u0430\u0447\u043A\u0443"
+  description: "\u041A\u0443\u043F\u0438\u043B, \u043F\u0440\u0438\u0433\u043D\u0430\u043B,
+    \u043D\u0430\u0434\u0435\u044E\u0441\u044C \u0447\u0442\u043E \u043A\u0443\u043F\u044F\u0442"
   artwork: {fileID: 21300000, guid: b762ce25882a0604cb766268f8b455b0, type: 3}
-  successChance: 0.48
-  rewardMultiplier: 2.4
-  durationSeconds: 300
-  stakeRubles: 500000
+  successChance: 0.42
+  displayedSuccessChance: 0.46
+  rewardMultiplier: 3.2
+  durationSeconds: 420
+  stakeRubles: 750000
+  stakeGrowthPerUse: 1.6

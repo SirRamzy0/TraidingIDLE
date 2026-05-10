@@ -12,13 +12,14 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 0893b6d22e86fb54d8e87ba82846deee, type: 3}
   m_Name: Temka_Legend
   m_EditorClassIdentifier: Assembly-CSharp::TraidingIDLE.Temki.TemkaDefinition
-  saveId: temka_legend
-  displayName: "\u0420\u0435\u0434\u043A\u0438\u0439 \u0448\u0430\u043D\u0441"
-  description: "\u0414\u043E\u0440\u043E\u0433\u0430\u044F \u0441\u0442\u0430\u0432\u043A\u0430
-    \u0438 \u0440\u0435\u0434\u043A\u0438\u0439 \u0431\u043E\u043B\u044C\u0448\u043E\u0439
-    \u0438\u0441\u0445\u043E\u0434."
+  saveId: temka_casino
+  displayName: "\u0421\u0442\u0430\u0432\u043A\u0430 \u0432 \u043A\u0430\u0437\u0438\u043A"
+  description: "\u042F \u0444\u0430\u0440\u0442\u043E\u0432\u044B\u0439, \u043C\u043D\u0435
+    \u0437\u0430\u043B\u0435\u0442\u0438\u0442"
   artwork: {fileID: 21300000, guid: b762ce25882a0604cb766268f8b455b0, type: 3}
-  successChance: 0.14
-  rewardMultiplier: 9
-  durationSeconds: 1800
-  stakeRubles: 15000000
+  successChance: 0.02
+  displayedSuccessChance: 0.75
+  rewardMultiplier: 10
+  durationSeconds: 240
+  stakeRubles: 1000000
+  stakeGrowthPerUse: 2

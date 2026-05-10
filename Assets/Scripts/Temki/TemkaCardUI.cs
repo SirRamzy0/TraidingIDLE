@@ -25,6 +25,11 @@ namespace TraidingIDLE.Temki
         [SerializeField] private Sprite timerButtonSprite;
         [SerializeField] private Sprite checkButtonSprite;
 
+        [Header("Chance color")]
+        [SerializeField] private Color lowChanceColor = new(0.95f, 0.24f, 0.34f, 1f);
+        [SerializeField] private Color mediumChanceColor = new(1f, 0.82f, 0.24f, 1f);
+        [SerializeField] private Color highChanceColor = new(0.25f, 0.95f, 0.52f, 1f);
+
         [Header("Texts")]
         [SerializeField] private string chanceFormat = "{0}%";
         [SerializeField] private string multiplierFormat = "x{0}";
@@ -70,7 +75,11 @@ namespace TraidingIDLE.Temki
             if (descriptionText != null)
                 descriptionText.text = definition.Description;
             if (chanceText != null)
-                chanceText.text = GameTextFormatter.Format(chanceFormat, "{0}%", Mathf.RoundToInt(definition.SuccessChance * 100f));
+            {
+                var displayedChancePercent = RoundChanceToFive(definition.DisplayedSuccessChance * 100f);
+                chanceText.text = GameTextFormatter.Format(chanceFormat, "{0}%", displayedChancePercent);
+                chanceText.color = GetChanceColor(displayedChancePercent);
+            }
             if (multiplierText != null)
                 multiplierText.text = GameTextFormatter.Format(multiplierFormat, "x{0}", FormatMultiplier(definition.RewardMultiplier));
             if (durationText != null)
@@ -169,6 +178,21 @@ namespace TraidingIDLE.Temki
         private static string FormatMultiplier(float value)
         {
             return value.ToString(value % 1f < 0.01f ? "0" : "0.#", System.Globalization.CultureInfo.InvariantCulture);
+        }
+
+        private static int RoundChanceToFive(float percent)
+        {
+            return Mathf.Clamp(Mathf.RoundToInt(percent / 5f) * 5, 0, 100);
+        }
+
+        private Color GetChanceColor(int percent)
+        {
+            if (percent < 25)
+                return lowChanceColor;
+            if (percent < 45)
+                return mediumChanceColor;
+
+            return highChanceColor;
         }
     }
 }

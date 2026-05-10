@@ -888,8 +888,8 @@ namespace TraidingIDLE.Business
                 entry.displayName,
                 FormatNumberMoney(level),
                 FormatNumberMoney(nextLevel),
-                FormatReadableMoney(currentIncome),
-                FormatReadableMoney(nextIncome),
+                FormatDetailIncomeMoney(currentIncome),
+                FormatDetailIncomeMoney(nextIncome),
                 canUpgrade,
                 !unlocked ? lockedCaption : level <= 0 ? rowPrimaryBuyCaption : rowPrimaryUpgradeCaption,
                 !unlocked ? GetUnlockRequirementText(_selectedIndex) : canUpgrade ? FormatReadableMoney(cost) : "",
@@ -1328,6 +1328,15 @@ namespace TraidingIDLE.Business
         {
             var separator = rublesCurrencySuffix != null && rublesCurrencySuffix.Length > 1 ? " " : "";
             return $"{FormatReadableMoney(value)}{separator}{rublesCurrencySuffix}";
+        }
+
+        private string FormatDetailIncomeMoney(double value)
+        {
+            value = Math.Max(0d, RoundToReadableMoney(value));
+            if (value < 1_000_000d)
+                return FormatNumberMoney(value);
+
+            return AbbreviateRubles(value);
         }
 
         private string AbbreviateRubles(double value)

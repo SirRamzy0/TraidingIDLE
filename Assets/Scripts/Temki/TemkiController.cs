@@ -19,6 +19,8 @@ namespace TraidingIDLE.Temki
             public long endUtc;
             public bool success;
             public long rewardRubles;
+            public long activeStakeRubles;
+            public int useCount;
         }
 
         [Serializable]
@@ -41,6 +43,8 @@ namespace TraidingIDLE.Temki
             public long endUtc;
             public bool success;
             public long rewardRubles;
+            public long activeStakeRubles;
+            public int useCount;
         }
 
         private const string SaveKey = "save.temki.v1";
@@ -197,12 +201,14 @@ namespace TraidingIDLE.Temki
                 return;
 
             var item = _runtime[index];
-            var stake = item.definition.StakeRubles;
+            var stake = CalculateStakeRubles(item);
             if (!profile.TrySpendRubles(stake))
                 return;
 
             item.state = TemkaState.Running;
             item.endUtc = UtcNow() + item.definition.DurationSeconds;
+            item.activeStakeRubles = stake;
+            item.useCount = Math.Max(0, item.useCount) + 1;
             item.success = UnityEngine.Random.value < item.definition.SuccessChance;
             item.rewardRubles = item.success
                 ? ToSaturatedLong(Math.Round(stake * item.definition.RewardMultiplier))
@@ -282,6 +288,7 @@ namespace TraidingIDLE.Temki
             item.endUtc = 0;
             item.success = false;
             item.rewardRubles = 0;
+            item.activeStakeRubles = 0;
         }
 
         private void RefreshAll()
@@ -300,9 +307,12 @@ namespace TraidingIDLE.Temki
                     continue;
 
                 var definition = item.definition;
+                var displayStake = item.state == TemkaState.Ready
+                    ? CalculateStakeRubles(item)
+                    : Math.Max(0, item.activeStakeRubles);
                 _cards[i].ConfigureStatic(
                     definition,
-                    FormatNumber(definition.StakeRubles),
+                    FormatNumber(displayStake),
                     GameTextFormatter.CountdownHours(definition.DurationSeconds));
 
                 switch (item.state)
@@ -314,7 +324,7 @@ namespace TraidingIDLE.Temki
                         _cards[i].PresentCheck();
                         break;
                     default:
-                        _cards[i].PresentRisk(profile != null && profile.Rubles >= definition.StakeRubles);
+                        _cards[i].PresentRisk(profile != null && profile.Rubles >= displayStake);
                         break;
                 }
             }
@@ -432,6 +442,8 @@ namespace TraidingIDLE.Temki
                 item.endUtc = Math.Max(0, save.endUtc);
                 item.success = save.success;
                 item.rewardRubles = Math.Max(0, save.rewardRubles);
+                item.activeStakeRubles = Math.Max(0, save.activeStakeRubles);
+                item.useCount = Math.Max(0, save.useCount);
             }
 
             return true;
@@ -450,6 +462,8 @@ namespace TraidingIDLE.Temki
                     endUtc = item.endUtc,
                     success = item.success,
                     rewardRubles = item.rewardRubles,
+                    activeStakeRubles = item.activeStakeRubles,
+                    useCount = item.useCount,
                 };
             }
 
@@ -473,6 +487,37 @@ namespace TraidingIDLE.Temki
         private string FormatRubles(long value) => $"{FormatNumber(value)}{rubleSuffix}";
 
         private string FormatNumber(long value) => GameTextFormatter.WholeNumber(value, thousandSep);
+
+        private static long CalculateStakeRubles(RuntimeTemka item)
+        {
+            if (item?.definition == null)
+                return 0;
+
+            var baseStake = item.definition.StakeRubles;
+            if (baseStake <= 0)
+                return 0;
+
+            var multiplier = Math.Pow(item.definition.StakeGrowthPerUse, Math.Max(0, item.useCount));
+            return ToSaturatedLong(RoundToReadableMoney(baseStake * multiplier));
+        }
+
+        private static double RoundToReadableMoney(double value)
+        {
+            if (double.IsNaN(value) || double.IsInfinity(value) || value <= 0d)
+                return 0d;
+
+            var step = value switch
+            {
+                < 100_000d => 5_000d,
+                < 1_000_000d => 25_000d,
+                < 10_000_000d => 100_000d,
+                < 100_000_000d => 500_000d,
+                < 1_000_000_000d => 2_500_000d,
+                _ => 10_000_000d,
+            };
+
+            return Math.Max(step, Math.Round(value / step, MidpointRounding.AwayFromZero) * step);
+        }
 
         private static long UtcNow() => DateTimeOffset.UtcNow.ToUnixTimeSeconds();
 
