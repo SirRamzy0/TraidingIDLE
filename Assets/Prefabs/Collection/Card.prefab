@@ -253,8 +253,8 @@ MonoBehaviour:
       m_Calls: []
   m_text: "\u041C\u0435\u0440\u0441 G63"
   m_isRightToLeft: 0
-  m_fontAsset: {fileID: 11400000, guid: 120125520a053f746a4e80bb3a27d703, type: 2}
-  m_sharedMaterial: {fileID: -7568768935229133649, guid: 120125520a053f746a4e80bb3a27d703, type: 2}
+  m_fontAsset: {fileID: 11400000, guid: 524686954a3943f4eba5a1f966e4e83f, type: 2}
+  m_sharedMaterial: {fileID: -365111809829100870, guid: 524686954a3943f4eba5a1f966e4e83f, type: 2}
   m_fontSharedMaterials: []
   m_fontMaterial: {fileID: 0}
   m_fontMaterials: []
@@ -278,7 +278,7 @@ MonoBehaviour:
   m_faceColor:
     serializedVersion: 2
     rgba: 4294967295
-  m_fontSize: 12
+  m_fontSize: 20
   m_fontSizeBase: 36
   m_fontWeight: 400
   m_enableAutoSizing: 1
@@ -364,7 +364,7 @@ RectTransform:
   m_AnchorMin: {x: 0, y: 0}
   m_AnchorMax: {x: 0, y: 0}
   m_AnchoredPosition: {x: 0, y: 0}
-  m_SizeDelta: {x: 0, y: 0}
+  m_SizeDelta: {x: 191, y: 236}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!222 &1640638095830379687
 CanvasRenderer:
@@ -559,14 +559,14 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.HorizontalLayoutGroup
   m_Padding:
-    m_Left: 0
-    m_Right: 0
+    m_Left: 5
+    m_Right: 5
     m_Top: 0
     m_Bottom: 0
   m_ChildAlignment: 4
   m_Spacing: 0
-  m_ChildForceExpandWidth: 0
-  m_ChildForceExpandHeight: 0
+  m_ChildForceExpandWidth: 1
+  m_ChildForceExpandHeight: 1
   m_ChildControlWidth: 1
   m_ChildControlHeight: 1
   m_ChildScaleWidth: 0
@@ -639,8 +639,8 @@ MonoBehaviour:
       m_Calls: []
   m_text: "\u041A\u0443\u043F\u0438\u0442\u044C"
   m_isRightToLeft: 0
-  m_fontAsset: {fileID: 11400000, guid: 120125520a053f746a4e80bb3a27d703, type: 2}
-  m_sharedMaterial: {fileID: -7568768935229133649, guid: 120125520a053f746a4e80bb3a27d703, type: 2}
+  m_fontAsset: {fileID: 11400000, guid: 524686954a3943f4eba5a1f966e4e83f, type: 2}
+  m_sharedMaterial: {fileID: -365111809829100870, guid: 524686954a3943f4eba5a1f966e4e83f, type: 2}
   m_fontSharedMaterials: []
   m_fontMaterial: {fileID: 0}
   m_fontMaterials: []
@@ -664,7 +664,7 @@ MonoBehaviour:
   m_faceColor:
     serializedVersion: 2
     rgba: 4294967295
-  m_fontSize: 8
+  m_fontSize: 14
   m_fontSizeBase: 24
   m_fontWeight: 400
   m_enableAutoSizing: 1

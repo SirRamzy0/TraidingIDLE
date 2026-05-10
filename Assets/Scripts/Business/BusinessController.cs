@@ -32,6 +32,7 @@ namespace TraidingIDLE.Business
             public byte tempKind;
             public long tempBuffEndUtc;
             public float tempMultiplierHeld;
+            public string tempCategory = "";
             public int selectedBusinessIndex;
         }
 
@@ -40,7 +41,8 @@ namespace TraidingIDLE.Business
             public string saveId = "";
             public string displayName = "";
             public string category = "";
-            public Sprite artwork;
+            public Sprite listArtwork;
+            public Sprite detailArtwork;
             public BusinessProgressionConfig progression = new();
             public BusinessSkillConfig skill = new();
 
@@ -83,8 +85,8 @@ namespace TraidingIDLE.Business
         [SerializeField] private BusinessDefinition[] businesses = Array.Empty<BusinessDefinition>();
 
         [Header("Energy")]
-        [SerializeField, Min(1)] private int energyMax = 3;
-        [SerializeField, Min(1f)] private float energyChunkRegenSeconds = 1200f;
+        [SerializeField, Min(1)] private int energyMax = 5;
+        [SerializeField, Min(1f)] private float energyChunkRegenSeconds = 900f;
 
         [Header("Top UI")]
         [SerializeField] private TMP_Text energyCountText;
@@ -93,8 +95,9 @@ namespace TraidingIDLE.Business
         [SerializeField] private TMP_Text accumulatedAbbrevText;
         [SerializeField] private Button claimButton;
 
-        [Header("Animation")]
-        [SerializeField, Min(0.1f)] private float accumulatedDisplayLerpPerSecond = 8f;
+        [Header("Display timing")]
+        [SerializeField, Min(0.1f)] private float accumulatedDisplayUpdateIntervalSeconds = 0.75f;
+        [SerializeField, Min(0f)] private float accumulatedDisplayAnimationSeconds = 0.35f;
 
         [Header("Texts")]
         [SerializeField] private string rowPrimaryBuyCaption = "Купить";
@@ -123,8 +126,13 @@ namespace TraidingIDLE.Business
         private BusinessTemporaryBuffKind _tempKind;
         private long _tempBuffEndUtc;
         private float _tempMultiplier = 1f;
+        private string _tempCategory = "";
         private int _selectedIndex;
         private string _activeCategoryFilter = "";
+        private double _displayAccumStartRubles;
+        private double _displayAccumTargetRubles;
+        private float _accumulatedDisplayUpdateTimer;
+        private float _accumulatedDisplayAnimationTimer;
         private float _saveTimer;
         private bool _dirty;
 
@@ -219,11 +227,7 @@ namespace TraidingIDLE.Business
             ClearTemporaryBuffIfExpired();
             SimulateTick(Time.deltaTime);
 
-            var dt = Time.unscaledDeltaTime;
-            _displayAccumRubles += (_accumulatedRubles - _displayAccumRubles)
-                * (1d - Math.Exp(-accumulatedDisplayLerpPerSecond * dt));
-
-            RefreshDynamicUi();
+            RefreshDynamicUi(UpdateAccumulatedDisplay(Time.unscaledDeltaTime));
 
             if (!_dirty)
                 return;
@@ -273,7 +277,8 @@ namespace TraidingIDLE.Business
                     saveId = definition.SaveId,
                     displayName = definition.DisplayName,
                     category = definition.Category,
-                    artwork = definition.Artwork,
+                    listArtwork = definition.ListArtwork,
+                    detailArtwork = definition.DetailArtwork,
                     progression = definition.Progression.Clone(),
                     skill = CloneSkill(definition.Skill),
                 });
@@ -294,6 +299,7 @@ namespace TraidingIDLE.Business
                 description = source.description,
                 effect = source.effect,
                 instantRubles = Math.Max(0, source.instantRubles),
+                instantRublesGrowthPer10Levels = Mathf.Max(0f, source.instantRublesGrowthPer10Levels),
                 temporaryIncomeMultiplier = Mathf.Max(1f, source.temporaryIncomeMultiplier),
                 temporaryDurationSeconds = Mathf.Max(1f, source.temporaryDurationSeconds),
                 marketCurrency = source.marketCurrency,
@@ -373,7 +379,7 @@ namespace TraidingIDLE.Business
             if (dt <= 0f)
                 return;
 
-            var perSecond = GetTotalBaseIncomePerHour() / 3600d * GetAccumulatedBusinessPassiveMultiplier();
+            var perSecond = GetTotalEffectiveIncomePerHour() / 3600d;
             if (perSecond <= 0d)
                 return;
 
@@ -413,9 +419,10 @@ namespace TraidingIDLE.Business
                 return;
 
             var boostedSeconds = 0d;
-            if (_tempKind == BusinessTemporaryBuffKind.AllBusinessIncome
+            var businessIncomeBoostActive = IsBusinessIncomeTemporaryBoostKind(_tempKind)
                 && _tempMultiplier > 1f
-                && _tempBuffEndUtc > startUtc)
+                && _tempBuffEndUtc > startUtc;
+            if (businessIncomeBoostActive)
             {
                 var boostedEnd = Math.Min(endUtc, _tempBuffEndUtc);
                 boostedSeconds = Math.Max(0, boostedEnd - startUtc);
@@ -423,7 +430,7 @@ namespace TraidingIDLE.Business
 
             var normalSeconds = seconds - boostedSeconds;
             _accumulatedRubles += basePerSecond * normalSeconds;
-            _accumulatedRubles += basePerSecond * boostedSeconds * Math.Max(1d, _tempMultiplier);
+            _accumulatedRubles += GetTotalEffectiveIncomePerHour() / 3600d * boostedSeconds;
             MarkDirty();
         }
 
@@ -474,6 +481,7 @@ namespace TraidingIDLE.Business
             _tempKind = BusinessTemporaryBuffKind.None;
             _tempBuffEndUtc = 0;
             _tempMultiplier = 1f;
+            _tempCategory = "";
             MarkDirty();
         }
 
@@ -559,7 +567,7 @@ namespace TraidingIDLE.Business
                     if (profile == null)
                         return;
 
-                    profile.AddRubles(Math.Max(0, skill.instantRubles));
+                    profile.AddRubles(CalculateInstantSkillRubles(skill, _levels[index]));
                     SpendEnergy(skill.energyCost);
                     MarkDirty();
                     RefreshAllUi();
@@ -587,6 +595,18 @@ namespace TraidingIDLE.Business
                     RefreshAllUi();
                     return;
 
+                case BusinessSkillEffectKind.TemporaryBoostCategoryBusinessIncome:
+                    if (!TryStartTemporaryBoost(
+                            BusinessTemporaryBuffKind.CategoryBusinessIncome,
+                            skill.energyCost,
+                            skill.temporaryIncomeMultiplier,
+                            skill.temporaryDurationSeconds,
+                            entry.category))
+                        return;
+
+                    RefreshAllUi();
+                    return;
+
                 case BusinessSkillEffectKind.MarketManipulate:
                     if (marketSimulation == null)
                         return;
@@ -609,7 +629,8 @@ namespace TraidingIDLE.Business
             BusinessTemporaryBuffKind kind,
             int energyCost,
             float multiplier,
-            float durationSeconds)
+            float durationSeconds,
+            string category = "")
         {
             if (IsGlobalTemporaryBuffBlocking())
                 return false;
@@ -617,6 +638,9 @@ namespace TraidingIDLE.Business
             SpendEnergy(energyCost);
             _tempKind = kind;
             _tempMultiplier = Mathf.Max(1f, multiplier);
+            _tempCategory = kind == BusinessTemporaryBuffKind.CategoryBusinessIncome
+                ? NormalizeCategory(category)
+                : "";
             _tempBuffEndUtc = UtcNow() + (long)Mathf.Max(1f, durationSeconds);
             MarkDirty();
             return true;
@@ -690,6 +714,50 @@ namespace TraidingIDLE.Business
             return sum;
         }
 
+        private double GetTotalEffectiveIncomePerHour()
+        {
+            var sum = 0d;
+            for (var i = 0; i < _entries.Count; i++)
+            {
+                var level = _levels.Length > i ? _levels[i] : 0;
+                if (level <= 0 || !IsBusinessUnlocked(i))
+                    continue;
+
+                sum += GetBusinessIncomePerHourWithBonuses(i, level);
+            }
+
+            return sum;
+        }
+
+        private double GetBusinessIncomePerHourWithBonuses(int index, int level)
+        {
+            if (!IsValidIndex(index) || level <= 0)
+                return 0d;
+
+            var entry = _entries[index];
+            return entry.GetIncomePerHour(level)
+                * GetCollectionIncomeMultiplier(entry.category)
+                * GetBusinessTemporaryMultiplierForCategory(entry.category);
+        }
+
+        private double GetBusinessTemporaryMultiplierForCategory(string category)
+        {
+            if (_tempKind == BusinessTemporaryBuffKind.AllBusinessIncome)
+                return Math.Max(1d, _tempMultiplier);
+
+            if (_tempKind == BusinessTemporaryBuffKind.CategoryBusinessIncome
+                && string.Equals(NormalizeCategory(category), _tempCategory, StringComparison.OrdinalIgnoreCase))
+                return Math.Max(1d, _tempMultiplier);
+
+            return 1d;
+        }
+
+        private static bool IsBusinessIncomeTemporaryBoostKind(BusinessTemporaryBuffKind kind)
+        {
+            return kind is BusinessTemporaryBuffKind.AllBusinessIncome
+                or BusinessTemporaryBuffKind.CategoryBusinessIncome;
+        }
+
         private void RefreshAllUi()
         {
             EnsureArrays();
@@ -709,12 +777,60 @@ namespace TraidingIDLE.Business
                     RefreshRowUi(row, index);
             }
 
+            ApplyVisibleRowOrder();
             RefreshDetailCard();
             RefreshTopStaticUi();
-            RefreshDynamicUi();
+            RefreshDynamicUi(true);
             RefreshFilterButtons();
 
             UiTransformUtility.RebuildLayout(rowCardsContent);
+        }
+
+        private void ApplyVisibleRowOrder()
+        {
+            if (rowCardsContent == null || _resolvedRows == null || _resolvedRows.Length <= 1)
+                return;
+
+            var ordered = new List<BusinessListRowUI>(_resolvedRows.Length);
+            for (var i = 0; i < _resolvedRows.Length; i++)
+            {
+                var row = _resolvedRows[i];
+                if (row != null && row.gameObject.activeSelf)
+                    ordered.Add(row);
+            }
+
+            if (ordered.Count <= 1)
+                return;
+
+            if (string.IsNullOrEmpty(_activeCategoryFilter))
+            {
+                ordered.Sort((a, b) =>
+                {
+                    var incomeCompare = GetBusinessSortIncome(b.BusinessIndex)
+                        .CompareTo(GetBusinessSortIncome(a.BusinessIndex));
+                    return incomeCompare != 0
+                        ? incomeCompare
+                        : a.BusinessIndex.CompareTo(b.BusinessIndex);
+                });
+            }
+            else
+            {
+                ordered.Sort((a, b) => a.BusinessIndex.CompareTo(b.BusinessIndex));
+            }
+
+            for (var i = 0; i < ordered.Count; i++)
+                ordered[i].transform.SetSiblingIndex(i);
+        }
+
+        private double GetBusinessSortIncome(int index)
+        {
+            if (!IsValidIndex(index) || !IsBusinessUnlocked(index))
+                return -1d;
+
+            var level = _levels[index];
+            return level > 0
+                ? GetBusinessIncomePerHourWithBonuses(index, level)
+                : _entries[index].GetIncomePerHour(GetNextLevel(index)) * GetCollectionIncomeMultiplier(_entries[index].category);
         }
 
         private void RefreshRowUi(BusinessListRowUI row, int index)
@@ -723,14 +839,14 @@ namespace TraidingIDLE.Business
             var level = _levels[index];
             var nextLevel = GetNextLevel(index);
             var unlocked = IsBusinessUnlocked(index);
-            var collectionMultiplier = GetCollectionIncomeMultiplier(entry.category);
-            var displayIncome = (unlocked && level > 0 ? entry.GetIncomePerHour(level) : entry.GetIncomePerHour(nextLevel))
-                * collectionMultiplier;
+            var displayIncome = unlocked && level > 0
+                ? GetBusinessIncomePerHourWithBonuses(index, level)
+                : entry.GetIncomePerHour(nextLevel) * GetCollectionIncomeMultiplier(entry.category);
             var cost = entry.GetUpgradeCostFromLevel(level);
             var canUpgrade = unlocked && cost > 0;
 
             row.RefreshRow(
-                entry.artwork,
+                entry.listArtwork,
                 entry.displayName,
                 entry.category,
                 unlocked ? $"{FormatRublesAmount(displayIncome)} в час" : "-",
@@ -756,14 +872,15 @@ namespace TraidingIDLE.Business
             var level = _levels[_selectedIndex];
             var nextLevel = GetNextLevel(_selectedIndex);
             var unlocked = IsBusinessUnlocked(_selectedIndex);
-            var collectionMultiplier = GetCollectionIncomeMultiplier(entry.category);
-            var currentIncome = (unlocked ? entry.GetIncomePerHour(level) : 0d) * collectionMultiplier;
-            var nextIncome = entry.GetIncomePerHour(nextLevel) * collectionMultiplier;
+            var currentIncome = unlocked ? GetBusinessIncomePerHourWithBonuses(_selectedIndex, level) : 0d;
+            var nextIncome = entry.GetIncomePerHour(nextLevel)
+                * GetCollectionIncomeMultiplier(entry.category)
+                * GetBusinessTemporaryMultiplierForCategory(entry.category);
             var cost = entry.GetUpgradeCostFromLevel(level);
             var canUpgrade = unlocked && cost > 0;
 
             detailCard.Configure(
-                entry.artwork,
+                entry.detailArtwork,
                 entry.displayName,
                 FormatNumberMoney(level),
                 FormatNumberMoney(nextLevel),
@@ -781,7 +898,7 @@ namespace TraidingIDLE.Business
         {
             if (totalIncomePerHourText != null)
             {
-                var total = GetTotalBaseIncomePerHour() * GetAccumulatedBusinessPassiveMultiplier();
+                var total = GetTotalEffectiveIncomePerHour();
                 totalIncomePerHourText.text = GameTextFormatter.Format(
                     totalIncomePerHourFormat,
                     "{0} в час",
@@ -789,7 +906,52 @@ namespace TraidingIDLE.Business
             }
         }
 
-        private void RefreshDynamicUi()
+        private bool UpdateAccumulatedDisplay(float deltaTime)
+        {
+            var safeDelta = Mathf.Max(0f, deltaTime);
+            var changed = false;
+
+            _accumulatedDisplayUpdateTimer -= safeDelta;
+            if (_accumulatedDisplayUpdateTimer <= 0f)
+            {
+                _accumulatedDisplayUpdateTimer = Mathf.Max(0.1f, accumulatedDisplayUpdateIntervalSeconds);
+                changed |= StartAccumulatedDisplayAnimation(_accumulatedRubles);
+            }
+
+            if (_accumulatedDisplayAnimationTimer <= 0f)
+                return changed;
+
+            _accumulatedDisplayAnimationTimer -= safeDelta;
+            var duration = Mathf.Max(0.01f, accumulatedDisplayAnimationSeconds);
+            var progress = 1f - Mathf.Clamp01(_accumulatedDisplayAnimationTimer / duration);
+            var eased = progress * progress * (3f - 2f * progress);
+            _displayAccumRubles = _displayAccumStartRubles
+                + (_displayAccumTargetRubles - _displayAccumStartRubles) * eased;
+
+            if (_accumulatedDisplayAnimationTimer <= 0f)
+                _displayAccumRubles = _displayAccumTargetRubles;
+
+            return true;
+        }
+
+        private bool StartAccumulatedDisplayAnimation(double targetRubles)
+        {
+            if (Math.Abs(targetRubles - _displayAccumTargetRubles) < 0.5d
+                && _accumulatedDisplayAnimationTimer <= 0f)
+                return false;
+
+            _displayAccumStartRubles = _displayAccumRubles;
+            _displayAccumTargetRubles = Math.Max(0d, targetRubles);
+            _accumulatedDisplayAnimationTimer = Mathf.Max(0f, accumulatedDisplayAnimationSeconds);
+
+            if (_accumulatedDisplayAnimationTimer > 0f)
+                return true;
+
+            _displayAccumRubles = _displayAccumTargetRubles;
+            return true;
+        }
+
+        private void RefreshDynamicUi(bool updateAccumulatedText = false)
         {
             if (energyCountText != null)
                 energyCountText.text = $"{_energy}/{energyMax}";
@@ -802,7 +964,16 @@ namespace TraidingIDLE.Business
                     energyTimerText.text = GameTextFormatter.CountdownMinutes(Math.Max(0, _nextEnergyAtUtc - UtcNow()));
             }
 
-            if (accumulatedAbbrevText != null)
+            if (updateAccumulatedText)
+            {
+                _accumulatedDisplayUpdateTimer = Mathf.Max(0.1f, accumulatedDisplayUpdateIntervalSeconds);
+                _accumulatedDisplayAnimationTimer = 0f;
+                _displayAccumRubles = _accumulatedRubles;
+                _displayAccumStartRubles = _displayAccumRubles;
+                _displayAccumTargetRubles = _displayAccumRubles;
+            }
+
+            if (updateAccumulatedText && accumulatedAbbrevText != null)
                 accumulatedAbbrevText.text = AbbreviateRubles(_displayAccumRubles);
 
             if (claimButton != null)
@@ -844,14 +1015,42 @@ namespace TraidingIDLE.Business
 
             var energyOk = _energy >= skill.energyCost;
             var isTemporary = skill.effect is BusinessSkillEffectKind.TemporaryBoostAllBusinessIncome
-                or BusinessSkillEffectKind.TemporaryBoostMiningIncome;
+                or BusinessSkillEffectKind.TemporaryBoostMiningIncome
+                or BusinessSkillEffectKind.TemporaryBoostCategoryBusinessIncome;
 
             var temporaryBlocking = isTemporary && IsGlobalTemporaryBuffBlocking();
             var launchLabel = FormatNumberMoney(skill.energyCost);
             var interactable = energyOk && !temporaryBlocking;
 
-            skillPanel.PresentUnlocked(skill.icon, skill.title, skill.description, interactable, launchLabel);
+            skillPanel.PresentUnlocked(skill.icon, skill.title, FormatSkillDescription(skill, level), interactable, launchLabel);
             skillPanel.SetLaunchListener(TryLaunchSkillForSelection);
+        }
+
+        private string FormatSkillDescription(BusinessSkillConfig skill, int level)
+        {
+            if (skill.effect == BusinessSkillEffectKind.InstantRubles)
+            {
+                return GameTextFormatter.Format(
+                    skill.description,
+                    "Мгновенно приносит {0}.",
+                    FormatRublesAmount(CalculateInstantSkillRubles(skill, level)));
+            }
+
+            if (skill.effect == BusinessSkillEffectKind.TemporaryBoostCategoryBusinessIncome)
+            {
+                return GameTextFormatter.Format(
+                    skill.description,
+                    "Доход бизнесов этого типа +{0}",
+                    FormatIncomeBonusPercent(skill.temporaryIncomeMultiplier));
+            }
+
+            return skill.description;
+        }
+
+        private static string FormatIncomeBonusPercent(float multiplier)
+        {
+            var bonusPercent = Math.Max(0d, multiplier - 1d) * 100d;
+            return bonusPercent.ToString("0.#", CultureInfo.InvariantCulture) + "%";
         }
 
         private int GetNextLevel(int index)
@@ -862,6 +1061,16 @@ namespace TraidingIDLE.Business
             var entry = _entries[index];
             var current = _levels[index];
             return current >= int.MaxValue ? int.MaxValue : current + 1;
+        }
+
+        private long CalculateInstantSkillRubles(BusinessSkillConfig skill, int businessLevel)
+        {
+            if (skill == null || skill.instantRubles <= 0)
+                return 0;
+
+            var steps = Math.Max(0, businessLevel / 10);
+            var multiplier = Math.Pow(1d + Math.Max(0d, skill.instantRublesGrowthPer10Levels), steps);
+            return ToSaturatedLong(RoundToReadableMoney(skill.instantRubles * multiplier));
         }
 
         private bool CanSpendRubles(long amount)
@@ -1024,6 +1233,7 @@ namespace TraidingIDLE.Business
                 tempKind = (byte)_tempKind,
                 tempBuffEndUtc = _tempBuffEndUtc,
                 tempMultiplierHeld = _tempMultiplier,
+                tempCategory = _tempCategory,
                 selectedBusinessIndex = _selectedIndex,
             };
 
@@ -1058,6 +1268,7 @@ namespace TraidingIDLE.Business
                 : BusinessTemporaryBuffKind.None;
             _tempBuffEndUtc = Math.Max(0, data.tempBuffEndUtc);
             _tempMultiplier = Mathf.Max(1f, data.tempMultiplierHeld);
+            _tempCategory = NormalizeCategory(data.tempCategory);
             _selectedIndex = _entries.Count <= 0 ? 0 : Mathf.Clamp(data.selectedBusinessIndex, 0, _entries.Count - 1);
             _displayAccumRubles = _accumulatedRubles;
 
@@ -1065,7 +1276,6 @@ namespace TraidingIDLE.Business
                 _nextEnergyAtUtc = UtcNow() + (long)Mathf.Max(1f, energyChunkRegenSeconds);
 
             EnsureArrays();
-            ClearTemporaryBuffIfExpired();
         }
 
         private void LoadLevelsById(BusinessLevelSave[] saved)
@@ -1122,6 +1332,16 @@ namespace TraidingIDLE.Business
         }
 
         private static long UtcNow() => DateTimeOffset.UtcNow.ToUnixTimeSeconds();
+
+        private static long ToSaturatedLong(double value)
+        {
+            if (double.IsNaN(value) || value <= 0d)
+                return 0;
+            if (double.IsInfinity(value) || value >= long.MaxValue)
+                return long.MaxValue;
+
+            return (long)Math.Ceiling(value);
+        }
 
         private static double RoundToReadableMoney(double value)
         {

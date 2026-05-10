@@ -89,7 +89,7 @@ namespace TraidingIDLE.Currencies.Simulation
 
         public void Push(CurrencyId id, float price)
         {
-            if (price < 0f || float.IsNaN(price) || float.IsInfinity(price))
+            if (!TryNormalizePrice(price, out price))
                 return;
 
             var list = GetOrCreate(id);
@@ -107,7 +107,7 @@ namespace TraidingIDLE.Currencies.Simulation
                 for (var i = 0; i < prices.Count; i++)
                 {
                     var p = prices[i];
-                    if (p < 0f || float.IsNaN(p) || float.IsInfinity(p))
+                    if (!TryNormalizePrice(p, out p))
                         continue;
                     list.Add(p);
                 }
@@ -219,13 +219,23 @@ namespace TraidingIDLE.Currencies.Simulation
                 for (var j = 0; j < saved.prices.Length; j++)
                 {
                     var p = saved.prices[j];
-                    if (p < 0f || float.IsNaN(p) || float.IsInfinity(p))
+                    if (!TryNormalizePrice(p, out p))
                         continue;
                     list.Add(p);
                 }
 
                 TrimToCapacity(list);
             }
+        }
+
+        private static bool TryNormalizePrice(float rawPrice, out float price)
+        {
+            price = 0f;
+            if (float.IsNaN(rawPrice) || float.IsInfinity(rawPrice) || rawPrice < CurrencyMarket.MinimumTradablePrice)
+                return false;
+
+            price = CurrencyMarket.SanitizePrice(rawPrice);
+            return true;
         }
     }
 }

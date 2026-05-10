@@ -6,6 +6,7 @@ namespace TraidingIDLE.Business
         TemporaryBoostAllBusinessIncome = 1,
         TemporaryBoostMiningIncome = 2,
         MarketManipulate = 3,
+        TemporaryBoostCategoryBusinessIncome = 4,
     }
 
     public enum BusinessTemporaryBuffKind : byte
@@ -13,5 +14,6 @@ namespace TraidingIDLE.Business
         None = 0,
         AllBusinessIncome = 1,
         MiningIncome = 2,
+        CategoryBusinessIncome = 3,
     }
 }

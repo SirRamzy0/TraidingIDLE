@@ -22,53 +22,53 @@ MonoBehaviour:
   cards:
   - saveId: air_transport_card_01
     title: "\u0421\u0435\u0441\u0441\u043D\u0430 172"
-    background: {fileID: 21300000, guid: 30f061215691c6f4fadfd8a62d6b037a, type: 3}
-    artwork: {fileID: 0}
+    background: {fileID: 21300000, guid: 18210976a5efb00449593b44eadcf5f6, type: 3}
+    artwork: {fileID: 21300000, guid: dc516d4e8bd1d934e88ba0b444726aa0, type: 3}
     priceRubles: 12000000
   - saveId: air_transport_card_02
-    title: "\u0421\u0438\u0440\u0440\u0443\u0441 \u042D\u0441-\u0410\u0440-22"
-    background: {fileID: 21300000, guid: 30f061215691c6f4fadfd8a62d6b037a, type: 3}
-    artwork: {fileID: 0}
+    title: "\u0421\u0420 22"
+    background: {fileID: 21300000, guid: 18210976a5efb00449593b44eadcf5f6, type: 3}
+    artwork: {fileID: 21300000, guid: 3e4b33027dbd98146bc406bf06c3ecf6, type: 3}
     priceRubles: 65000000
   - saveId: air_transport_card_03
-    title: "\u041F\u0438\u043B\u0430\u0442\u0443\u0441 \u041F\u0438-\u0421\u0438-12"
-    background: {fileID: 21300000, guid: 30f061215691c6f4fadfd8a62d6b037a, type: 3}
-    artwork: {fileID: 0}
+    title: "\u041F\u0421 12"
+    background: {fileID: 21300000, guid: 18210976a5efb00449593b44eadcf5f6, type: 3}
+    artwork: {fileID: 21300000, guid: 7a8143aeef693564eac71d6ec1106388, type: 3}
     priceRubles: 450000000
   - saveId: air_transport_card_04
-    title: "\u0424\u0435\u043D\u043E\u043C 300"
+    title: "\u041A\u0438\u043D\u0433 \u0410\u044D\u0439\u0440"
     background: {fileID: 21300000, guid: 18210976a5efb00449593b44eadcf5f6, type: 3}
-    artwork: {fileID: 0}
+    artwork: {fileID: 21300000, guid: a11a5ac5def084d4e8e83c98bed6d537, type: 3}
     priceRubles: 900000000
   - saveId: air_transport_card_05
-    title: "\u0421\u0430\u0439\u0442\u0435\u0439\u0448\u043D \u0418\u043A\u0441-\u042D\u043B-\u042D\u0441"
-    background: {fileID: 21300000, guid: 18210976a5efb00449593b44eadcf5f6, type: 3}
-    artwork: {fileID: 0}
+    title: "\u0424\u0435\u043D\u043E\u043C 300"
+    background: {fileID: 21300000, guid: 30f061215691c6f4fadfd8a62d6b037a, type: 3}
+    artwork: {fileID: 21300000, guid: 31b72ddfdc884b540a3af2cb9182c539, type: 3}
     priceRubles: 1000000000
   - saveId: air_transport_card_06
     title: "\u041B\u0438\u0440\u0434\u0436\u0435\u0442 75"
-    background: {fileID: 21300000, guid: 75f00f6a96c1bb64da30f3f404f04088, type: 3}
-    artwork: {fileID: 0}
+    background: {fileID: 21300000, guid: 30f061215691c6f4fadfd8a62d6b037a, type: 3}
+    artwork: {fileID: 21300000, guid: ea300c9ac4b330c43b916c884db5c26a, type: 3}
     priceRubles: 1100000000
   - saveId: air_transport_card_07
     title: "\u0424\u0430\u043B\u043A\u043E\u043D 2000"
-    background: {fileID: 21300000, guid: 75f00f6a96c1bb64da30f3f404f04088, type: 3}
-    artwork: {fileID: 0}
+    background: {fileID: 21300000, guid: 30f061215691c6f4fadfd8a62d6b037a, type: 3}
+    artwork: {fileID: 21300000, guid: 0102d3079c43f264989b3c95dd03838c, type: 3}
     priceRubles: 2100000000
   - saveId: air_transport_card_08
-    title: "\u0413\u043E\u043B\u044C\u0444\u0441\u0442\u0440\u0438\u043C \u0414\u0436\u0438-650"
-    background: {fileID: 21300000, guid: 75f00f6a96c1bb64da30f3f404f04088, type: 3}
-    artwork: {fileID: 0}
+    title: "\u0413\u043E\u043B\u044C\u0444\u0441\u0442\u0440\u0438\u043C"
+    background: {fileID: 21300000, guid: aff2564508024c44d93bc98c16251325, type: 3}
+    artwork: {fileID: 21300000, guid: febedbc2be6f2e04f8ffe5b6593f2c64, type: 3}
     priceRubles: 4500000000
   - saveId: air_transport_card_09
     title: "\u0413\u043B\u043E\u0431\u0430\u043B 7500"
     background: {fileID: 21300000, guid: aff2564508024c44d93bc98c16251325, type: 3}
-    artwork: {fileID: 0}
+    artwork: {fileID: 21300000, guid: 79fd38b25d6aba3479fbe93058b0d9f0, type: 3}
     priceRubles: 5800000000
   - saveId: air_transport_card_10
-    title: "\u0411\u043E\u0438\u043D\u0433 \u0411\u0438-\u0411\u0438-\u0414\u0436\u0435\u0439"
-    background: {fileID: 21300000, guid: aff2564508024c44d93bc98c16251325, type: 3}
-    artwork: {fileID: 0}
+    title: "\u0411\u0438\u0437\u043D\u0435\u0441 \u0414\u0436\u0435\u0442"
+    background: {fileID: 21300000, guid: 75f00f6a96c1bb64da30f3f404f04088, type: 3}
+    artwork: {fileID: 21300000, guid: 94cfc8e1acb1ce241b27fc071760e9cd, type: 3}
     priceRubles: 7000000000
   bonusMilestones:
   - requiredOwnedCount: 3
@@ -79,9 +79,8 @@ MonoBehaviour:
     bonusPercent: 15
   finalItem:
     saveId: air_transport_final
-    title: "\u042D\u0439\u0440\u0431\u0430\u0441 \u042D\u0439-\u0421\u0438-\u0414\u0436\u0435\u0439
-      350"
+    title: "\u042D\u0439\u0440\u0431\u0430\u0441 \u0410\u0421\u0416 350"
     background: {fileID: 21300000, guid: 4402f6f78273b734daf824afdfc1f623, type: 3}
-    artwork: {fileID: 0}
+    artwork: {fileID: 21300000, guid: 97c7d29efbf4a5f4cbaca45ec335e802, type: 3}
     priceRubles: 35000000000
     bonusPercent: 20

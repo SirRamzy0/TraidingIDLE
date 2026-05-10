@@ -93,7 +93,7 @@ namespace TraidingIDLE.Player
 
         public bool TryBuy(CurrencyId id, int count, long unitPrice)
         {
-            if (count <= 0 || unitPrice < 0)
+            if (count <= 0 || unitPrice <= 0)
                 return false;
 
             var index = FindHolding(id);
@@ -102,6 +102,9 @@ namespace TraidingIDLE.Player
 
             var holding = holdings[index];
             if (holding.amount + count > holding.cap)
+                return false;
+
+            if (unitPrice > long.MaxValue / count)
                 return false;
 
             var cost = unitPrice * count;
@@ -121,7 +124,7 @@ namespace TraidingIDLE.Player
 
         public bool TrySell(CurrencyId id, int count, long unitPrice)
         {
-            if (count <= 0 || unitPrice < 0)
+            if (count <= 0 || unitPrice <= 0)
                 return false;
 
             var index = FindHolding(id);
@@ -130,6 +133,9 @@ namespace TraidingIDLE.Player
 
             var holding = holdings[index];
             if (holding.amount < count)
+                return false;
+
+            if (unitPrice > long.MaxValue / count)
                 return false;
 
             var proceeds = unitPrice * count;
@@ -149,7 +155,7 @@ namespace TraidingIDLE.Player
                 holding.investedRubles = 0;
             }
             holdings[index] = holding;
-            _rubles += proceeds;
+            _rubles = proceeds > long.MaxValue - _rubles ? long.MaxValue : _rubles + proceeds;
 
             RublesChanged?.Invoke(_rubles);
             HoldingsChanged?.Invoke(id);

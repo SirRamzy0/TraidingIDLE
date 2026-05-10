@@ -37,6 +37,18 @@ namespace TraidingIDLE.UI.Charts
         [Range(0f, 3f)]
         [SerializeField] private float btcMinViewportRangeFromPrice01 = 0.22f;
 
+        [Header("Sideways viewport zoom")]
+        [SerializeField] private bool enableSidewaysViewportZoom = true;
+        [Tooltip("If real history range is below this share of the normal floor, use a tighter sideways floor.")]
+        [Range(0.05f, 1f)]
+        [SerializeField] private float sidewaysZoomRangeThreshold01 = 0.65f;
+        [Range(0f, 3f)]
+        [SerializeField] private float shtSidewaysMinViewportRangeFromPrice01 = 0.85f;
+        [Range(0f, 3f)]
+        [SerializeField] private float ethSidewaysMinViewportRangeFromPrice01 = 0.055f;
+        [Range(0f, 3f)]
+        [SerializeField] private float btcSidewaysMinViewportRangeFromPrice01 = 0.22f;
+
         [Min(0f)]
         [SerializeField] private float maxViewportRange = 0f; // 0 = unlimited
 
@@ -90,6 +102,14 @@ namespace TraidingIDLE.UI.Charts
         [Tooltip("Adds extra randomness around symmetric wicks (near 0.5 balance).")]
         [Range(0f, 0.35f)]
         [SerializeField] private float wickBalanceRandomness = 0.20f;
+
+        [Header("Per-currency candle readability")]
+        [Range(0.5f, 2.5f)]
+        [SerializeField] private float shtCandleVisualRangeMultiplier = 1f;
+        [Range(0.5f, 2.5f)]
+        [SerializeField] private float ethCandleVisualRangeMultiplier = 1.35f;
+        [Range(0.5f, 2.5f)]
+        [SerializeField] private float btcCandleVisualRangeMultiplier = 1f;
 
         private readonly PriceHistoryBuffer _history = new();
         private readonly CandleHistoryBuffer _candles = new();
@@ -176,6 +196,13 @@ namespace TraidingIDLE.UI.Charts
             shtMinViewportRangeFromPrice01 = Mathf.Max(0f, shtMinViewportRangeFromPrice01);
             ethMinViewportRangeFromPrice01 = Mathf.Max(0f, ethMinViewportRangeFromPrice01);
             btcMinViewportRangeFromPrice01 = Mathf.Max(0f, btcMinViewportRangeFromPrice01);
+            sidewaysZoomRangeThreshold01 = Mathf.Clamp(sidewaysZoomRangeThreshold01, 0.05f, 1f);
+            shtSidewaysMinViewportRangeFromPrice01 = Mathf.Max(0f, shtSidewaysMinViewportRangeFromPrice01);
+            ethSidewaysMinViewportRangeFromPrice01 = Mathf.Max(0f, ethSidewaysMinViewportRangeFromPrice01);
+            btcSidewaysMinViewportRangeFromPrice01 = Mathf.Max(0f, btcSidewaysMinViewportRangeFromPrice01);
+            shtCandleVisualRangeMultiplier = Mathf.Max(0.5f, shtCandleVisualRangeMultiplier);
+            ethCandleVisualRangeMultiplier = Mathf.Max(0.5f, ethCandleVisualRangeMultiplier);
+            btcCandleVisualRangeMultiplier = Mathf.Max(0.5f, btcCandleVisualRangeMultiplier);
             expandViewport = Mathf.Clamp01(expandViewport);
             viewportFloorSmooth = Mathf.Clamp01(viewportFloorSmooth);
         }
@@ -327,7 +354,8 @@ namespace TraidingIDLE.UI.Charts
             if (!_history.TryGetMinMax(out var priceMin, out var priceMax))
                 return;
 
-            var viewportRangeFloor = GetSmoothedViewportRangeFloor(latestPrice, force);
+            var observedRange = priceMax - priceMin;
+            var viewportRangeFloor = GetSmoothedViewportRangeFloor(latestPrice, observedRange, force);
             var priceRange = Mathf.Max(viewportRangeFloor, priceMax - priceMin);
             var pad = priceRange * edgePadding01;
             var targetMin = Mathf.Max(0f, priceMin - pad);
@@ -363,9 +391,9 @@ namespace TraidingIDLE.UI.Charts
             ViewportChanged?.Invoke(_viewMin, _viewMax);
         }
 
-        private float GetSmoothedViewportRangeFloor(float latestPrice, bool force)
+        private float GetSmoothedViewportRangeFloor(float latestPrice, float observedRange, bool force)
         {
-            var targetFloor = GetViewportRangeFloor(latestPrice);
+            var targetFloor = GetViewportRangeFloor(latestPrice, observedRange);
             if (!_hasViewport || force || _smoothedViewportRangeFloor <= 0f)
             {
                 _smoothedViewportRangeFloor = targetFloor;
@@ -376,14 +404,27 @@ namespace TraidingIDLE.UI.Charts
             return _smoothedViewportRangeFloor;
         }
 
-        private float GetViewportRangeFloor(float latestPrice)
+        private float GetViewportRangeFloor(float latestPrice, float observedRange)
         {
-            var range = Mathf.Max(0.000001f, minViewportRange);
+            var minRange = Mathf.Max(0.000001f, minViewportRange);
             if (!useCurrencyRelativeViewportFloor)
-                return range;
+                return minRange;
 
             var price = Mathf.Max(0.000001f, latestPrice);
-            return Mathf.Max(range, price * GetMinViewportRangeFromPrice01(currency));
+            var normalFloor = Mathf.Max(minRange, price * GetMinViewportRangeFromPrice01(currency));
+            if (!enableSidewaysViewportZoom)
+                return normalFloor;
+
+            var sidewaysFloor = Mathf.Max(minRange, price * GetSidewaysMinViewportRangeFromPrice01(currency));
+            if (sidewaysFloor >= normalFloor)
+                return normalFloor;
+
+            var triggerRange = Mathf.Max(sidewaysFloor, normalFloor * sidewaysZoomRangeThreshold01);
+            if (observedRange >= triggerRange)
+                return normalFloor;
+
+            var t = Mathf.InverseLerp(sidewaysFloor, triggerRange, Mathf.Max(0f, observedRange));
+            return Mathf.Lerp(sidewaysFloor, normalFloor, Mathf.Clamp01(t));
         }
 
         private float GetMinViewportRangeFromPrice01(CurrencyId id)
@@ -394,6 +435,17 @@ namespace TraidingIDLE.UI.Charts
                 CurrencyId.ETH => ethMinViewportRangeFromPrice01,
                 CurrencyId.BTC => btcMinViewportRangeFromPrice01,
                 _ => ethMinViewportRangeFromPrice01,
+            };
+        }
+
+        private float GetSidewaysMinViewportRangeFromPrice01(CurrencyId id)
+        {
+            return id switch
+            {
+                CurrencyId.SHT => shtSidewaysMinViewportRangeFromPrice01,
+                CurrencyId.ETH => ethSidewaysMinViewportRangeFromPrice01,
+                CurrencyId.BTC => btcSidewaysMinViewportRangeFromPrice01,
+                _ => ethSidewaysMinViewportRangeFromPrice01,
             };
         }
 
@@ -469,8 +521,9 @@ namespace TraidingIDLE.UI.Charts
             var r6 = Hash01(_seed ^ unchecked((int)0xC0FFEE11), index);
 
             var visualReferenceRange = GetCandleVisualReferenceRange(absOpen, absClose);
+            var visualRangeMultiplier = GetCandleVisualRangeMultiplier(currency);
             var baseRange = Mathf.Abs(absClose - absOpen);
-            var minRange = visualReferenceRange * minCandleRangeFromViewport01;
+            var minRange = visualReferenceRange * minCandleRangeFromViewport01 * visualRangeMultiplier;
             var movement01 = Mathf.Clamp01(baseRange / Mathf.Max(0.000001f, visualReferenceRange * 0.08f));
             var smallMoveScale = Mathf.Lerp(0.35f, 1f, movement01);
             var variedMinRange = minRange
@@ -492,7 +545,7 @@ namespace TraidingIDLE.UI.Charts
             }
 
             if (avoidIdenticalConsecutiveCandles)
-                ApplyDuplicateCandleNudge(prevClose, bodyDirection, visualReferenceRange, ref absOpen, ref absClose);
+                ApplyDuplicateCandleNudge(prevClose, bodyDirection, visualReferenceRange * visualRangeMultiplier, ref absOpen, ref absClose);
 
             if (enableCandleVisualJitter)
                 ApplyCandleBodyJitterPrice(index, ref absOpen, ref absClose);
@@ -503,7 +556,7 @@ namespace TraidingIDLE.UI.Charts
             var low = Mathf.Min(absOpen, absClose, realClose);
 
             // Most candles keep short readable wicks; long wick profiles are occasional accents.
-            var minWick = visualReferenceRange * minCandleWickFromViewport01;
+            var minWick = visualReferenceRange * minCandleWickFromViewport01 * visualRangeMultiplier;
             var smallWick = Mathf.Max(
                 minWick,
                 Mathf.Abs(absClose - absOpen) * candleWickNoise01 * 0.35f);
@@ -584,6 +637,17 @@ namespace TraidingIDLE.UI.Charts
 
             var price = Mathf.Max(open, close, 0.000001f);
             return Mathf.Max(minViewportRange, price * Mathf.Max(0.005f, initialFillNoise01));
+        }
+
+        private float GetCandleVisualRangeMultiplier(CurrencyId id)
+        {
+            return id switch
+            {
+                CurrencyId.SHT => shtCandleVisualRangeMultiplier,
+                CurrencyId.ETH => ethCandleVisualRangeMultiplier,
+                CurrencyId.BTC => btcCandleVisualRangeMultiplier,
+                _ => ethCandleVisualRangeMultiplier,
+            };
         }
 
         private int GetCandleBodyDirection(float open, float close, float prevClose, int index)

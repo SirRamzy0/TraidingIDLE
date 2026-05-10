@@ -21,6 +21,7 @@ namespace TraidingIDLE.Currencies
         }
 
         private const string SaveKey = "save.market.v1";
+        public const float MinimumTradablePrice = 1f;
 
         [Header("Initial state")]
         [SerializeField] private CurrencyId activeCurrency = CurrencyId.SHT;
@@ -100,6 +101,7 @@ namespace TraidingIDLE.Currencies
 
         private void SaveToStorage()
         {
+            EnsureConfiguredPrices();
             var data = new SaveData
             {
                 prices = (CurrencyPrice[])prices.Clone(),
@@ -121,14 +123,14 @@ namespace TraidingIDLE.Currencies
             for (var i = 0; i < data.prices.Length; i++)
             {
                 var saved = data.prices[i];
-                if (saved.price < 0f)
+                if (!IsFinite(saved.price) || saved.price < MinimumTradablePrice)
                     continue;
 
                 for (var j = 0; j < prices.Length; j++)
                 {
                     if (prices[j].id != saved.id)
                         continue;
-                    prices[j].price = saved.price;
+                    prices[j].price = SanitizePrice(saved.price);
                     break;
                 }
             }
@@ -179,7 +181,7 @@ namespace TraidingIDLE.Currencies
             for (var i = 0; i < prices.Length; i++)
             {
                 if (prices[i].id == id)
-                    return prices[i].price;
+                    return SanitizeConfiguredPrice(prices[i].id, prices[i].price);
             }
 
             throw new ArgumentOutOfRangeException(nameof(id), id, "Price not configured for currency.");
@@ -188,9 +190,7 @@ namespace TraidingIDLE.Currencies
         public void SetPrice(CurrencyId id, float price)
         {
             EnsureConfiguredPrices();
-
-            if (price < 0f)
-                price = 0f;
+            price = SanitizePrice(price);
 
             for (var i = 0; i < prices.Length; i++)
             {
@@ -219,9 +219,16 @@ namespace TraidingIDLE.Currencies
         {
             prices ??= Array.Empty<CurrencyPrice>();
 
-            EnsurePrice(CurrencyId.SHT, 5000f);
-            EnsurePrice(CurrencyId.ETH, 100000f);
-            EnsurePrice(CurrencyId.BTC, 2500000f);
+            EnsurePrice(CurrencyId.SHT, GetDefaultPrice(CurrencyId.SHT));
+            EnsurePrice(CurrencyId.ETH, GetDefaultPrice(CurrencyId.ETH));
+            EnsurePrice(CurrencyId.BTC, GetDefaultPrice(CurrencyId.BTC));
+
+            for (var i = 0; i < prices.Length; i++)
+            {
+                var entry = prices[i];
+                entry.price = SanitizeConfiguredPrice(entry.id, entry.price);
+                prices[i] = entry;
+            }
         }
 
         private void EnsurePrice(CurrencyId id, float defaultPrice)
@@ -241,8 +248,34 @@ namespace TraidingIDLE.Currencies
             prices[^1] = new CurrencyPrice
             {
                 id = id,
-                price = Mathf.Max(0f, price),
+                price = SanitizePrice(price),
             };
+        }
+
+        public static float SanitizePrice(float price)
+        {
+            return IsFinite(price) ? Mathf.Max(MinimumTradablePrice, price) : MinimumTradablePrice;
+        }
+
+        private static float SanitizeConfiguredPrice(CurrencyId id, float price)
+        {
+            return IsFinite(price) && price >= MinimumTradablePrice ? price : GetDefaultPrice(id);
+        }
+
+        private static float GetDefaultPrice(CurrencyId id)
+        {
+            return id switch
+            {
+                CurrencyId.SHT => 5000f,
+                CurrencyId.ETH => 100000f,
+                CurrencyId.BTC => 2500000f,
+                _ => MinimumTradablePrice,
+            };
+        }
+
+        private static bool IsFinite(float value)
+        {
+            return !float.IsNaN(value) && !float.IsInfinity(value);
         }
     }
 }

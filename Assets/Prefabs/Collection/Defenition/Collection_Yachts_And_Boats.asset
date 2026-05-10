@@ -22,54 +22,54 @@ MonoBehaviour:
     \u0431\u0438\u0437\u043D\u0435\u0441\u0430."
   cards:
   - saveId: yachts_and_boats_card_01
-    title: "\u042F\u043C\u0430\u0445\u0430 \u042D\u0444-\u0418\u043A\u0441"
-    background: {fileID: 21300000, guid: 30f061215691c6f4fadfd8a62d6b037a, type: 3}
-    artwork: {fileID: 0}
+    title: "\u042F\u043C\u0430\u0445\u0430 \u0424-\u0418\u043A\u0441"
+    background: {fileID: 21300000, guid: 18210976a5efb00449593b44eadcf5f6, type: 3}
+    artwork: {fileID: 21300000, guid: 6505655183b122946a8bd6d0be4a8173, type: 3}
     priceRubles: 1750000
   - saveId: yachts_and_boats_card_02
-    title: "\u0421\u0438 \u0420\u044D\u0439 190"
-    background: {fileID: 21300000, guid: 30f061215691c6f4fadfd8a62d6b037a, type: 3}
-    artwork: {fileID: 0}
+    title: "\u0421\u0438\u0430 \u0420\u044D\u0439"
+    background: {fileID: 21300000, guid: 18210976a5efb00449593b44eadcf5f6, type: 3}
+    artwork: {fileID: 21300000, guid: d9ef58228fb787045b3a3a2951a45e2a, type: 3}
     priceRubles: 2500000
   - saveId: yachts_and_boats_card_03
-    title: "\u0411\u044D\u0439\u043B\u0430\u0439\u043D\u0435\u0440 \u0412\u0438-\u0410\u0440-6"
-    background: {fileID: 21300000, guid: 30f061215691c6f4fadfd8a62d6b037a, type: 3}
-    artwork: {fileID: 0}
+    title: "\u0411\u044D\u0439\u043B\u0430\u0439\u043D\u0435\u0440 \u0412\u0420 6"
+    background: {fileID: 21300000, guid: 18210976a5efb00449593b44eadcf5f6, type: 3}
+    artwork: {fileID: 21300000, guid: bc0fd6c923bd6ba448ebb1335b4f9926, type: 3}
     priceRubles: 4000000
   - saveId: yachts_and_boats_card_04
-    title: "\u0410\u043A\u0441\u043F\u0430\u0440 37"
+    title: "\u0410\u043A\u0441\u043F\u0430\u0440"
     background: {fileID: 21300000, guid: 18210976a5efb00449593b44eadcf5f6, type: 3}
-    artwork: {fileID: 0}
+    artwork: {fileID: 21300000, guid: a27d1b5a3c5fcab4699057bab959c512, type: 3}
     priceRubles: 40000000
   - saveId: yachts_and_boats_card_05
-    title: "\u041F\u0440\u0438\u043D\u0446\u0435\u0441\u0441 \u0412\u0438-40"
-    background: {fileID: 21300000, guid: 18210976a5efb00449593b44eadcf5f6, type: 3}
-    artwork: {fileID: 0}
+    title: "\u041F\u0440\u0438\u043D\u0446\u0435\u0441\u0441\u0430"
+    background: {fileID: 21300000, guid: 30f061215691c6f4fadfd8a62d6b037a, type: 3}
+    artwork: {fileID: 21300000, guid: d4e2e768848ff204c87d7bad7377934f, type: 3}
     priceRubles: 50000000
   - saveId: yachts_and_boats_card_06
-    title: "\u0421\u0430\u043D\u0441\u0438\u043A\u0435\u0440 55"
-    background: {fileID: 21300000, guid: 75f00f6a96c1bb64da30f3f404f04088, type: 3}
-    artwork: {fileID: 0}
+    title: "\u0425\u0438\u0449\u043D\u0438\u043A"
+    background: {fileID: 21300000, guid: 30f061215691c6f4fadfd8a62d6b037a, type: 3}
+    artwork: {fileID: 21300000, guid: f8eefe9f3183fda46b8ff70b876ad45b, type: 3}
     priceRubles: 180000000
   - saveId: yachts_and_boats_card_07
-    title: "\u0424\u0435\u0440\u0440\u0435\u0442\u0442\u0438 670"
-    background: {fileID: 21300000, guid: 75f00f6a96c1bb64da30f3f404f04088, type: 3}
-    artwork: {fileID: 0}
+    title: "\u0424\u0435\u0440\u0440\u0435\u0442\u0442\u0438"
+    background: {fileID: 21300000, guid: 30f061215691c6f4fadfd8a62d6b037a, type: 3}
+    artwork: {fileID: 21300000, guid: eba41de8c9131114fbc5f27371938f36, type: 3}
     priceRubles: 220000000
   - saveId: yachts_and_boats_card_08
     title: "\u0420\u0438\u0432\u0430 \u041A\u043E\u0440\u0441\u0430\u0440\u043E"
-    background: {fileID: 21300000, guid: 75f00f6a96c1bb64da30f3f404f04088, type: 3}
-    artwork: {fileID: 0}
+    background: {fileID: 21300000, guid: aff2564508024c44d93bc98c16251325, type: 3}
+    artwork: {fileID: 21300000, guid: 88934602815e97d468bcc5486d3501d3, type: 3}
     priceRubles: 650000000
   - saveId: yachts_and_boats_card_09
     title: "\u0411\u0435\u043D\u0435\u0442\u0442\u0438 \u041E\u0430\u0437\u0438\u0441"
     background: {fileID: 21300000, guid: aff2564508024c44d93bc98c16251325, type: 3}
-    artwork: {fileID: 0}
+    artwork: {fileID: 21300000, guid: 9f662905a6f75cb45acb5e5378b65aa4, type: 3}
     priceRubles: 2500000000
   - saveId: yachts_and_boats_card_10
-    title: "\u041C\u0443\u043D\u043B\u0430\u0439\u0442 2"
-    background: {fileID: 21300000, guid: aff2564508024c44d93bc98c16251325, type: 3}
-    artwork: {fileID: 0}
+    title: "\u041C\u0443\u043D\u043B\u0430\u0439\u0442"
+    background: {fileID: 21300000, guid: 75f00f6a96c1bb64da30f3f404f04088, type: 3}
+    artwork: {fileID: 21300000, guid: db1ce87ca17ef814c9eae08d3ab474ab, type: 3}
     priceRubles: 5700000000
   bonusMilestones:
   - requiredOwnedCount: 3
@@ -82,6 +82,6 @@ MonoBehaviour:
     saveId: yachts_and_boats_final
     title: "\u0410\u0437\u0437\u0430\u043C"
     background: {fileID: 21300000, guid: 4402f6f78273b734daf824afdfc1f623, type: 3}
-    artwork: {fileID: 0}
+    artwork: {fileID: 21300000, guid: 433bb22007814a84e831067223e258e4, type: 3}
     priceRubles: 45000000000
     bonusPercent: 20

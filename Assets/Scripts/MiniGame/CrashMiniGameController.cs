@@ -67,7 +67,7 @@ namespace TraidingIDLE.MiniGame
             new() { label = "x2", value = 2f },
             new() { label = "x5", value = 5f },
             new() { label = "x10", value = 10f },
-            new() { label = "x15", value = 15f },
+            new() { label = "x20", value = 20f },
         };
         [SerializeField] private StakeOption[] stakes =
         {
@@ -85,17 +85,33 @@ namespace TraidingIDLE.MiniGame
         [SerializeField, Min(0f)] private float resultPauseSeconds = 5f;
 
         [Header("Balance")]
-        [SerializeField, Range(0f, 1f)] private float[] winChanceByStake =
+        [Tooltip("Expected payout return by stake tier. Values below 1 keep the mini-game from printing money long-term.")]
+        [SerializeField, Range(0f, 1f)] private float[] targetReturnByStake =
         {
-            0.56f,
-            0.46f,
-            0.36f,
-            0.26f,
+            0.84f,
+            0.80f,
+            0.76f,
+            0.72f,
         };
-        [SerializeField, Range(0f, 1f)] private float noBetWinChance = 0.5f;
+        [Tooltip("Higher values make large multipliers statistically rarer and lower their expected return.")]
+        [SerializeField, Range(0.75f, 1.35f)] private float multiplierChancePower = 1.05f;
+        [SerializeField, Range(0f, 1f)] private float maxPlayerWinChance = 0.46f;
+        [SerializeField, Range(0f, 0.2f)] private float minPlayerWinChance = 0.01f;
+        [Tooltip("No-bet rounds can be more generous visually because they do not pay the player.")]
+        [SerializeField, Range(0f, 2f)] private float noBetTargetReturn = 1.05f;
         [SerializeField, Range(0f, 1f)] private float nearWinWeight = 0.42f;
         [SerializeField, Range(0f, 1f)] private float fomoWinWeight = 0.28f;
         [SerializeField, Range(0f, 1f)] private float nearLoseWeight = 0.68f;
+
+        [Header("Tutorial safety")]
+        [SerializeField] private bool guaranteeFirstWin = true;
+        [SerializeField, Min(1f)] private float firstGuaranteedWinMaxMultiplier = 20f;
+        [SerializeField, Min(1f)] private float firstGuaranteedCrashMultiplier = 20f;
+        [SerializeField] private bool guaranteeFirstTenMultiplierWin = false;
+
+        [Header("Background")]
+        [SerializeField] private bool runWhileInactive = true;
+        [SerializeField, Min(0.1f)] private float backgroundTickSeconds = 1f;
 
         [Header("Chart scale")]
         [SerializeField, Min(0.25f)] private float visibleMultiplierSpan = 4.8f;
@@ -148,9 +164,66 @@ namespace TraidingIDLE.MiniGame
         private float _roundCrashAtSeconds;
         private float _roundTotalSeconds;
         private bool _crashPeakSamplePushed;
+        private bool _forceFirstGuaranteedCrash;
+        private float _backgroundTickAccumulator;
         private int _dropEventCount;
         private readonly DropEvent[] _dropEvents = new DropEvent[MaxDropEvents];
         private readonly float[] _chartThresholdValues = new float[MaxDropEvents];
+
+        private static BackgroundRunner _backgroundRunner;
+
+        private sealed class BackgroundRunner : MonoBehaviour
+        {
+            private readonly System.Collections.Generic.List<CrashMiniGameController> _controllers = new();
+
+            public static void Register(CrashMiniGameController controller)
+            {
+                if (controller == null || !controller.runWhileInactive)
+                    return;
+
+                var runner = GetOrCreate();
+                if (!runner._controllers.Contains(controller))
+                    runner._controllers.Add(controller);
+            }
+
+            public static void Unregister(CrashMiniGameController controller)
+            {
+                if (_backgroundRunner == null || controller == null)
+                    return;
+
+                _backgroundRunner._controllers.Remove(controller);
+            }
+
+            private static BackgroundRunner GetOrCreate()
+            {
+                if (_backgroundRunner != null)
+                    return _backgroundRunner;
+
+                var go = new GameObject(nameof(CrashMiniGameController) + "BackgroundRunner");
+                DontDestroyOnLoad(go);
+                _backgroundRunner = go.AddComponent<BackgroundRunner>();
+                return _backgroundRunner;
+            }
+
+            private void Update()
+            {
+                var dt = Time.deltaTime;
+                if (dt <= 0f)
+                    return;
+
+                for (var i = _controllers.Count - 1; i >= 0; i--)
+                {
+                    var controller = _controllers[i];
+                    if (controller == null || controller.isActiveAndEnabled || !controller.runWhileInactive)
+                    {
+                        _controllers.RemoveAt(i);
+                        continue;
+                    }
+
+                    controller.AdvanceInBackground(dt);
+                }
+            }
+        }
 
         private void Awake()
         {
@@ -164,12 +237,16 @@ namespace TraidingIDLE.MiniGame
 
         private void OnEnable()
         {
+            BackgroundRunner.Unregister(this);
+            _backgroundTickAccumulator = 0f;
+
             if (profile != null)
                 profile.RublesChanged += OnRublesChanged;
 
             if (placeBetButton != null)
                 placeBetButton.onClick.AddListener(TryPlaceBet);
 
+            UpdateChartView();
             RefreshAllUi();
         }
 
@@ -182,6 +259,14 @@ namespace TraidingIDLE.MiniGame
                 placeBetButton.onClick.RemoveListener(TryPlaceBet);
 
             Save();
+
+            if (runWhileInactive && Application.isPlaying)
+                BackgroundRunner.Register(this);
+        }
+
+        private void OnDestroy()
+        {
+            BackgroundRunner.Unregister(this);
         }
 
         private void OnApplicationPause(bool pause)
@@ -201,6 +286,29 @@ namespace TraidingIDLE.MiniGame
             if (dt <= 0f)
                 return;
 
+            AdvanceRoundTime(dt, updateGraph: true);
+        }
+
+        private void AdvanceInBackground(float dt)
+        {
+            if (dt <= 0f)
+                return;
+
+            _backgroundTickAccumulator += dt;
+            var interval = Mathf.Max(0.1f, backgroundTickSeconds);
+            if (_backgroundTickAccumulator < interval)
+                return;
+
+            var step = _backgroundTickAccumulator;
+            _backgroundTickAccumulator = 0f;
+            AdvanceRoundTime(step, updateGraph: false);
+        }
+
+        private void AdvanceRoundTime(float dt, bool updateGraph)
+        {
+            if (dt <= 0f)
+                return;
+
             _stageTimeLeft -= dt;
             switch (_stage)
             {
@@ -210,7 +318,8 @@ namespace TraidingIDLE.MiniGame
                     break;
 
                 case Stage.Playing:
-                    UpdatePlayingGraph();
+                    if (updateGraph)
+                        UpdatePlayingGraph();
                     if (_stageTimeLeft <= 0f)
                         FinishPlayingRound();
                     break;
@@ -221,7 +330,8 @@ namespace TraidingIDLE.MiniGame
                     break;
             }
 
-            RefreshDynamicUi();
+            if (updateGraph)
+                RefreshDynamicUi();
         }
 
         private void BindOptionButtons()
@@ -315,6 +425,7 @@ namespace TraidingIDLE.MiniGame
             _roundCrashAtSeconds = 0f;
             _roundTotalSeconds = 0f;
             _crashPeakSamplePushed = false;
+            _forceFirstGuaranteedCrash = false;
             _dropEventCount = 0;
             _sampleCount = 0;
             chart?.SetSamples(_samples, 0, 0f, idleChartMaxMultiplier);
@@ -385,6 +496,12 @@ namespace TraidingIDLE.MiniGame
 
         private void FinishPlayingRound()
         {
+            if (!_crashPeakSamplePushed)
+            {
+                PushSample(Mathf.Clamp01(_roundCrashAtSeconds / GetGraphTimeAxisSeconds()), _roundCrashMultiplier);
+                _crashPeakSamplePushed = true;
+            }
+
             PushSample(Mathf.Clamp01(_roundTotalSeconds / GetGraphTimeAxisSeconds()), 0f);
             UpdateChartView();
 
@@ -542,17 +659,21 @@ namespace TraidingIDLE.MiniGame
         private void GenerateRoundResult()
         {
             _roundHadPlayer = _betPlaced;
+            _forceFirstGuaranteedCrash = false;
             var target = _betPlaced
                 ? Mathf.Max(1f, _roundTargetMultiplier)
                 : GetRandomMultiplierOption();
 
-            var win = _betPlaced ? RollPlayerOutcome(target) : UnityEngine.Random.value < noBetWinChance;
+            var win = _betPlaced ? RollPlayerOutcome(target) : RollNoBetOutcome(target);
             _roundPlayerWon = _betPlaced && win;
             _roundCrashMultiplier = win
                 ? RollWinningCrashMultiplier(target)
                 : RollLosingCrashMultiplier(target);
+            if (_roundPlayerWon && _forceFirstGuaranteedCrash)
+                _roundCrashMultiplier = Mathf.Max(_roundCrashMultiplier, RollFirstGuaranteedCrashMultiplier(target));
 
-            Save();
+            if (_betPlaced)
+                Save();
         }
 
         private bool RollPlayerOutcome(float target)
@@ -560,25 +681,43 @@ namespace TraidingIDLE.MiniGame
             if (!_firstBetWinConsumed)
             {
                 _firstBetWinConsumed = true;
-                if (IsTenMultiplier(target))
-                    _firstX10WinConsumed = true;
-                return true;
+
+                if (guaranteeFirstWin && target <= Mathf.Max(1f, firstGuaranteedWinMaxMultiplier))
+                {
+                    _forceFirstGuaranteedCrash = true;
+                    return true;
+                }
             }
 
-            if (IsTenMultiplier(target) && !_firstX10WinConsumed)
+            if (guaranteeFirstTenMultiplierWin
+                && IsTenMultiplier(target)
+                && !_firstX10WinConsumed)
             {
                 _firstX10WinConsumed = true;
                 return true;
             }
 
-            var chance = GetWinChanceForSelectedStake();
-            chance *= Mathf.Sqrt(2f / Mathf.Max(2f, target));
-            return UnityEngine.Random.value < Mathf.Clamp01(chance);
+            if (IsTenMultiplier(target))
+                _firstX10WinConsumed = true;
+
+            return UnityEngine.Random.value < GetPlayerWinChance(target);
+        }
+
+        private bool RollNoBetOutcome(float target)
+        {
+            return UnityEngine.Random.value < GetNoBetWinChance(target);
         }
 
         private static bool IsTenMultiplier(float target)
         {
             return Mathf.Abs(target - 10f) <= 0.01f;
+        }
+
+        private float RollFirstGuaranteedCrashMultiplier(float target)
+        {
+            var floor = Mathf.Max(target + 0.05f, firstGuaranteedCrashMultiplier);
+            var max = Mathf.Max(floor + 0.15f, floor * 1.08f);
+            return UnityEngine.Random.Range(floor, max);
         }
 
         private float RollWinningCrashMultiplier(float target)
@@ -779,12 +918,26 @@ namespace TraidingIDLE.MiniGame
             return Mathf.Max(1f, multipliers[index].value);
         }
 
-        private float GetWinChanceForSelectedStake()
+        private float GetPlayerWinChance(float target)
         {
-            if (winChanceByStake != null && _selectedStakeIndex >= 0 && _selectedStakeIndex < winChanceByStake.Length)
-                return Mathf.Clamp01(winChanceByStake[_selectedStakeIndex]);
+            var expectedReturn = GetTargetReturnForSelectedStake();
+            var chance = expectedReturn / Mathf.Pow(Mathf.Max(1f, target), Mathf.Max(0.75f, multiplierChancePower));
+            return Mathf.Clamp(chance, Mathf.Clamp01(minPlayerWinChance), Mathf.Clamp01(maxPlayerWinChance));
+        }
 
-            return 0.35f;
+        private float GetNoBetWinChance(float target)
+        {
+            var chance = Mathf.Max(0f, noBetTargetReturn)
+                / Mathf.Pow(Mathf.Max(1f, target), Mathf.Max(0.75f, multiplierChancePower));
+            return Mathf.Clamp01(chance);
+        }
+
+        private float GetTargetReturnForSelectedStake()
+        {
+            if (targetReturnByStake != null && _selectedStakeIndex >= 0 && _selectedStakeIndex < targetReturnByStake.Length)
+                return Mathf.Clamp01(targetReturnByStake[_selectedStakeIndex]);
+
+            return 0.78f;
         }
 
         private static long CalculatePayout(long stake, float multiplier)
@@ -821,13 +974,14 @@ namespace TraidingIDLE.MiniGame
             if (multipliers == null || multipliers.Length != 4)
                 return;
 
-            if (!ApproximatelyMultiplierSet(2f, 3f, 5f, 10f))
+            if (!ApproximatelyMultiplierSet(2f, 3f, 5f, 10f)
+                && !ApproximatelyMultiplierSet(2f, 5f, 10f, 15f))
                 return;
 
             SetMultiplierOption(0, "x2", 2f);
             SetMultiplierOption(1, "x5", 5f);
             SetMultiplierOption(2, "x10", 10f);
-            SetMultiplierOption(3, "x15", 15f);
+            SetMultiplierOption(3, "x20", 20f);
         }
 
         private bool ApproximatelyMultiplierSet(float a, float b, float c, float d)

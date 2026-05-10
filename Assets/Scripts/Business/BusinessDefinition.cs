@@ -19,6 +19,8 @@ namespace TraidingIDLE.Business
         [Min(1.01f)] public float upgradeCostGrowthPerLevel = 1.24f;
         [Min(1.01f)] public float incomeGrowthPerLevel = 1.16f;
         [Min(0.1f)] public float startingPaybackHours = 1.8f;
+        [Tooltip("Extra multiplier for the first purchased level, used to make newly unlocked businesses feel like a clear next tier.")]
+        [Min(0.1f)] public float startingIncomeMultiplier = 1f;
         [Min(0)] public int lateCostAccelerationStartLevel = 24;
         [Min(1f)] public float lateCostAccelerationPerLevel = 1.025f;
 
@@ -47,7 +49,9 @@ namespace TraidingIDLE.Business
 
             var paybackHours = Math.Max(0.1d, startingPaybackHours);
             var incomeGrowth = Math.Max(1.01d, incomeGrowthPerLevel);
-            var total = Math.Max(0d, startRublesCost) / paybackHours;
+            var total = Math.Max(0d, startRublesCost)
+                / paybackHours
+                * Math.Max(0.1d, startingIncomeMultiplier);
 
             if (level <= 1)
                 return RoundToReadableMoney(total);
@@ -70,6 +74,7 @@ namespace TraidingIDLE.Business
                 upgradeCostGrowthPerLevel = Math.Max(1.01f, upgradeCostGrowthPerLevel),
                 incomeGrowthPerLevel = Math.Max(1.01f, incomeGrowthPerLevel),
                 startingPaybackHours = Math.Max(0.1f, startingPaybackHours),
+                startingIncomeMultiplier = Math.Max(0.1f, startingIncomeMultiplier),
                 lateCostAccelerationStartLevel = Math.Max(0, lateCostAccelerationStartLevel),
                 lateCostAccelerationPerLevel = Math.Max(1f, lateCostAccelerationPerLevel),
             };
@@ -128,6 +133,8 @@ namespace TraidingIDLE.Business
         [Header("Effect")]
         public BusinessSkillEffectKind effect = BusinessSkillEffectKind.InstantRubles;
         [Min(0)] public long instantRubles;
+        [Tooltip("InstantRubles grows by this percent every 10 business levels.")]
+        [Min(0f)] public float instantRublesGrowthPer10Levels = 0.30f;
         [Min(1f)] public float temporaryIncomeMultiplier = 5f;
         [Min(1f)] public float temporaryDurationSeconds = 600f;
 
@@ -150,7 +157,11 @@ namespace TraidingIDLE.Business
         [SerializeField] private string saveId = "";
         [SerializeField] private string displayName = "Business";
         [SerializeField] private string category = "Other";
-        [SerializeField] private Sprite artwork;
+
+        [Header("View")]
+        [SerializeField] private Sprite listArtwork;
+        [SerializeField] private Sprite detailArtwork;
+        [SerializeField, HideInInspector] private Sprite artwork;
 
         [Header("Progression")]
         [SerializeField] private BusinessProgressionConfig progression = new();
@@ -166,7 +177,9 @@ namespace TraidingIDLE.Business
         public string SaveId => string.IsNullOrWhiteSpace(saveId) ? name : saveId;
         public string DisplayName => string.IsNullOrWhiteSpace(displayName) ? name : displayName;
         public string Category => category;
-        public Sprite Artwork => artwork;
+        public Sprite ListArtwork => listArtwork != null ? listArtwork : artwork;
+        public Sprite DetailArtwork => detailArtwork != null ? detailArtwork : artwork;
+        public Sprite Artwork => DetailArtwork;
         public BusinessProgressionConfig Progression => progression ?? new BusinessProgressionConfig();
         public BusinessSkillConfig Skill => skill;
 

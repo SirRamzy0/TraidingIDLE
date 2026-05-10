@@ -22,53 +22,53 @@ MonoBehaviour:
   cards:
   - saveId: auto_card_01
     title: "\u0421\u0443\u043F\u0440\u0430"
-    background: {fileID: 21300000, guid: 30f061215691c6f4fadfd8a62d6b037a, type: 3}
-    artwork: {fileID: 0}
+    background: {fileID: 21300000, guid: 18210976a5efb00449593b44eadcf5f6, type: 3}
+    artwork: {fileID: 21300000, guid: c104e78dac426b342b031ea054d783ab, type: 3}
     priceRubles: 4500000
   - saveId: auto_card_02
-    title: "\u041C\u0443\u0441\u0442\u0430\u043D\u0433 \u0414\u0436\u0438-\u0422\u0438"
-    background: {fileID: 21300000, guid: 30f061215691c6f4fadfd8a62d6b037a, type: 3}
-    artwork: {fileID: 0}
+    title: "\u041C\u0443\u0441\u0442\u0430\u043D\u0433 \u0413\u0422"
+    background: {fileID: 21300000, guid: 18210976a5efb00449593b44eadcf5f6, type: 3}
+    artwork: {fileID: 21300000, guid: fb06245f7039b0344acba76769afd961, type: 3}
     priceRubles: 5000000
   - saveId: auto_card_03
     title: "\u042D\u0441\u043A\u0430\u043B\u0435\u0439\u0434"
-    background: {fileID: 21300000, guid: 30f061215691c6f4fadfd8a62d6b037a, type: 3}
-    artwork: {fileID: 0}
+    background: {fileID: 21300000, guid: 18210976a5efb00449593b44eadcf5f6, type: 3}
+    artwork: {fileID: 21300000, guid: 5ba3287895be7f640b43297fc9ab6a41, type: 3}
     priceRubles: 10000000
   - saveId: auto_card_04
-    title: "\u041C\u0435\u0440\u0441 \u0414\u0436\u0438-63"
+    title: "\u041C\u0435\u0440\u0441 \u041363"
     background: {fileID: 21300000, guid: 18210976a5efb00449593b44eadcf5f6, type: 3}
-    artwork: {fileID: 0}
+    artwork: {fileID: 21300000, guid: 16197418241a7684a8acd405e17108d8, type: 3}
     priceRubles: 18000000
   - saveId: auto_card_05
     title: "\u041F\u043E\u0440\u0448 911"
-    background: {fileID: 21300000, guid: 18210976a5efb00449593b44eadcf5f6, type: 3}
-    artwork: {fileID: 0}
+    background: {fileID: 21300000, guid: 30f061215691c6f4fadfd8a62d6b037a, type: 3}
+    artwork: {fileID: 21300000, guid: 2297c5ff550e2054b8e39a15feba3c44, type: 3}
     priceRubles: 20000000
   - saveId: auto_card_06
-    title: "\u0420\u044D\u043D\u0436 \u042D\u0441-\u0412\u0438"
-    background: {fileID: 21300000, guid: 75f00f6a96c1bb64da30f3f404f04088, type: 3}
-    artwork: {fileID: 0}
+    title: "\u0420\u044D\u043D\u0436 \u0421\u0412"
+    background: {fileID: 21300000, guid: 30f061215691c6f4fadfd8a62d6b037a, type: 3}
+    artwork: {fileID: 21300000, guid: ad5d656225600e54badc17cca3863a2a, type: 3}
     priceRubles: 23000000
   - saveId: auto_card_07
-    title: "\u0414\u0436\u0438-\u0422\u0438-\u0410\u0440"
-    background: {fileID: 21300000, guid: 75f00f6a96c1bb64da30f3f404f04088, type: 3}
-    artwork: {fileID: 0}
+    title: "\u0413\u0422\u0420"
+    background: {fileID: 21300000, guid: 30f061215691c6f4fadfd8a62d6b037a, type: 3}
+    artwork: {fileID: 21300000, guid: 75d5f3d64dad354489ad811175f31f8f, type: 3}
     priceRubles: 25000000
   - saveId: auto_card_08
     title: "\u0423\u0440\u0443\u0441"
     background: {fileID: 21300000, guid: 75f00f6a96c1bb64da30f3f404f04088, type: 3}
-    artwork: {fileID: 0}
+    artwork: {fileID: 21300000, guid: 5603c3df61fbb3c40a98da1e2bad5e02, type: 3}
     priceRubles: 30000000
   - saveId: auto_card_09
     title: "\u0424\u0435\u0440\u0440\u0430\u0440\u0438 812"
-    background: {fileID: 21300000, guid: aff2564508024c44d93bc98c16251325, type: 3}
-    artwork: {fileID: 0}
+    background: {fileID: 21300000, guid: 75f00f6a96c1bb64da30f3f404f04088, type: 3}
+    artwork: {fileID: 21300000, guid: cfb339accd5adde44aa8fd1107741f53, type: 3}
     priceRubles: 35000000
   - saveId: auto_card_10
     title: "\u041A\u0443\u043B\u043B\u0438\u043D\u0430\u043D"
     background: {fileID: 21300000, guid: aff2564508024c44d93bc98c16251325, type: 3}
-    artwork: {fileID: 0}
+    artwork: {fileID: 21300000, guid: 9ecfc4c80d947fe49a5c5dc6508a8349, type: 3}
     priceRubles: 45000000
   bonusMilestones:
   - requiredOwnedCount: 3
@@ -81,6 +81,6 @@ MonoBehaviour:
     saveId: auto_final
     title: "\u0411\u0443\u0433\u0430\u0442\u0442\u0438 \u0412\u0435\u0439\u0440\u043E\u043D"
     background: {fileID: 21300000, guid: 4402f6f78273b734daf824afdfc1f623, type: 3}
-    artwork: {fileID: 0}
+    artwork: {fileID: 21300000, guid: 45908ed382c441e4fb4510b27a15bb34, type: 3}
     priceRubles: 180000000
     bonusPercent: 20

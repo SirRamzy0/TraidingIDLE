@@ -353,10 +353,10 @@ namespace TraidingIDLE.Currencies.Simulation
                 corridorWidthAtLowPrice = 1.55f,
                 corridorWidthAtHighPrice = 1.20f,
                 highPriceReference = 2000000f,
-                corridorWidthRandomJitter = 0.06f,
+                corridorWidthRandomJitter = 0.08f,
                 minCorridorLowFromInitial = 0.55f,
-                calmCorridorWidth = 1.06f,
-                calmCorridorPullStrength = 0.48f,
+                calmCorridorWidth = 1.10f,
+                calmCorridorPullStrength = 0.44f,
                 chopCorridorWidthMin = 1.35f,
                 chopCorridorWidthMax = 2.10f,
                 chopCorridorPullStrength = 0.38f,
@@ -368,7 +368,7 @@ namespace TraidingIDLE.Currencies.Simulation
                 deadFlatCorridorPullStrength = 0.018f,
                 crashCorridorWidth = 1.38f,
                 crashCorridorPullStrength = 0.14f,
-                noiseStrength = 0.26f,
+                noiseStrength = 0.30f,
                 trendStrength = 0.24f,
                 meanReversionStrength = 0.42f,
                 chopPhaseDurationMinSeconds = 16f,
@@ -379,14 +379,14 @@ namespace TraidingIDLE.Currencies.Simulation
                 chopFakeoutStrength = 0.32f,
                 chopRecoveryDurationSeconds = 5f,
                 chopRecoveryBoost = 1.55f,
-                calmOffsetFromHalfMin01 = 0.08f,
-                calmOffsetFromHalfMax01 = 0.24f,
+                calmOffsetFromHalfMin01 = 0.11f,
+                calmOffsetFromHalfMax01 = 0.30f,
                 calmLegDurationMinSeconds = 16f,
                 calmLegDurationMaxSeconds = 65f,
                 calmShortLegMaxSeconds = 22f,
                 calmSmallMoveRelativeThreshold = 0.24f,
-                calmMaxPriceChangePerTick01 = 0.028f,
-                calmNoiseStrength = 0.045f,
+                calmMaxPriceChangePerTick01 = 0.038f,
+                calmNoiseStrength = 0.070f,
                 calmApproachStrength = 0.18f,
                 longUptrendDurationMinSeconds = 50f,
                 longUptrendDurationMaxSeconds = 145f,
@@ -678,6 +678,19 @@ namespace TraidingIDLE.Currencies.Simulation
         [Min(1f)]
         [SerializeField] private float hugeChangeMaxMultiplier = 3.0f;
 
+        [Header("Low price recovery")]
+        [SerializeField] private bool preventPlayablePriceCollapse = true;
+        [Range(1f, 2f)]
+        [SerializeField] private float lowPriceRecoveryTriggerMultiplier = 1.20f;
+        [Range(1.05f, 4f)]
+        [SerializeField] private float lowPriceRecoveryTargetMultiplier = 1.80f;
+        [Range(0f, 1f)]
+        [SerializeField] private float lowPriceRecoveryPullStrength = 0.35f;
+        [Min(1f)]
+        [SerializeField] private float lowPriceRecoveryDurationMinSeconds = 8f;
+        [Min(1f)]
+        [SerializeField] private float lowPriceRecoveryDurationMaxSeconds = 20f;
+
         [Header("Debug")]
         [SerializeField] private bool writeToCurrencyMarket = true;
         [SerializeField] private bool logMarketStatesOnStart = true;
@@ -730,9 +743,9 @@ namespace TraidingIDLE.Currencies.Simulation
 
                 NormalizeConfig(cfg);
 
-                var startPrice = cfg.initialPrice;
+                var startPrice = ClampToPlayableFloor(cfg, cfg.initialPrice);
                 if ((useCurrencyMarketPricesOnStart || loadedFromSave) && market != null)
-                    startPrice = market.GetPrice(cfg.id);
+                    startPrice = ClampToPlayableFloor(cfg, market.GetPrice(cfg.id));
 
                 var r = new CoinRuntime
                 {
@@ -753,6 +766,7 @@ namespace TraidingIDLE.Currencies.Simulation
                     market.SetPrice(cfg.id, r.visiblePrice);
             }
 
+            SanitizeStoredHistoryFloors();
             WarmupHistoryIfNeeded();
 
             if (logMarketStatesOnStart)
@@ -802,6 +816,33 @@ namespace TraidingIDLE.Currencies.Simulation
             }
         }
 
+        private void SanitizeStoredHistoryFloors()
+        {
+            if (priceHistoryStore == null)
+                return;
+
+            foreach (var kv in _runtime)
+            {
+                var id = kv.Key;
+                var r = kv.Value;
+                if (!priceHistoryStore.TryGet(id, out var prices))
+                    continue;
+
+                var changed = false;
+                var sanitized = new List<float>(prices.Count);
+                for (var i = 0; i < prices.Count; i++)
+                {
+                    var price = ClampToPlayableFloor(r.config, prices[i]);
+                    if (!Mathf.Approximately(price, prices[i]))
+                        changed = true;
+                    sanitized.Add(price);
+                }
+
+                if (changed)
+                    priceHistoryStore.SetAll(id, sanitized);
+            }
+        }
+
         private void ApplyGameStartSettings()
         {
             if (market != null)
@@ -830,7 +871,7 @@ namespace TraidingIDLE.Currencies.Simulation
                 if (startPrices[i].id != id)
                     continue;
 
-                price = Mathf.Max(0.000001f, startPrices[i].price);
+                price = CurrencyMarket.SanitizePrice(startPrices[i].price);
                 return true;
             }
 
@@ -881,13 +922,16 @@ namespace TraidingIDLE.Currencies.Simulation
 
             if (r.currentState != MarketStateType.BusinessSkillPumpDump)
             {
+                ForceLowPriceRecoveryIfNeeded(r);
                 ArmCrashIfNeeded(r);
                 ForceCrashIfThresholdReached(r);
             }
 
             var nextRaw = SimulateNextRawPrice(r, dt);
-            nextRaw = Mathf.Max(0f, nextRaw);
+            nextRaw = ClampToPlayableFloor(r.config, nextRaw);
+            nextRaw = ApplyLowPriceRecovery(r, nextRaw);
             nextRaw = LimitPriceChangePerTick(r, nextRaw);
+            nextRaw = ClampToPlayableFloor(r.config, nextRaw);
 
             r.rawPrice = nextRaw;
             r.visiblePrice = RoundPrice(r.config, r.rawPrice);
@@ -900,6 +944,73 @@ namespace TraidingIDLE.Currencies.Simulation
 
             if (priceHistoryStore != null)
                 priceHistoryStore.Push(r.config.id, r.visiblePrice);
+        }
+
+        private void ForceLowPriceRecoveryIfNeeded(CoinRuntime r)
+        {
+            if (!preventPlayablePriceCollapse || IsDebugStateOverrideTarget(r))
+                return;
+
+            if (r.currentState == MarketStateType.BusinessSkillPumpDump || IsLowPriceRecoveryState(r.currentState))
+                return;
+
+            var floor = GetPlayablePriceFloor(r.config);
+            var trigger = floor * Mathf.Max(1f, lowPriceRecoveryTriggerMultiplier);
+            if (r.rawPrice > trigger && r.visiblePrice > trigger)
+                return;
+
+            r.crashArmed = false;
+            r.crashThresholdX = 0f;
+
+            var minDuration = Mathf.Max(1f, lowPriceRecoveryDurationMinSeconds);
+            var maxDuration = Mathf.Max(minDuration, lowPriceRecoveryDurationMaxSeconds);
+            EnterState(
+                r,
+                MarketStateType.LongUptrend,
+                UnityEngine.Random.Range(minDuration, maxDuration),
+                changeCorridor: true);
+
+            r.corridorAnchor = Mathf.Max(r.corridorAnchor, floor);
+            RebuildCorridor(r, r.rawPrice, force: false);
+        }
+
+        private float ApplyLowPriceRecovery(CoinRuntime r, float nextRaw)
+        {
+            var floor = GetPlayablePriceFloor(r.config);
+            nextRaw = Mathf.Max(nextRaw, floor);
+
+            if (!preventPlayablePriceCollapse)
+                return nextRaw;
+
+            var trigger = floor * Mathf.Max(1f, lowPriceRecoveryTriggerMultiplier);
+            var lowZonePrice = Mathf.Min(r.rawPrice, nextRaw);
+            if (lowZonePrice > trigger)
+                return nextRaw;
+
+            var target = GetLowPriceRecoveryTarget(r.config);
+            var depth = Mathf.InverseLerp(trigger, floor, lowZonePrice);
+            var strength = Mathf.Clamp01(lowPriceRecoveryPullStrength) * Mathf.Lerp(0.35f, 1f, depth);
+
+            nextRaw = Mathf.Lerp(nextRaw, Mathf.Max(nextRaw, target), strength);
+            r.corridorAnchor = Mathf.Lerp(
+                Mathf.Max(r.corridorAnchor, floor),
+                Mathf.Max(r.corridorAnchor, target),
+                strength * 0.4f);
+            RebuildCorridor(r, nextRaw, force: false);
+
+            return Mathf.Max(nextRaw, floor);
+        }
+
+        private float GetLowPriceRecoveryTarget(CoinSimulationConfig cfg)
+        {
+            return ClampToPlayableFloor(
+                cfg,
+                GetPlayablePriceFloor(cfg) * Mathf.Max(1.05f, lowPriceRecoveryTargetMultiplier));
+        }
+
+        private static bool IsLowPriceRecoveryState(MarketStateType state)
+        {
+            return state == MarketStateType.LongUptrend || state == MarketStateType.DeadFlatThenRocketPump;
         }
 
         private float SimulateNextRawPrice(CoinRuntime r, float dt)
@@ -1453,7 +1564,7 @@ namespace TraidingIDLE.Currencies.Simulation
 
             r.longDowntrendStartPrice = r.rawPrice;
             r.longDowntrendTargetAnchor = Mathf.Max(
-                cfg.initialPrice * cfg.minCorridorLowFromInitial,
+                GetPlayablePriceFloor(cfg),
                 r.corridorAnchor / divider);
 
             var previousAnchor = r.corridorAnchor;
@@ -1465,7 +1576,7 @@ namespace TraidingIDLE.Currencies.Simulation
                 cfg.longDowntrendTargetCorridorPos);
             r.corridorAnchor = previousAnchor;
 
-            var minTarget = cfg.initialPrice * cfg.minCorridorLowFromInitial;
+            var minTarget = GetPlayablePriceFloor(cfg);
             r.longDowntrendTargetPrice = Mathf.Max(r.longDowntrendTargetPrice, minTarget);
 
             r.longDowntrendDuration = Mathf.Max(1f, r.stateTimeLeft);
@@ -1582,7 +1693,7 @@ namespace TraidingIDLE.Currencies.Simulation
             var cfg = r.config;
             var dropMultiplier = UnityEngine.Random.Range(cfg.spikeDumpDropOverGrowMin, cfg.spikeDumpDropOverGrowMax);
             var dropPercent = Mathf.Min(cfg.spikeDumpMaxDropPercent, r.spikeDumpGrowPercent * dropMultiplier);
-            var minPrice = cfg.initialPrice * cfg.minCorridorLowFromInitial;
+            var minPrice = GetPlayablePriceFloor(cfg);
 
             r.spikeDumpPhase = SpikeDumpPhase.Dump;
             r.spikeDumpPhaseStartPrice = Mathf.Max(0.000001f, r.rawPrice);
@@ -1612,7 +1723,7 @@ namespace TraidingIDLE.Currencies.Simulation
             var moveMax = Mathf.Max(cfg.spikeDumpShakeMovePercentMin, cfg.spikeDumpShakeMovePercentMax);
             var direction = UnityEngine.Random.value < 0.5f ? -1f : 1f;
             var movePercent = UnityEngine.Random.Range(moveMin, moveMax);
-            var minPrice = cfg.initialPrice * cfg.minCorridorLowFromInitial;
+            var minPrice = GetPlayablePriceFloor(cfg);
 
             r.spikeDumpTargetPrice = Mathf.Max(minPrice, r.spikeDumpPhaseStartPrice * (1f + direction * movePercent));
             r.spikeDumpPhaseDuration = UnityEngine.Random.Range(
@@ -1707,7 +1818,7 @@ namespace TraidingIDLE.Currencies.Simulation
 
             r.dipPumpPhase = DipPumpPhase.Dip;
             r.dipPumpPhaseStartPrice = Mathf.Max(0.000001f, r.rawPrice);
-            var minPrice = cfg.initialPrice * cfg.minCorridorLowFromInitial;
+            var minPrice = GetPlayablePriceFloor(cfg);
             r.dipPumpTargetPrice = Mathf.Max(minPrice, r.dipPumpPhaseStartPrice * (1f - r.dipPumpDipPercent));
             r.dipPumpPhaseDuration = UnityEngine.Random.Range(
                 cfg.dipPumpDipDurationMinSeconds,
@@ -1751,7 +1862,7 @@ namespace TraidingIDLE.Currencies.Simulation
             var moveMax = Mathf.Max(cfg.dipPumpShakeMovePercentMin, cfg.dipPumpShakeMovePercentMax);
             var direction = UnityEngine.Random.value < 0.5f ? -1f : 1f;
             var movePercent = UnityEngine.Random.Range(moveMin, moveMax);
-            var minPrice = cfg.initialPrice * cfg.minCorridorLowFromInitial;
+            var minPrice = GetPlayablePriceFloor(cfg);
 
             r.dipPumpTargetPrice = Mathf.Max(minPrice, r.dipPumpPhaseStartPrice * (1f + direction * movePercent));
             r.dipPumpPhaseDuration = UnityEngine.Random.Range(
@@ -1940,7 +2051,7 @@ namespace TraidingIDLE.Currencies.Simulation
             var minDrop = Mathf.Min(cfg.deadFlatDumpDropPercentMin, cfg.deadFlatDumpDropPercentMax);
             var maxDrop = Mathf.Max(cfg.deadFlatDumpDropPercentMin, cfg.deadFlatDumpDropPercentMax);
             var dropPercent = UnityEngine.Random.Range(minDrop, maxDrop);
-            var minPrice = cfg.initialPrice * cfg.minCorridorLowFromInitial;
+            var minPrice = GetPlayablePriceFloor(cfg);
 
             r.deadFlatDumpStartPrice = Mathf.Max(0.000001f, r.rawPrice);
             r.deadFlatDumpTargetPrice = Mathf.Max(minPrice, r.deadFlatDumpStartPrice * (1f - dropPercent));
@@ -2261,6 +2372,7 @@ namespace TraidingIDLE.Currencies.Simulation
         private static void RebuildCorridor(CoinRuntime r, float aroundPrice, bool force)
         {
             var cfg = r.config;
+            aroundPrice = ClampToPlayableFloor(cfg, aroundPrice);
 
             // Volatility shrinks with price: interpolate width between "low price" and "high price".
             var t = Mathf.Clamp01(aroundPrice / Mathf.Max(0.000001f, cfg.highPriceReference));
@@ -2273,7 +2385,7 @@ namespace TraidingIDLE.Currencies.Simulation
 
             // Center corridor around anchor multiplicatively (symmetric in log-space).
             var half = Mathf.Sqrt(width);
-            var anchor = Mathf.Max(0.000001f, r.corridorAnchor);
+            var anchor = ClampToPlayableFloor(cfg, r.corridorAnchor);
 
             var low = anchor / half;
             var high = anchor * half;
@@ -2286,7 +2398,7 @@ namespace TraidingIDLE.Currencies.Simulation
             }
 
             // Clamp minimum low relative to initial price.
-            var minLow = cfg.initialPrice * cfg.minCorridorLowFromInitial;
+            var minLow = GetPlayablePriceFloor(cfg);
             if (low < minLow)
             {
                 var shift = minLow - low;
@@ -2556,7 +2668,7 @@ namespace TraidingIDLE.Currencies.Simulation
             RebuildCorridor(r, r.rawPrice, force: false);
 
             // Keep minimum low constraint.
-            var minLow = cfg.initialPrice * cfg.minCorridorLowFromInitial;
+            var minLow = GetPlayablePriceFloor(cfg);
             if (r.corridorLow < minLow)
             {
                 var shift = minLow - r.corridorLow;
@@ -2638,11 +2750,23 @@ namespace TraidingIDLE.Currencies.Simulation
 
         private static float RoundPrice(CoinSimulationConfig cfg, float rawPrice)
         {
+            rawPrice = ClampToPlayableFloor(cfg, rawPrice);
             var step = GetRoundingStep(cfg, rawPrice);
             if (step <= 0f)
                 return rawPrice;
 
-            return Mathf.Round(rawPrice / step) * step;
+            return ClampToPlayableFloor(cfg, Mathf.Round(rawPrice / step) * step);
+        }
+
+        private static float ClampToPlayableFloor(CoinSimulationConfig cfg, float price)
+        {
+            return Mathf.Max(CurrencyMarket.SanitizePrice(price), GetPlayablePriceFloor(cfg));
+        }
+
+        private static float GetPlayablePriceFloor(CoinSimulationConfig cfg)
+        {
+            return CurrencyMarket.SanitizePrice(
+                cfg.initialPrice * Mathf.Clamp(cfg.minCorridorLowFromInitial, 0.01f, 0.95f));
         }
 
         private static float GetRoundingStep(CoinSimulationConfig cfg, float price)
@@ -2678,12 +2802,12 @@ namespace TraidingIDLE.Currencies.Simulation
             cfg.stateDurationMaxSeconds = Mathf.Max(cfg.stateDurationMinSeconds, cfg.stateDurationMaxSeconds);
             NormalizeStateWeights(cfg);
 
-            cfg.initialPrice = Mathf.Max(0.000001f, cfg.initialPrice);
+            cfg.initialPrice = CurrencyMarket.SanitizePrice(cfg.initialPrice);
             cfg.highPriceReference = Mathf.Max(cfg.initialPrice, cfg.highPriceReference);
 
             cfg.corridorWidthAtLowPrice = Mathf.Max(1.01f, cfg.corridorWidthAtLowPrice);
             cfg.corridorWidthAtHighPrice = Mathf.Max(1.01f, cfg.corridorWidthAtHighPrice);
-            cfg.minCorridorLowFromInitial = Mathf.Max(0.01f, cfg.minCorridorLowFromInitial);
+            cfg.minCorridorLowFromInitial = Mathf.Clamp(cfg.minCorridorLowFromInitial, 0.01f, 0.95f);
 
             cfg.calmCorridorWidth = Mathf.Max(1.01f, cfg.calmCorridorWidth);
             cfg.calmCorridorPullStrength = Mathf.Clamp01(cfg.calmCorridorPullStrength);

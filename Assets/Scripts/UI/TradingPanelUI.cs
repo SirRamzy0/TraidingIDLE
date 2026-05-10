@@ -322,8 +322,8 @@ namespace TraidingIDLE.UI
             if (market == null)
                 return 0;
 
-            var price = market.GetPrice(_activeCurrency);
-            return price <= 0f ? 0 : (long)Math.Round(price);
+            var price = CurrencyMarket.SanitizePrice(market.GetPrice(_activeCurrency));
+            return Math.Max(1L, (long)Math.Round(price));
         }
 
         private static int ComputeCountFromSlider(Slider slider, int maxCount)
