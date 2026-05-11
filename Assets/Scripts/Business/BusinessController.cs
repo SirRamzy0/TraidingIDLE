@@ -858,7 +858,7 @@ namespace TraidingIDLE.Business
                     ? GameTextFormatter.Format(rowLevelFormat, "Уровень {0}", 0)
                     : level > 0
                     ? GameTextFormatter.Format(rowLevelFormat, "Уровень {0}", level)
-                    : GameTextFormatter.Format(rowNextLevelFormat, "+{0}", nextLevel),
+                    : GameTextFormatter.Format(rowLevelFormat, "Уровень {0}", nextLevel),
                 !unlocked ? lockedCaption : canUpgrade ? FormatReadableMoney(cost) : "",
                 !unlocked || level <= 0 ? rowPrimaryBuyCaption : rowPrimaryUpgradeCaption,
                 canUpgrade || !unlocked,

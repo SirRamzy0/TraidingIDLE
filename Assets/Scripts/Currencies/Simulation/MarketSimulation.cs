@@ -188,6 +188,7 @@ namespace TraidingIDLE.Currencies.Simulation
             public float deadFlatRocketPumpStartPrice;
             public float deadFlatRocketTargetPrice;
             public float deadFlatRocketFlatTimeLeft;
+            public float deadFlatRocketFlatDuration;
             public float deadFlatRocketPumpDuration;
             public float deadFlatRocketPumpTimeLeft;
             public bool deadFlatRocketPumpStarted;
@@ -197,6 +198,7 @@ namespace TraidingIDLE.Currencies.Simulation
             public float deadFlatDumpStartPrice;
             public float deadFlatDumpTargetPrice;
             public float deadFlatDumpFlatTimeLeft;
+            public float deadFlatDumpFlatDuration;
             public float deadFlatDumpDuration;
             public float deadFlatDumpTimeLeft;
             public bool deadFlatDumpStarted;
@@ -224,6 +226,9 @@ namespace TraidingIDLE.Currencies.Simulation
             public float patternLegDuration;
             public float patternLegTimeLeft;
             public bool patternInitialized;
+
+            public float starterAssistTimeLeft;
+            public float starterAssistElapsed;
 
             public int seed;
             public float time;
@@ -785,9 +790,32 @@ namespace TraidingIDLE.Currencies.Simulation
         [Range(0f, 1f)]
         [SerializeField] private float globalGrowthNoiseStrength = 0.20f;
 
+        [Header("SHT action assist")]
+        [SerializeField] private bool useShtStarterAssist = true;
+        [Tooltip("Keeps SHT punchy and rebound-heavy. When enabled, SHT keeps the same high-action personality after the early game.")]
+        [SerializeField] private bool keepShtStarterAssistAlwaysActive = true;
+        [Tooltip("Early SHT window for new players when always-active mode is disabled. Existing saves do not restart the timer.")]
+        [Min(0f)]
+        [SerializeField] private float shtStarterAssistDurationSeconds = 8f * 60f;
+        [Min(0f)]
+        [SerializeField] private float shtStarterAssistMinimumSeconds = 3f * 60f;
+        [Min(1.01f)]
+        [SerializeField] private float shtStarterAssistProfitExitMultiplier = 2.25f;
+        [Range(0.1f, 1f)]
+        [SerializeField] private float shtStarterAssistSoftFloorFromInitial = 0.78f;
+        [Range(0f, 4f)]
+        [SerializeField] private float shtStarterAssistReboundPerMinute01 = 2.20f;
+        [Range(0f, 1f)]
+        [SerializeField] private float shtStarterAssistDownMoveDamping = 0.45f;
+
         [Header("Balance simulation")]
         [SerializeField, Min(1)] private int balanceSimulationRuns = 24;
         [SerializeField, Min(1f)] private float balanceSimulationMinutes = 60f;
+
+        [Header("Runtime timing")]
+        [SerializeField] private bool useRealtimeCatchUp = true;
+        [Tooltip("Limits one resume catch-up so a tab left in background for hours does not freeze the browser.")]
+        [SerializeField, Min(1f)] private float maxRealtimeCatchUpSeconds = 15f * 60f;
 
         [Header("Debug")]
         [SerializeField] private bool writeToCurrencyMarket = true;
@@ -807,6 +835,8 @@ namespace TraidingIDLE.Currencies.Simulation
 
         private bool _warmupInProgress;
         private bool _balanceSimulationInProgress;
+        private double _lastRealtimeUtcSeconds;
+        private bool _resumeCatchUpPending;
 
         private void Awake()
         {
@@ -870,9 +900,37 @@ namespace TraidingIDLE.Currencies.Simulation
 
             SanitizeStoredHistoryFloors();
             WarmupHistoryIfNeeded();
+            ActivateShtStarterAssistIfNeeded(loadedFromSave);
+
+            ResetRealtimeClock();
 
             if (logMarketStatesOnStart)
                 LogActiveMarketStates("Market simulation started");
+        }
+
+        private void ActivateShtStarterAssistIfNeeded(bool loadedFromSave)
+        {
+            if (!useShtStarterAssist || loadedFromSave || !_runtime.TryGetValue(CurrencyId.SHT, out var r))
+                return;
+
+            if (!ShouldStartShtStarterAssist(r.config, loadedFromSave))
+                return;
+
+            var startPrice = ClampToPlayableFloor(r.config, r.config.initialPrice);
+            r.rawPrice = startPrice;
+            r.visiblePrice = RoundPrice(r.config, startPrice);
+            r.corridorAnchor = startPrice;
+            r.starterAssistElapsed = 0f;
+            r.starterAssistTimeLeft = Mathf.Max(0f, shtStarterAssistDurationSeconds);
+            RebuildCorridor(r, r.rawPrice, force: true);
+            BuildInitialPlan(r);
+            ApplyNextPlannedState(r);
+
+            if (writeToCurrencyMarket && market != null)
+                market.SetPrice(r.config.id, r.visiblePrice);
+
+            if (priceHistoryStore != null)
+                priceHistoryStore.Push(r.config.id, r.visiblePrice);
         }
 
         private void WarmupHistoryIfNeeded()
@@ -981,11 +1039,82 @@ namespace TraidingIDLE.Currencies.Simulation
             return false;
         }
 
+        private bool ShouldStartShtStarterAssist(CoinSimulationConfig cfg, bool loadedFromSave)
+        {
+            return useShtStarterAssist
+                && !loadedFromSave
+                && cfg != null
+                && cfg.id == CurrencyId.SHT
+                && shtStarterAssistDurationSeconds > 0f;
+        }
+
         private void Update()
         {
-            var dt = Time.deltaTime;
+            var dt = GetRuntimeDeltaSeconds();
+            if (dt <= 0f)
+                return;
+
             foreach (var kv in _runtime)
                 AdvanceRuntime(kv.Value, dt);
+        }
+
+        private void OnApplicationPause(bool pause)
+        {
+            if (pause)
+                MarkResumeCatchUpPending();
+        }
+
+        private void OnApplicationFocus(bool focus)
+        {
+            if (!focus)
+                MarkResumeCatchUpPending();
+        }
+
+        private float GetRuntimeDeltaSeconds()
+        {
+            if (Time.timeScale <= 0f)
+            {
+                if (!_resumeCatchUpPending)
+                    ResetRealtimeClock();
+
+                return 0f;
+            }
+
+            if (!useRealtimeCatchUp)
+                return Time.deltaTime;
+
+            var now = GetUtcSecondsPrecise();
+            if (_lastRealtimeUtcSeconds <= 0d)
+            {
+                _lastRealtimeUtcSeconds = now;
+                _resumeCatchUpPending = false;
+                return Time.deltaTime;
+            }
+
+            var elapsed = now - _lastRealtimeUtcSeconds;
+            _lastRealtimeUtcSeconds = now;
+            _resumeCatchUpPending = false;
+
+            if (elapsed <= 0d)
+                return Time.deltaTime;
+
+            return Mathf.Min((float)elapsed, maxRealtimeCatchUpSeconds);
+        }
+
+        private void MarkResumeCatchUpPending()
+        {
+            _resumeCatchUpPending = true;
+            ResetRealtimeClock();
+        }
+
+        private void ResetRealtimeClock()
+        {
+            _lastRealtimeUtcSeconds = GetUtcSecondsPrecise();
+        }
+
+        private static double GetUtcSecondsPrecise()
+        {
+            return DateTimeOffset.UtcNow.ToUnixTimeMilliseconds() / 1000d;
         }
 
         public void FlushPendingTicks()
@@ -1041,6 +1170,7 @@ namespace TraidingIDLE.Currencies.Simulation
             }
 
             var nextRaw = SimulateNextRawPrice(r, dt);
+            nextRaw = ApplyShtStarterAssist(r, nextRaw, dt);
             nextRaw = ApplyGlobalMarketGrowth(r, nextRaw, dt);
             nextRaw = ApplyHighPriceCooling(r, nextRaw, dt);
             nextRaw = ClampToPlayableFloor(r.config, nextRaw);
@@ -1050,6 +1180,8 @@ namespace TraidingIDLE.Currencies.Simulation
 
             r.rawPrice = nextRaw;
             r.visiblePrice = RoundPrice(r.config, r.rawPrice);
+
+            AdvanceShtStarterAssist(r, dt);
 
             if (_warmupInProgress)
                 return;
@@ -1194,6 +1326,82 @@ namespace TraidingIDLE.Currencies.Simulation
             var strength = Mathf.Clamp01(baseCooling * dt * (1f + excess * 2f));
             r.corridorAnchor = Mathf.Lerp(r.corridorAnchor, ceiling, strength * 0.75f);
             return Mathf.Lerp(nextRaw, ceiling, strength);
+        }
+
+        private float ApplyShtStarterAssist(CoinRuntime r, float nextRaw, float dt)
+        {
+            if (!IsShtStarterAssistActive(r) || dt <= 0f)
+                return nextRaw;
+
+            var cfg = r.config;
+            var startPrice = Mathf.Max(GetPlayablePriceFloor(cfg), cfg.initialPrice);
+            var softFloor = Mathf.Max(GetPlayablePriceFloor(cfg), startPrice * shtStarterAssistSoftFloorFromInitial);
+            var protectedNext = nextRaw;
+
+            if (IsNegativeStarterAssistState(r.currentState) && protectedNext < r.rawPrice)
+                protectedNext = Mathf.Lerp(protectedNext, r.rawPrice, shtStarterAssistDownMoveDamping);
+
+            if (protectedNext < softFloor)
+            {
+                var depth = Mathf.InverseLerp(softFloor, GetPlayablePriceFloor(cfg), protectedNext);
+                var strength = Mathf.Lerp(0.35f, 0.75f, depth);
+                protectedNext = Mathf.Lerp(protectedNext, softFloor, strength);
+            }
+
+            var lowReference = Mathf.Min(r.rawPrice, protectedNext);
+            var drawdown01 = Mathf.Clamp01((startPrice - lowReference) / startPrice);
+            if (drawdown01 > 0.05f)
+            {
+                var reboundPower = Mathf.InverseLerp(0.05f, 0.28f, drawdown01);
+                var perTick01 = Mathf.Max(0f, shtStarterAssistReboundPerMinute01) * dt / 60f;
+                protectedNext += startPrice * perTick01 * reboundPower;
+            }
+
+            if (protectedNext > nextRaw)
+            {
+                r.corridorAnchor = Mathf.Max(r.corridorAnchor, Mathf.Lerp(r.corridorAnchor, protectedNext, 0.35f));
+                RebuildCorridor(r, protectedNext, force: false);
+            }
+
+            return protectedNext;
+        }
+
+        private void AdvanceShtStarterAssist(CoinRuntime r, float dt)
+        {
+            if (!IsShtStarterAssistActive(r) || dt <= 0f || _warmupInProgress)
+                return;
+
+            if (keepShtStarterAssistAlwaysActive)
+                return;
+
+            r.starterAssistElapsed += dt;
+
+            var minDuration = Mathf.Max(0f, shtStarterAssistMinimumSeconds);
+            var canExitAfterProfit = r.starterAssistElapsed >= minDuration
+                && r.rawPrice >= Mathf.Max(GetPlayablePriceFloor(r.config), r.config.initialPrice) * shtStarterAssistProfitExitMultiplier;
+
+            if (canExitAfterProfit)
+                r.starterAssistTimeLeft = Mathf.Min(r.starterAssistTimeLeft, 60f);
+
+            r.starterAssistTimeLeft = Mathf.Max(0f, r.starterAssistTimeLeft - dt);
+        }
+
+        private bool IsShtStarterAssistActive(CoinRuntime r)
+        {
+            return useShtStarterAssist
+                && r != null
+                && r.config != null
+                && r.config.id == CurrencyId.SHT
+                && (keepShtStarterAssistAlwaysActive || r.starterAssistTimeLeft > 0f);
+        }
+
+        private static bool IsNegativeStarterAssistState(MarketStateType state)
+        {
+            return state == MarketStateType.LongDowntrend
+                || state == MarketStateType.StairDown
+                || state == MarketStateType.SlowUpThenDump
+                || state == MarketStateType.DeadFlatThenRocketDump
+                || state == MarketStateType.MarketCrash;
         }
 
         private float GetLowPriceRecoveryTarget(CoinSimulationConfig cfg)
@@ -1916,16 +2124,14 @@ namespace TraidingIDLE.Currencies.Simulation
             var cfg = r.config;
             var elapsed = Mathf.Clamp(r.spikeDumpPhaseDuration - r.spikeDumpPhaseTimeLeft, 0f, r.spikeDumpPhaseDuration);
             var progress = Mathf.Clamp01((elapsed + dt) / Mathf.Max(0.0001f, r.spikeDumpPhaseDuration));
-            var curve = r.spikeDumpPhase == SpikeDumpPhase.Dump
-                ? 1f - (1f - progress) * (1f - progress) // fast at the beginning, still reaches target by phase end
-                : SmoothStep01(progress);
+            var curve = SmoothStep01(progress);
             var scheduledPrice = Mathf.Lerp(r.spikeDumpPhaseStartPrice, r.spikeDumpTargetPrice, curve);
 
             var phaseDistance = Mathf.Abs(r.spikeDumpTargetPrice - r.spikeDumpPhaseStartPrice);
             var maxCatchupDelta = phaseDistance
                 / Mathf.Max(0.5f, r.spikeDumpPhaseDuration)
                 * dt
-                * (r.spikeDumpPhase == SpikeDumpPhase.Dump ? 3.0f : 1.8f);
+                * (r.spikeDumpPhase == SpikeDumpPhase.Dump ? 1.65f : 1.25f);
 
             var guidedDelta = Mathf.Clamp(
                 scheduledPrice - r.rawPrice,
@@ -2057,16 +2263,14 @@ namespace TraidingIDLE.Currencies.Simulation
             var cfg = r.config;
             var elapsed = Mathf.Clamp(r.dipPumpPhaseDuration - r.dipPumpPhaseTimeLeft, 0f, r.dipPumpPhaseDuration);
             var progress = Mathf.Clamp01((elapsed + dt) / Mathf.Max(0.0001f, r.dipPumpPhaseDuration));
-            var curve = r.dipPumpPhase == DipPumpPhase.Pump
-                ? 1f - (1f - progress) * (1f - progress)
-                : SmoothStep01(progress);
+            var curve = SmoothStep01(progress);
             var scheduledPrice = Mathf.Lerp(r.dipPumpPhaseStartPrice, r.dipPumpTargetPrice, curve);
 
             var phaseDistance = Mathf.Abs(r.dipPumpTargetPrice - r.dipPumpPhaseStartPrice);
             var maxCatchupDelta = phaseDistance
                 / Mathf.Max(0.5f, r.dipPumpPhaseDuration)
                 * dt
-                * (r.dipPumpPhase == DipPumpPhase.Pump ? 3.0f : 1.8f);
+                * (r.dipPumpPhase == DipPumpPhase.Pump ? 1.65f : 1.25f);
 
             var guidedDelta = Mathf.Clamp(
                 scheduledPrice - r.rawPrice,
@@ -2198,18 +2402,22 @@ namespace TraidingIDLE.Currencies.Simulation
             var cfg = r.config;
             if (!r.deadFlatRocketPumpStarted)
             {
+                var flatProgress = 1f - Mathf.Clamp01(
+                    r.deadFlatRocketFlatTimeLeft / Mathf.Max(0.0001f, r.deadFlatRocketFlatDuration));
+                var compression = Mathf.Lerp(1.75f, 0.18f, SmoothStep01(flatProgress));
                 var flatNoiseA = Mathf.PerlinNoise((r.seed * 0.0061f) + r.time * 0.18f, 0.17f) * 2f - 1f;
                 var flatNoiseB = Mathf.PerlinNoise((r.seed * 0.0073f) + r.time * 0.55f, 0.41f) * 2f - 1f;
                 var flatNoise = flatNoiseA * 0.75f + flatNoiseB * 0.25f;
                 var flatTarget = r.deadFlatRocketBasePrice
-                    * (1f + flatNoise * cfg.deadFlatRocketFlatRange01);
-                var flatPull = (flatTarget - r.rawPrice) * 0.22f;
-                var micro = noise * range * cfg.deadFlatRocketNoiseStrength * dt;
-                micro += BuildBoundaryEscapeDelta(r, range, cfg.deadFlatRocketNoiseStrength, dt);
+                    * (1f + flatNoise * cfg.deadFlatRocketFlatRange01 * compression);
+                var flatPull = (flatTarget - r.rawPrice) * Mathf.Lerp(0.16f, 0.34f, flatProgress);
+                var micro = noise * range * cfg.deadFlatRocketNoiseStrength * compression * dt;
+                micro += BuildBoundaryEscapeDelta(r, range, cfg.deadFlatRocketNoiseStrength * compression, dt);
                 var nextFlat = r.rawPrice + flatPull + micro;
 
-                var minFlat = r.deadFlatRocketBasePrice * (1f - cfg.deadFlatRocketFlatRange01);
-                var maxFlat = r.deadFlatRocketBasePrice * (1f + cfg.deadFlatRocketFlatRange01);
+                var clampRange = cfg.deadFlatRocketFlatRange01 * compression;
+                var minFlat = r.deadFlatRocketBasePrice * (1f - clampRange);
+                var maxFlat = r.deadFlatRocketBasePrice * (1f + clampRange);
                 nextFlat = Mathf.Clamp(nextFlat, minFlat, maxFlat);
 
                 r.deadFlatRocketFlatTimeLeft -= dt;
@@ -2223,11 +2431,11 @@ namespace TraidingIDLE.Currencies.Simulation
 
             var elapsed = Mathf.Clamp(r.deadFlatRocketPumpDuration - r.deadFlatRocketPumpTimeLeft, 0f, r.deadFlatRocketPumpDuration);
             var progress = Mathf.Clamp01((elapsed + dt) / Mathf.Max(0.0001f, r.deadFlatRocketPumpDuration));
-            var curve = 1f - Mathf.Pow(1f - progress, 3f);
+            var curve = SmoothStep01(progress);
             var scheduledPrice = Mathf.Lerp(r.deadFlatRocketPumpStartPrice, r.deadFlatRocketTargetPrice, curve);
 
             var distance = Mathf.Abs(r.deadFlatRocketTargetPrice - r.deadFlatRocketPumpStartPrice);
-            var maxCatchupDelta = distance / Mathf.Max(0.25f, r.deadFlatRocketPumpDuration) * dt * 4f;
+            var maxCatchupDelta = distance / Mathf.Max(0.25f, r.deadFlatRocketPumpDuration) * dt * 1.85f;
             var guidedDelta = Mathf.Clamp(scheduledPrice - r.rawPrice, 0f, maxCatchupDelta);
             var next = r.rawPrice + guidedDelta;
 
@@ -2245,9 +2453,10 @@ namespace TraidingIDLE.Currencies.Simulation
         {
             var cfg = r.config;
             r.deadFlatRocketBasePrice = Mathf.Max(0.000001f, r.rawPrice);
-            r.deadFlatRocketFlatTimeLeft = UnityEngine.Random.Range(
+            r.deadFlatRocketFlatDuration = UnityEngine.Random.Range(
                 cfg.deadFlatRocketFlatDurationMinSeconds,
                 cfg.deadFlatRocketFlatDurationMaxSeconds);
+            r.deadFlatRocketFlatTimeLeft = r.deadFlatRocketFlatDuration;
             r.deadFlatRocketPumpDuration = UnityEngine.Random.Range(
                 cfg.deadFlatRocketPumpDurationMinSeconds,
                 cfg.deadFlatRocketPumpDurationMaxSeconds);
@@ -2284,6 +2493,7 @@ namespace TraidingIDLE.Currencies.Simulation
             r.deadFlatRocketPumpStartPrice = 0f;
             r.deadFlatRocketTargetPrice = 0f;
             r.deadFlatRocketFlatTimeLeft = 0f;
+            r.deadFlatRocketFlatDuration = 0f;
             r.deadFlatRocketPumpDuration = 0f;
             r.deadFlatRocketPumpTimeLeft = 0f;
             r.deadFlatRocketPumpStarted = false;
@@ -2298,18 +2508,22 @@ namespace TraidingIDLE.Currencies.Simulation
             var cfg = r.config;
             if (!r.deadFlatDumpStarted)
             {
+                var flatProgress = 1f - Mathf.Clamp01(
+                    r.deadFlatDumpFlatTimeLeft / Mathf.Max(0.0001f, r.deadFlatDumpFlatDuration));
+                var compression = Mathf.Lerp(1.75f, 0.18f, SmoothStep01(flatProgress));
                 var flatNoiseA = Mathf.PerlinNoise((r.seed * 0.0067f) + r.time * 0.18f, 0.23f) * 2f - 1f;
                 var flatNoiseB = Mathf.PerlinNoise((r.seed * 0.0079f) + r.time * 0.55f, 0.49f) * 2f - 1f;
                 var flatNoise = flatNoiseA * 0.75f + flatNoiseB * 0.25f;
                 var flatTarget = r.deadFlatDumpBasePrice
-                    * (1f + flatNoise * cfg.deadFlatDumpFlatRange01);
-                var flatPull = (flatTarget - r.rawPrice) * 0.22f;
-                var micro = noise * range * cfg.deadFlatDumpNoiseStrength * dt;
-                micro += BuildBoundaryEscapeDelta(r, range, cfg.deadFlatDumpNoiseStrength, dt);
+                    * (1f + flatNoise * cfg.deadFlatDumpFlatRange01 * compression);
+                var flatPull = (flatTarget - r.rawPrice) * Mathf.Lerp(0.16f, 0.34f, flatProgress);
+                var micro = noise * range * cfg.deadFlatDumpNoiseStrength * compression * dt;
+                micro += BuildBoundaryEscapeDelta(r, range, cfg.deadFlatDumpNoiseStrength * compression, dt);
                 var nextFlat = r.rawPrice + flatPull + micro;
 
-                var minFlat = r.deadFlatDumpBasePrice * (1f - cfg.deadFlatDumpFlatRange01);
-                var maxFlat = r.deadFlatDumpBasePrice * (1f + cfg.deadFlatDumpFlatRange01);
+                var clampRange = cfg.deadFlatDumpFlatRange01 * compression;
+                var minFlat = r.deadFlatDumpBasePrice * (1f - clampRange);
+                var maxFlat = r.deadFlatDumpBasePrice * (1f + clampRange);
                 nextFlat = Mathf.Clamp(nextFlat, minFlat, maxFlat);
 
                 r.deadFlatDumpFlatTimeLeft -= dt;
@@ -2323,11 +2537,11 @@ namespace TraidingIDLE.Currencies.Simulation
 
             var elapsed = Mathf.Clamp(r.deadFlatDumpDuration - r.deadFlatDumpTimeLeft, 0f, r.deadFlatDumpDuration);
             var progress = Mathf.Clamp01((elapsed + dt) / Mathf.Max(0.0001f, r.deadFlatDumpDuration));
-            var curve = 1f - Mathf.Pow(1f - progress, 3f);
+            var curve = SmoothStep01(progress);
             var scheduledPrice = Mathf.Lerp(r.deadFlatDumpStartPrice, r.deadFlatDumpTargetPrice, curve);
 
             var distance = Mathf.Abs(r.deadFlatDumpStartPrice - r.deadFlatDumpTargetPrice);
-            var maxCatchupDelta = distance / Mathf.Max(0.25f, r.deadFlatDumpDuration) * dt * 4f;
+            var maxCatchupDelta = distance / Mathf.Max(0.25f, r.deadFlatDumpDuration) * dt * 1.85f;
             var guidedDelta = Mathf.Clamp(scheduledPrice - r.rawPrice, -maxCatchupDelta, 0f);
             var next = r.rawPrice + guidedDelta;
 
@@ -2345,9 +2559,10 @@ namespace TraidingIDLE.Currencies.Simulation
         {
             var cfg = r.config;
             r.deadFlatDumpBasePrice = Mathf.Max(0.000001f, r.rawPrice);
-            r.deadFlatDumpFlatTimeLeft = UnityEngine.Random.Range(
+            r.deadFlatDumpFlatDuration = UnityEngine.Random.Range(
                 cfg.deadFlatDumpFlatDurationMinSeconds,
                 cfg.deadFlatDumpFlatDurationMaxSeconds);
+            r.deadFlatDumpFlatTimeLeft = r.deadFlatDumpFlatDuration;
             r.deadFlatDumpDuration = UnityEngine.Random.Range(
                 cfg.deadFlatDumpDurationMinSeconds,
                 cfg.deadFlatDumpDurationMaxSeconds);
@@ -2383,6 +2598,7 @@ namespace TraidingIDLE.Currencies.Simulation
             r.deadFlatDumpStartPrice = 0f;
             r.deadFlatDumpTargetPrice = 0f;
             r.deadFlatDumpFlatTimeLeft = 0f;
+            r.deadFlatDumpFlatDuration = 0f;
             r.deadFlatDumpDuration = 0f;
             r.deadFlatDumpTimeLeft = 0f;
             r.deadFlatDumpStarted = false;
@@ -2689,8 +2905,8 @@ namespace TraidingIDLE.Currencies.Simulation
             {
                 return id switch
                 {
-                    CurrencyId.BTC => UnityEngine.Random.Range(0.024f, 0.070f),
-                    CurrencyId.ETH => UnityEngine.Random.Range(0.032f, 0.085f),
+                    CurrencyId.BTC => UnityEngine.Random.Range(0.036f, 0.100f),
+                    CurrencyId.ETH => UnityEngine.Random.Range(0.045f, 0.120f),
                     _ => UnityEngine.Random.Range(0.070f, 0.165f),
                 };
             }
@@ -2700,8 +2916,8 @@ namespace TraidingIDLE.Currencies.Simulation
                 return id switch
                 {
                     CurrencyId.SHT => UnityEngine.Random.Range(0.085f, 0.235f),
-                    CurrencyId.ETH => UnityEngine.Random.Range(0.040f, 0.105f),
-                    CurrencyId.BTC => UnityEngine.Random.Range(0.032f, 0.088f),
+                    CurrencyId.ETH => UnityEngine.Random.Range(0.055f, 0.140f),
+                    CurrencyId.BTC => UnityEngine.Random.Range(0.044f, 0.118f),
                     _ => UnityEngine.Random.Range(0.06f, 0.16f),
                 };
             }
@@ -2709,8 +2925,8 @@ namespace TraidingIDLE.Currencies.Simulation
             return id switch
             {
                 CurrencyId.SHT => UnityEngine.Random.Range(0.085f, 0.220f),
-                CurrencyId.ETH => UnityEngine.Random.Range(0.045f, 0.118f),
-                CurrencyId.BTC => UnityEngine.Random.Range(0.038f, 0.098f),
+                CurrencyId.ETH => UnityEngine.Random.Range(0.028f, 0.074f),
+                CurrencyId.BTC => UnityEngine.Random.Range(0.024f, 0.065f),
                 _ => UnityEngine.Random.Range(0.06f, 0.16f),
             };
         }
@@ -2720,8 +2936,8 @@ namespace TraidingIDLE.Currencies.Simulation
             return id switch
             {
                 CurrencyId.SHT => UnityEngine.Random.Range(0.030f, 0.090f),
-                CurrencyId.ETH => UnityEngine.Random.Range(0.018f, 0.046f),
-                CurrencyId.BTC => UnityEngine.Random.Range(0.014f, 0.038f),
+                CurrencyId.ETH => UnityEngine.Random.Range(0.026f, 0.065f),
+                CurrencyId.BTC => UnityEngine.Random.Range(0.020f, 0.052f),
                 _ => UnityEngine.Random.Range(0.018f, 0.050f),
             };
         }
@@ -2731,8 +2947,8 @@ namespace TraidingIDLE.Currencies.Simulation
             return id switch
             {
                 CurrencyId.SHT => UnityEngine.Random.Range(0.120f, 0.380f),
-                CurrencyId.ETH => UnityEngine.Random.Range(0.060f, 0.165f),
-                CurrencyId.BTC => UnityEngine.Random.Range(0.045f, 0.140f),
+                CurrencyId.ETH => UnityEngine.Random.Range(0.085f, 0.230f),
+                CurrencyId.BTC => UnityEngine.Random.Range(0.065f, 0.180f),
                 _ => UnityEngine.Random.Range(0.10f, 0.28f),
             };
         }
@@ -2742,8 +2958,8 @@ namespace TraidingIDLE.Currencies.Simulation
             return id switch
             {
                 CurrencyId.SHT => UnityEngine.Random.Range(0.130f, 0.320f),
-                CurrencyId.ETH => UnityEngine.Random.Range(0.075f, 0.210f),
-                CurrencyId.BTC => UnityEngine.Random.Range(0.060f, 0.170f),
+                CurrencyId.ETH => UnityEngine.Random.Range(0.060f, 0.170f),
+                CurrencyId.BTC => UnityEngine.Random.Range(0.050f, 0.135f),
                 _ => UnityEngine.Random.Range(0.10f, 0.24f),
             };
         }
@@ -2753,8 +2969,8 @@ namespace TraidingIDLE.Currencies.Simulation
             return id switch
             {
                 CurrencyId.SHT => UnityEngine.Random.Range(0.040f, 0.125f),
-                CurrencyId.ETH => UnityEngine.Random.Range(0.022f, 0.060f),
-                CurrencyId.BTC => UnityEngine.Random.Range(0.016f, 0.048f),
+                CurrencyId.ETH => UnityEngine.Random.Range(0.030f, 0.078f),
+                CurrencyId.BTC => UnityEngine.Random.Range(0.022f, 0.060f),
                 _ => UnityEngine.Random.Range(0.025f, 0.065f),
             };
         }
@@ -2764,8 +2980,8 @@ namespace TraidingIDLE.Currencies.Simulation
             return id switch
             {
                 CurrencyId.SHT => UnityEngine.Random.Range(0.150f, 0.420f),
-                CurrencyId.ETH => UnityEngine.Random.Range(0.095f, 0.255f),
-                CurrencyId.BTC => UnityEngine.Random.Range(0.085f, 0.225f),
+                CurrencyId.ETH => UnityEngine.Random.Range(0.125f, 0.335f),
+                CurrencyId.BTC => UnityEngine.Random.Range(0.105f, 0.285f),
                 _ => UnityEngine.Random.Range(0.14f, 0.34f),
             };
         }
@@ -2820,9 +3036,9 @@ namespace TraidingIDLE.Currencies.Simulation
 
             return id switch
             {
-                CurrencyId.SHT => new Vector2(1.8f, 7.2f),
-                CurrencyId.ETH => new Vector2(4.5f, 17f),
-                CurrencyId.BTC => new Vector2(7f, 28f),
+                CurrencyId.SHT => new Vector2(2.8f, 8.5f),
+                CurrencyId.ETH => new Vector2(5.5f, 19f),
+                CurrencyId.BTC => new Vector2(10f, 34f),
                 _ => new Vector2(5f, 20f),
             };
         }
@@ -3199,6 +3415,9 @@ namespace TraidingIDLE.Currencies.Simulation
                 rawPrice = startPrice,
                 visiblePrice = RoundPrice(cfg, startPrice),
                 corridorAnchor = startPrice,
+                starterAssistTimeLeft = cfg.id == CurrencyId.SHT && useShtStarterAssist
+                    ? Mathf.Max(0f, shtStarterAssistDurationSeconds)
+                    : 0f,
                 seed = UnityEngine.Random.Range(1, int.MaxValue),
             };
 
@@ -3567,6 +3786,7 @@ namespace TraidingIDLE.Currencies.Simulation
         {
             var stateType = PickMemoryPlannedState(r);
             var duration = PickStateDuration(r.config, stateType);
+            duration = AdjustStarterAssistStateDuration(r, stateType, duration);
 
             return new PlannedState
             {
@@ -3579,6 +3799,16 @@ namespace TraidingIDLE.Currencies.Simulation
         {
             if (IsInPlayableLowZone(r))
             {
+                if (IsShtStarterAssistActive(r))
+                {
+                    return PickWeightedChoice(
+                        new StateChoice(MarketStateType.LowRangeRecovery, 1.50f),
+                        new StateChoice(MarketStateType.StairUp, 1.10f),
+                        new StateChoice(MarketStateType.CompressionBreakout, 0.50f),
+                        new StateChoice(MarketStateType.DeadFlatThenRocketPump, 0.24f),
+                        new StateChoice(MarketStateType.ChopInCorridor, 0.28f));
+                }
+
                 return PickWeightedChoice(
                     new StateChoice(MarketStateType.LowRangeRecovery, 1.10f),
                     new StateChoice(MarketStateType.StairUp, 0.85f),
@@ -3587,6 +3817,9 @@ namespace TraidingIDLE.Currencies.Simulation
             }
 
             var previous = GetPlanningPreviousState(r);
+            if (IsShtStarterAssistActive(r))
+                return PickShtStarterAssistNextState(r, previous);
+
             return r.config.id switch
             {
                 CurrencyId.SHT => PickShtNextState(previous),
@@ -3602,6 +3835,68 @@ namespace TraidingIDLE.Currencies.Simulation
                 return r.plan.Last().type;
 
             return r.currentState;
+        }
+
+        private static MarketStateType PickShtStarterAssistNextState(CoinRuntime r, MarketStateType previous)
+        {
+            var startPrice = Mathf.Max(GetPlayablePriceFloor(r.config), r.config.initialPrice);
+            var belowStart = r.rawPrice < startPrice * 0.98f;
+
+            if (belowStart || IsNegativeStarterAssistState(previous))
+            {
+                return PickWeightedChoice(
+                    new StateChoice(MarketStateType.LowRangeRecovery, 1.65f),
+                    new StateChoice(MarketStateType.StairUp, 1.20f),
+                    new StateChoice(MarketStateType.DeadFlatThenRocketPump, 0.28f),
+                    new StateChoice(MarketStateType.CompressionBreakout, 0.45f),
+                    new StateChoice(MarketStateType.ChopInCorridor, 0.30f));
+            }
+
+            return previous switch
+            {
+                MarketStateType.StairUp or MarketStateType.LowRangeRecovery => PickWeightedChoice(
+                    new StateChoice(MarketStateType.ChopInCorridor, 0.90f),
+                    new StateChoice(MarketStateType.CompressionBreakout, 0.75f),
+                    new StateChoice(MarketStateType.StairUp, 0.55f),
+                    new StateChoice(MarketStateType.SlowUpThenPumpAndDump, 0.35f),
+                    new StateChoice(MarketStateType.StairDown, 0.16f)),
+                MarketStateType.CompressionBreakout => PickWeightedChoice(
+                    new StateChoice(MarketStateType.StairUp, 1.15f),
+                    new StateChoice(MarketStateType.ChopInCorridor, 0.65f),
+                    new StateChoice(MarketStateType.LowRangeRecovery, 0.32f),
+                    new StateChoice(MarketStateType.StairDown, 0.16f)),
+                MarketStateType.ChopInCorridor => PickWeightedChoice(
+                    new StateChoice(MarketStateType.CompressionBreakout, 1.05f),
+                    new StateChoice(MarketStateType.StairUp, 0.95f),
+                    new StateChoice(MarketStateType.LowRangeRecovery, 0.38f),
+                    new StateChoice(MarketStateType.SlowUpThenPumpAndDump, 0.35f),
+                    new StateChoice(MarketStateType.StairDown, 0.18f)),
+                _ => PickWeightedChoice(
+                    new StateChoice(MarketStateType.StairUp, 1.05f),
+                    new StateChoice(MarketStateType.CompressionBreakout, 1.00f),
+                    new StateChoice(MarketStateType.LowRangeRecovery, 0.70f),
+                    new StateChoice(MarketStateType.ChopInCorridor, 0.65f),
+                    new StateChoice(MarketStateType.DeadFlatThenRocketPump, 0.14f),
+                    new StateChoice(MarketStateType.StairDown, 0.16f)),
+            };
+        }
+
+        private float AdjustStarterAssistStateDuration(CoinRuntime r, MarketStateType stateType, float duration)
+        {
+            if (!IsShtStarterAssistActive(r))
+                return duration;
+
+            if (IsNegativeStarterAssistState(stateType))
+                return Mathf.Min(duration, 14f);
+
+            return stateType switch
+            {
+                MarketStateType.DeadFlatThenRocketPump => Mathf.Min(duration, 12f),
+                MarketStateType.LowRangeRecovery => Mathf.Min(duration, 34f),
+                MarketStateType.StairUp => Mathf.Min(duration, 36f),
+                MarketStateType.CompressionBreakout => Mathf.Min(duration, 32f),
+                _ => Mathf.Min(duration, 30f),
+            };
         }
 
         private static bool IsInPlayableLowZone(CoinRuntime r)
@@ -3657,38 +3952,41 @@ namespace TraidingIDLE.Currencies.Simulation
             return previous switch
             {
                 MarketStateType.CompressionBreakout => PickWeightedChoice(
-                    new StateChoice(MarketStateType.StairUp, 0.95f),
-                    new StateChoice(MarketStateType.StairDown, 0.75f),
-                    new StateChoice(MarketStateType.ChopInCorridor, 0.35f)),
+                    new StateChoice(MarketStateType.StairUp, 1.15f),
+                    new StateChoice(MarketStateType.StairDown, 0.50f),
+                    new StateChoice(MarketStateType.LowRangeRecovery, 0.45f),
+                    new StateChoice(MarketStateType.ChopInCorridor, 0.40f)),
                 MarketStateType.StairUp or MarketStateType.LongUptrend => PickWeightedChoice(
-                    new StateChoice(MarketStateType.ChopInCorridor, 0.70f),
-                    new StateChoice(MarketStateType.CompressionBreakout, 0.50f),
-                    new StateChoice(MarketStateType.SlowUpThenDump, 0.55f),
-                    new StateChoice(MarketStateType.StairUp, 0.28f)),
-                MarketStateType.StairDown or MarketStateType.LongDowntrend or MarketStateType.SlowUpThenDump => PickWeightedChoice(
-                    new StateChoice(MarketStateType.LowRangeRecovery, 1.10f),
-                    new StateChoice(MarketStateType.ChopInCorridor, 0.55f),
-                    new StateChoice(MarketStateType.CompressionBreakout, 0.38f),
-                    new StateChoice(MarketStateType.StairDown, 0.22f)),
-                MarketStateType.LowRangeRecovery => PickWeightedChoice(
-                    new StateChoice(MarketStateType.ChopInCorridor, 0.85f),
-                    new StateChoice(MarketStateType.StairUp, 0.70f),
-                    new StateChoice(MarketStateType.CompressionBreakout, 0.45f)),
-                MarketStateType.ChopInCorridor => PickWeightedChoice(
-                    new StateChoice(MarketStateType.StairUp, 0.70f),
-                    new StateChoice(MarketStateType.StairDown, 0.60f),
+                    new StateChoice(MarketStateType.ChopInCorridor, 0.78f),
                     new StateChoice(MarketStateType.CompressionBreakout, 0.70f),
-                    new StateChoice(MarketStateType.SlowUpThenDump, 0.28f),
-                    new StateChoice(MarketStateType.SlowUpThenPumpAndDump, 0.32f)),
-                _ => PickWeightedChoice(
-                    new StateChoice(MarketStateType.ChopInCorridor, 0.95f),
-                    new StateChoice(MarketStateType.StairUp, 0.80f),
-                    new StateChoice(MarketStateType.StairDown, 0.62f),
-                    new StateChoice(MarketStateType.CompressionBreakout, 0.72f),
+                    new StateChoice(MarketStateType.SlowUpThenDump, 0.35f),
+                    new StateChoice(MarketStateType.StairUp, 0.38f)),
+                MarketStateType.StairDown or MarketStateType.LongDowntrend or MarketStateType.SlowUpThenDump => PickWeightedChoice(
+                    new StateChoice(MarketStateType.LowRangeRecovery, 1.35f),
+                    new StateChoice(MarketStateType.StairUp, 0.75f),
+                    new StateChoice(MarketStateType.ChopInCorridor, 0.55f),
+                    new StateChoice(MarketStateType.CompressionBreakout, 0.50f),
+                    new StateChoice(MarketStateType.StairDown, 0.14f)),
+                MarketStateType.LowRangeRecovery => PickWeightedChoice(
+                    new StateChoice(MarketStateType.ChopInCorridor, 0.75f),
+                    new StateChoice(MarketStateType.StairUp, 0.92f),
+                    new StateChoice(MarketStateType.CompressionBreakout, 0.62f)),
+                MarketStateType.ChopInCorridor => PickWeightedChoice(
+                    new StateChoice(MarketStateType.StairUp, 0.96f),
+                    new StateChoice(MarketStateType.StairDown, 0.42f),
+                    new StateChoice(MarketStateType.CompressionBreakout, 0.92f),
                     new StateChoice(MarketStateType.LowRangeRecovery, 0.42f),
-                    new StateChoice(MarketStateType.SlowUpThenPumpAndDump, 0.28f),
-                    new StateChoice(MarketStateType.SlowUpThenDump, 0.24f),
-                    new StateChoice(MarketStateType.Calm, 0.14f)),
+                    new StateChoice(MarketStateType.SlowUpThenDump, 0.16f),
+                    new StateChoice(MarketStateType.SlowUpThenPumpAndDump, 0.42f)),
+                _ => PickWeightedChoice(
+                    new StateChoice(MarketStateType.ChopInCorridor, 0.88f),
+                    new StateChoice(MarketStateType.StairUp, 1.02f),
+                    new StateChoice(MarketStateType.StairDown, 0.42f),
+                    new StateChoice(MarketStateType.CompressionBreakout, 0.95f),
+                    new StateChoice(MarketStateType.LowRangeRecovery, 0.62f),
+                    new StateChoice(MarketStateType.SlowUpThenPumpAndDump, 0.38f),
+                    new StateChoice(MarketStateType.SlowUpThenDump, 0.14f),
+                    new StateChoice(MarketStateType.Calm, 0.06f)),
             };
         }
 
@@ -3697,30 +3995,33 @@ namespace TraidingIDLE.Currencies.Simulation
             return previous switch
             {
                 MarketStateType.AccumulationRun => PickWeightedChoice(
-                    new StateChoice(MarketStateType.CompressionBreakout, 0.55f),
-                    new StateChoice(MarketStateType.SlowUpThenDump, 0.46f),
-                    new StateChoice(MarketStateType.StairUp, 0.40f),
-                    new StateChoice(MarketStateType.ChopInCorridor, 0.30f)),
+                    new StateChoice(MarketStateType.CompressionBreakout, 0.72f),
+                    new StateChoice(MarketStateType.SlowUpThenDump, 0.32f),
+                    new StateChoice(MarketStateType.StairUp, 0.62f),
+                    new StateChoice(MarketStateType.ChopInCorridor, 0.36f)),
                 MarketStateType.CompressionBreakout => PickWeightedChoice(
-                    new StateChoice(MarketStateType.AccumulationRun, 0.95f),
-                    new StateChoice(MarketStateType.StairUp, 0.60f),
-                    new StateChoice(MarketStateType.StairDown, 0.28f)),
+                    new StateChoice(MarketStateType.AccumulationRun, 0.90f),
+                    new StateChoice(MarketStateType.StairUp, 0.84f),
+                    new StateChoice(MarketStateType.LowRangeRecovery, 0.38f),
+                    new StateChoice(MarketStateType.StairDown, 0.18f)),
                 MarketStateType.SlowUpThenDump or MarketStateType.StairDown or MarketStateType.LongDowntrend => PickWeightedChoice(
-                    new StateChoice(MarketStateType.LowRangeRecovery, 0.80f),
-                    new StateChoice(MarketStateType.AccumulationRun, 0.70f),
+                    new StateChoice(MarketStateType.LowRangeRecovery, 1.05f),
+                    new StateChoice(MarketStateType.AccumulationRun, 0.88f),
+                    new StateChoice(MarketStateType.StairUp, 0.45f),
                     new StateChoice(MarketStateType.ChopInCorridor, 0.35f)),
                 MarketStateType.LowRangeRecovery => PickWeightedChoice(
-                    new StateChoice(MarketStateType.AccumulationRun, 1.15f),
-                    new StateChoice(MarketStateType.StairUp, 0.45f),
+                    new StateChoice(MarketStateType.AccumulationRun, 1.10f),
+                    new StateChoice(MarketStateType.StairUp, 0.70f),
+                    new StateChoice(MarketStateType.CompressionBreakout, 0.42f),
                     new StateChoice(MarketStateType.ChopInCorridor, 0.25f)),
                 _ => PickWeightedChoice(
-                    new StateChoice(MarketStateType.AccumulationRun, 1.45f),
-                    new StateChoice(MarketStateType.StairUp, 0.58f),
-                    new StateChoice(MarketStateType.CompressionBreakout, 0.38f),
-                    new StateChoice(MarketStateType.SlowUpThenDump, 0.30f),
-                    new StateChoice(MarketStateType.LowRangeRecovery, 0.22f),
-                    new StateChoice(MarketStateType.ChopInCorridor, 0.28f),
-                    new StateChoice(MarketStateType.DeadFlatThenRocketPump, 0.06f)),
+                    new StateChoice(MarketStateType.AccumulationRun, 1.28f),
+                    new StateChoice(MarketStateType.StairUp, 0.78f),
+                    new StateChoice(MarketStateType.CompressionBreakout, 0.58f),
+                    new StateChoice(MarketStateType.SlowUpThenDump, 0.20f),
+                    new StateChoice(MarketStateType.LowRangeRecovery, 0.36f),
+                    new StateChoice(MarketStateType.ChopInCorridor, 0.36f),
+                    new StateChoice(MarketStateType.DeadFlatThenRocketPump, 0.10f)),
             };
         }
 
@@ -3767,6 +4068,12 @@ namespace TraidingIDLE.Currencies.Simulation
                 return Mathf.Max(1f, UnityEngine.Random.Range(min, max));
             }
 
+            if (stateType == MarketStateType.SlowUpThenDump)
+                return PickReadableScenarioDuration(cfg, upThenDump: true);
+
+            if (stateType == MarketStateType.SlowUpThenPumpAndDump)
+                return PickReadableScenarioDuration(cfg, upThenDump: false);
+
             if (stateType == MarketStateType.DeadFlatThenRocketPump)
             {
                 var flatMax = Mathf.Max(cfg.deadFlatRocketFlatDurationMinSeconds, cfg.deadFlatRocketFlatDurationMaxSeconds);
@@ -3785,6 +4092,17 @@ namespace TraidingIDLE.Currencies.Simulation
             return Mathf.Max(1f, duration);
         }
 
+        private static float PickReadableScenarioDuration(CoinSimulationConfig cfg, bool upThenDump)
+        {
+            return cfg.id switch
+            {
+                CurrencyId.SHT => UnityEngine.Random.Range(upThenDump ? 18f : 20f, upThenDump ? 34f : 36f),
+                CurrencyId.ETH => UnityEngine.Random.Range(upThenDump ? 34f : 38f, upThenDump ? 66f : 72f),
+                CurrencyId.BTC => UnityEngine.Random.Range(upThenDump ? 90f : 100f, upThenDump ? 170f : 190f),
+                _ => UnityEngine.Random.Range(35f, 80f),
+            };
+        }
+
         private static bool IsPatternState(MarketStateType stateType)
         {
             return stateType is MarketStateType.StairUp
@@ -3800,29 +4118,29 @@ namespace TraidingIDLE.Currencies.Simulation
             {
                 MarketStateType.StairUp => cfg.id switch
                 {
-                    CurrencyId.SHT => new Vector2(18f, 42f),
-                    CurrencyId.ETH => new Vector2(24f, 58f),
+                    CurrencyId.SHT => new Vector2(24f, 46f),
+                    CurrencyId.ETH => new Vector2(30f, 66f),
                     CurrencyId.BTC => new Vector2(100f, 210f),
                     _ => new Vector2(40f, 100f),
                 },
                 MarketStateType.StairDown => cfg.id switch
                 {
-                    CurrencyId.SHT => new Vector2(16f, 36f),
-                    CurrencyId.ETH => new Vector2(22f, 56f),
+                    CurrencyId.SHT => new Vector2(22f, 42f),
+                    CurrencyId.ETH => new Vector2(28f, 62f),
                     CurrencyId.BTC => new Vector2(70f, 150f),
                     _ => new Vector2(40f, 100f),
                 },
                 MarketStateType.CompressionBreakout => cfg.id switch
                 {
-                    CurrencyId.SHT => new Vector2(14f, 32f),
-                    CurrencyId.ETH => new Vector2(20f, 48f),
+                    CurrencyId.SHT => new Vector2(20f, 38f),
+                    CurrencyId.ETH => new Vector2(26f, 56f),
                     CurrencyId.BTC => new Vector2(65f, 135f),
                     _ => new Vector2(30f, 80f),
                 },
                 MarketStateType.LowRangeRecovery => cfg.id switch
                 {
-                    CurrencyId.SHT => new Vector2(24f, 52f),
-                    CurrencyId.ETH => new Vector2(34f, 78f),
+                    CurrencyId.SHT => new Vector2(28f, 56f),
+                    CurrencyId.ETH => new Vector2(40f, 86f),
                     CurrencyId.BTC => new Vector2(140f, 280f),
                     _ => new Vector2(70f, 160f),
                 },
@@ -4139,11 +4457,11 @@ namespace TraidingIDLE.Currencies.Simulation
         {
             cfg.tickIntervalSeconds = 0.68f;
             cfg.normalTickSpeedMultiplier = 1f;
-            cfg.pumpTickSpeedMultiplier = 1.45f;
-            cfg.crashTickSpeedMultiplier = 1.85f;
+            cfg.pumpTickSpeedMultiplier = 1.24f;
+            cfg.crashTickSpeedMultiplier = 1.45f;
             cfg.plannedStatesCount = 5;
-            cfg.stateDurationMinSeconds = 8f;
-            cfg.stateDurationMaxSeconds = 44f;
+            cfg.stateDurationMinSeconds = 6f;
+            cfg.stateDurationMaxSeconds = 22f;
             cfg.plannedStateWeights = new[]
             {
                 new MarketStateWeight { type = MarketStateType.ChopInCorridor, weight = 1.30f },
@@ -4176,80 +4494,98 @@ namespace TraidingIDLE.Currencies.Simulation
             cfg.trendStrength = 0.50f;
             cfg.meanReversionStrength = 0.16f;
 
-            cfg.chopPhaseDurationMinSeconds = 3.2f;
-            cfg.chopPhaseDurationMaxSeconds = 10.5f;
+            cfg.chopPhaseDurationMinSeconds = 4.2f;
+            cfg.chopPhaseDurationMaxSeconds = 12.5f;
             cfg.chopFakeoutChancePerPhase = 0.90f;
-            cfg.chopFakeoutDurationMinSeconds = 0.8f;
-            cfg.chopFakeoutDurationMaxSeconds = 3.0f;
+            cfg.chopFakeoutDurationMinSeconds = 1.2f;
+            cfg.chopFakeoutDurationMaxSeconds = 3.8f;
             cfg.chopFakeoutStrength = 0.75f;
-            cfg.chopRecoveryDurationSeconds = 1.3f;
-            cfg.chopRecoveryBoost = 2.7f;
+            cfg.chopRecoveryDurationSeconds = 1.8f;
+            cfg.chopRecoveryBoost = 2.45f;
 
-            cfg.longUptrendDurationMinSeconds = 9f;
-            cfg.longUptrendDurationMaxSeconds = 30f;
+            cfg.longUptrendDurationMinSeconds = 12f;
+            cfg.longUptrendDurationMaxSeconds = 34f;
             cfg.longUptrendTargetMultiplierMin = 1.35f;
             cfg.longUptrendTargetMultiplierMax = 2.45f;
             cfg.longUptrendMaxEffectiveMultiplier = 2.20f;
             cfg.longUptrendNoiseStrength = 0.46f;
             cfg.longUptrendWobbleStrength = 1.35f;
-            cfg.longUptrendDownWobbleChance = 0.60f;
+            cfg.longUptrendDownWobbleChance = 0.52f;
             cfg.longUptrendDownWobbleMultiplier = 2.15f;
             cfg.longUptrendUpWobbleMultiplier = 1.05f;
-            cfg.longUptrendPullbackChancePerTick = 0.42f;
-            cfg.longUptrendPullbackStrength = 0.30f;
-            cfg.longUptrendPullbackDurationMinSeconds = 0.7f;
-            cfg.longUptrendPullbackDurationMaxSeconds = 2.4f;
-            cfg.longUptrendPullbackCooldownSeconds = 0.8f;
-            cfg.longUptrendRecoveryDurationSeconds = 1.1f;
-            cfg.longUptrendRecoveryCatchupMultiplier = 3.25f;
-            cfg.longUptrendMaxPriceChangePerTick01 = 0.28f;
-            cfg.longDowntrendDurationMinSeconds = 8f;
-            cfg.longDowntrendDurationMaxSeconds = 26f;
+            cfg.longUptrendPullbackChancePerTick = 0.30f;
+            cfg.longUptrendPullbackStrength = 0.24f;
+            cfg.longUptrendPullbackDurationMinSeconds = 1.1f;
+            cfg.longUptrendPullbackDurationMaxSeconds = 3.4f;
+            cfg.longUptrendPullbackCooldownSeconds = 1.5f;
+            cfg.longUptrendRecoveryDurationSeconds = 1.8f;
+            cfg.longUptrendRecoveryCatchupMultiplier = 2.65f;
+            cfg.longUptrendMaxPriceChangePerTick01 = 0.22f;
+            cfg.longDowntrendDurationMinSeconds = 12f;
+            cfg.longDowntrendDurationMaxSeconds = 32f;
             cfg.longDowntrendTargetDividerMin = 1.24f;
             cfg.longDowntrendTargetDividerMax = 1.95f;
             cfg.longDowntrendNoiseStrength = 0.42f;
-            cfg.longDowntrendRallyChancePerTick = 0.40f;
-            cfg.longDowntrendRallyStrength = 0.30f;
-            cfg.longDowntrendRallyDurationMinSeconds = 0.9f;
-            cfg.longDowntrendRallyDurationMaxSeconds = 4.2f;
-            cfg.longDowntrendRallyCooldownSeconds = 1.7f;
-            cfg.longDowntrendRecoveryDurationSeconds = 1.6f;
-            cfg.longDowntrendRecoveryCatchupMultiplier = 2.9f;
-            cfg.longDowntrendMaxPriceChangePerTick01 = 0.28f;
+            cfg.longDowntrendRallyChancePerTick = 0.32f;
+            cfg.longDowntrendRallyStrength = 0.24f;
+            cfg.longDowntrendRallyDurationMinSeconds = 1.4f;
+            cfg.longDowntrendRallyDurationMaxSeconds = 4.8f;
+            cfg.longDowntrendRallyCooldownSeconds = 2.2f;
+            cfg.longDowntrendRecoveryDurationSeconds = 2.0f;
+            cfg.longDowntrendRecoveryCatchupMultiplier = 2.35f;
+            cfg.longDowntrendMaxPriceChangePerTick01 = 0.22f;
 
             cfg.spikeDumpGrowPercentMin = 0.22f;
             cfg.spikeDumpGrowPercentMax = 0.58f;
-            cfg.spikeDumpGrowDurationMinSeconds = 5f;
-            cfg.spikeDumpGrowDurationMaxSeconds = 15f;
+            cfg.spikeDumpGrowDurationMinSeconds = 6f;
+            cfg.spikeDumpGrowDurationMaxSeconds = 16f;
             cfg.spikeDumpDropOverGrowMin = 1.05f;
             cfg.spikeDumpDropOverGrowMax = 1.45f;
             cfg.spikeDumpMaxDropPercent = 0.58f;
+            cfg.spikeDumpDumpDurationMinSeconds = 3.2f;
+            cfg.spikeDumpDumpDurationMaxSeconds = 6.2f;
+            cfg.spikeDumpShakeDurationMinSeconds = 2.5f;
+            cfg.spikeDumpShakeDurationMaxSeconds = 6f;
             cfg.spikeDumpShakeMovePercentMin = 0.12f;
             cfg.spikeDumpShakeMovePercentMax = 0.44f;
             cfg.spikeDumpNoiseStrength = 0.28f;
-            cfg.spikeDumpMaxPriceChangePerTick01 = 0.28f;
+            cfg.spikeDumpMaxPriceChangePerTick01 = 0.22f;
 
             cfg.dipPumpDipPercentMin = 0.18f;
             cfg.dipPumpDipPercentMax = 0.40f;
-            cfg.dipPumpDipDurationMinSeconds = 5f;
-            cfg.dipPumpDipDurationMaxSeconds = 15f;
+            cfg.dipPumpDipDurationMinSeconds = 6f;
+            cfg.dipPumpDipDurationMaxSeconds = 16f;
             cfg.dipPumpPumpOverDipMin = 1.20f;
             cfg.dipPumpPumpOverDipMax = 1.85f;
             cfg.dipPumpMaxPumpPercent = 0.72f;
+            cfg.dipPumpPumpDurationMinSeconds = 3.2f;
+            cfg.dipPumpPumpDurationMaxSeconds = 6.2f;
+            cfg.dipPumpShakeDurationMinSeconds = 2.5f;
+            cfg.dipPumpShakeDurationMaxSeconds = 6f;
             cfg.dipPumpShakeMovePercentMin = 0.12f;
             cfg.dipPumpShakeMovePercentMax = 0.44f;
             cfg.dipPumpNoiseStrength = 0.28f;
-            cfg.dipPumpMaxPriceChangePerTick01 = 0.28f;
+            cfg.dipPumpMaxPriceChangePerTick01 = 0.22f;
 
+            cfg.deadFlatRocketFlatDurationMinSeconds = 3f;
+            cfg.deadFlatRocketFlatDurationMaxSeconds = 6f;
+            cfg.deadFlatRocketFlatRange01 = 0.070f;
+            cfg.deadFlatRocketNoiseStrength = 0.135f;
             cfg.deadFlatRocketPumpPercentMin = 0.24f;
             cfg.deadFlatRocketPumpPercentMax = 0.62f;
+            cfg.deadFlatRocketPumpDurationMinSeconds = 1.5f;
+            cfg.deadFlatRocketPumpDurationMaxSeconds = 3.2f;
+            cfg.deadFlatDumpFlatDurationMinSeconds = 3f;
+            cfg.deadFlatDumpFlatDurationMaxSeconds = 6f;
+            cfg.deadFlatDumpFlatRange01 = 0.070f;
+            cfg.deadFlatDumpNoiseStrength = 0.135f;
+            cfg.deadFlatDumpDurationMinSeconds = 1.5f;
+            cfg.deadFlatDumpDurationMaxSeconds = 3.2f;
             cfg.deadFlatDumpDropPercentMin = 0.20f;
             cfg.deadFlatDumpDropPercentMax = 0.46f;
-            cfg.deadFlatRocketNoiseStrength = 0.075f;
-            cfg.deadFlatDumpNoiseStrength = 0.075f;
-            cfg.normalMaxPriceChangePerTick01 = 0.24f;
-            cfg.pumpMaxPriceChangePerTick01 = 0.42f;
-            cfg.crashMaxPriceChangePerTick01 = 0.56f;
+            cfg.normalMaxPriceChangePerTick01 = 0.20f;
+            cfg.pumpMaxPriceChangePerTick01 = 0.36f;
+            cfg.crashMaxPriceChangePerTick01 = 0.48f;
             cfg.roundingRules = new[]
             {
                 new PriceRoundingRule { minPrice = 0f, step = 5f },
@@ -4263,23 +4599,23 @@ namespace TraidingIDLE.Currencies.Simulation
         {
             cfg.tickIntervalSeconds = 0.66f;
             cfg.normalTickSpeedMultiplier = 1f;
-            cfg.pumpTickSpeedMultiplier = 1.30f;
-            cfg.crashTickSpeedMultiplier = 1.42f;
+            cfg.pumpTickSpeedMultiplier = 1.20f;
+            cfg.crashTickSpeedMultiplier = 1.30f;
             cfg.plannedStatesCount = 5;
-            cfg.stateDurationMinSeconds = 20f;
-            cfg.stateDurationMaxSeconds = 82f;
+            cfg.stateDurationMinSeconds = 12f;
+            cfg.stateDurationMaxSeconds = 36f;
             cfg.plannedStateWeights = new[]
             {
-                new MarketStateWeight { type = MarketStateType.ChopInCorridor, weight = 0.95f },
-                new MarketStateWeight { type = MarketStateType.StairUp, weight = 0.85f },
-                new MarketStateWeight { type = MarketStateType.StairDown, weight = 0.66f },
-                new MarketStateWeight { type = MarketStateType.CompressionBreakout, weight = 0.75f },
-                new MarketStateWeight { type = MarketStateType.LowRangeRecovery, weight = 0.46f },
-                new MarketStateWeight { type = MarketStateType.SlowUpThenPumpAndDump, weight = 0.18f },
-                new MarketStateWeight { type = MarketStateType.SlowUpThenDump, weight = 0.12f },
-                new MarketStateWeight { type = MarketStateType.LongUptrend, weight = 0.20f },
-                new MarketStateWeight { type = MarketStateType.LongDowntrend, weight = 0.20f },
-                new MarketStateWeight { type = MarketStateType.Calm, weight = 0.04f },
+                new MarketStateWeight { type = MarketStateType.ChopInCorridor, weight = 0.90f },
+                new MarketStateWeight { type = MarketStateType.StairUp, weight = 1.08f },
+                new MarketStateWeight { type = MarketStateType.StairDown, weight = 0.46f },
+                new MarketStateWeight { type = MarketStateType.CompressionBreakout, weight = 0.98f },
+                new MarketStateWeight { type = MarketStateType.LowRangeRecovery, weight = 0.70f },
+                new MarketStateWeight { type = MarketStateType.SlowUpThenPumpAndDump, weight = 0.30f },
+                new MarketStateWeight { type = MarketStateType.SlowUpThenDump, weight = 0.10f },
+                new MarketStateWeight { type = MarketStateType.LongUptrend, weight = 0.26f },
+                new MarketStateWeight { type = MarketStateType.LongDowntrend, weight = 0.12f },
+                new MarketStateWeight { type = MarketStateType.Calm, weight = 0.02f },
             };
 
             cfg.corridorWidthAtLowPrice = 1.95f;
@@ -4289,27 +4625,27 @@ namespace TraidingIDLE.Currencies.Simulation
             cfg.minCorridorLowFromInitial = 0.55f;
             cfg.calmCorridorWidth = 1.14f;
             cfg.calmCorridorPullStrength = 0.28f;
-            cfg.chopCorridorWidthMin = 1.85f;
-            cfg.chopCorridorWidthMax = 3.05f;
-            cfg.chopCorridorPullStrength = 0.28f;
-            cfg.trendCorridorWidth = 1.86f;
-            cfg.trendCorridorPullStrength = 0.055f;
-            cfg.scenarioCorridorWidth = 1.66f;
-            cfg.scenarioCorridorPullStrength = 0.055f;
+            cfg.chopCorridorWidthMin = 2.05f;
+            cfg.chopCorridorWidthMax = 3.35f;
+            cfg.chopCorridorPullStrength = 0.24f;
+            cfg.trendCorridorWidth = 2.02f;
+            cfg.trendCorridorPullStrength = 0.048f;
+            cfg.scenarioCorridorWidth = 1.82f;
+            cfg.scenarioCorridorPullStrength = 0.048f;
             cfg.deadFlatCorridorWidth = 1.060f;
             cfg.deadFlatCorridorPullStrength = 0.020f;
-            cfg.noiseStrength = 0.62f;
-            cfg.trendStrength = 0.36f;
-            cfg.meanReversionStrength = 0.20f;
+            cfg.noiseStrength = 0.76f;
+            cfg.trendStrength = 0.42f;
+            cfg.meanReversionStrength = 0.18f;
 
             cfg.chopPhaseDurationMinSeconds = 7f;
-            cfg.chopPhaseDurationMaxSeconds = 21f;
-            cfg.chopFakeoutChancePerPhase = 0.78f;
-            cfg.chopFakeoutDurationMinSeconds = 1.8f;
-            cfg.chopFakeoutDurationMaxSeconds = 5.2f;
-            cfg.chopFakeoutStrength = 0.58f;
-            cfg.chopRecoveryDurationSeconds = 3.3f;
-            cfg.chopRecoveryBoost = 1.85f;
+            cfg.chopPhaseDurationMaxSeconds = 22f;
+            cfg.chopFakeoutChancePerPhase = 0.84f;
+            cfg.chopFakeoutDurationMinSeconds = 2.4f;
+            cfg.chopFakeoutDurationMaxSeconds = 6.5f;
+            cfg.chopFakeoutStrength = 0.66f;
+            cfg.chopRecoveryDurationSeconds = 3.6f;
+            cfg.chopRecoveryBoost = 1.90f;
 
             cfg.calmLegDurationMinSeconds = 4f;
             cfg.calmLegDurationMaxSeconds = 14f;
@@ -4319,90 +4655,106 @@ namespace TraidingIDLE.Currencies.Simulation
             cfg.calmNoiseStrength = 0.170f;
             cfg.calmApproachStrength = 0.30f;
 
-            cfg.longUptrendDurationMinSeconds = 26f;
-            cfg.longUptrendDurationMaxSeconds = 78f;
-            cfg.longUptrendTargetMultiplierMin = 1.24f;
-            cfg.longUptrendTargetMultiplierMax = 1.82f;
-            cfg.longUptrendMaxEffectiveMultiplier = 1.68f;
-            cfg.longUptrendNoiseStrength = 0.150f;
-            cfg.longUptrendWobbleStrength = 0.78f;
-            cfg.longUptrendDownWobbleChance = 0.50f;
-            cfg.longUptrendDownWobbleMultiplier = 1.55f;
-            cfg.longUptrendUpWobbleMultiplier = 1.05f;
-            cfg.longUptrendPullbackChancePerTick = 0.26f;
-            cfg.longUptrendPullbackStrength = 0.140f;
-            cfg.longUptrendPullbackDurationMinSeconds = 1.2f;
-            cfg.longUptrendPullbackDurationMaxSeconds = 4.5f;
-            cfg.longUptrendPullbackCooldownSeconds = 1.5f;
-            cfg.longUptrendRecoveryDurationSeconds = 2.2f;
-            cfg.longUptrendRecoveryCatchupMultiplier = 2.25f;
-            cfg.longUptrendMaxPriceChangePerTick01 = 0.115f;
+            cfg.longUptrendDurationMinSeconds = 34f;
+            cfg.longUptrendDurationMaxSeconds = 92f;
+            cfg.longUptrendTargetMultiplierMin = 1.30f;
+            cfg.longUptrendTargetMultiplierMax = 2.05f;
+            cfg.longUptrendMaxEffectiveMultiplier = 1.86f;
+            cfg.longUptrendNoiseStrength = 0.190f;
+            cfg.longUptrendWobbleStrength = 0.92f;
+            cfg.longUptrendDownWobbleChance = 0.54f;
+            cfg.longUptrendDownWobbleMultiplier = 1.75f;
+            cfg.longUptrendUpWobbleMultiplier = 1.18f;
+            cfg.longUptrendPullbackChancePerTick = 0.20f;
+            cfg.longUptrendPullbackStrength = 0.120f;
+            cfg.longUptrendPullbackDurationMinSeconds = 2.0f;
+            cfg.longUptrendPullbackDurationMaxSeconds = 5.8f;
+            cfg.longUptrendPullbackCooldownSeconds = 2.4f;
+            cfg.longUptrendRecoveryDurationSeconds = 3.0f;
+            cfg.longUptrendRecoveryCatchupMultiplier = 1.95f;
+            cfg.longUptrendMaxPriceChangePerTick01 = 0.095f;
 
-            cfg.longDowntrendDurationMinSeconds = 30f;
-            cfg.longDowntrendDurationMaxSeconds = 92f;
-            cfg.longDowntrendTargetDividerMin = 1.20f;
-            cfg.longDowntrendTargetDividerMax = 1.78f;
-            cfg.longDowntrendNoiseStrength = 0.205f;
-            cfg.longDowntrendRallyChancePerTick = 0.36f;
-            cfg.longDowntrendRallyStrength = 0.190f;
-            cfg.longDowntrendRallyDurationMinSeconds = 1.0f;
-            cfg.longDowntrendRallyDurationMaxSeconds = 4.2f;
-            cfg.longDowntrendRallyCooldownSeconds = 1.2f;
-            cfg.longDowntrendRecoveryDurationSeconds = 2.6f;
-            cfg.longDowntrendRecoveryCatchupMultiplier = 2.10f;
-            cfg.longDowntrendMaxPriceChangePerTick01 = 0.115f;
+            cfg.longDowntrendDurationMinSeconds = 38f;
+            cfg.longDowntrendDurationMaxSeconds = 104f;
+            cfg.longDowntrendTargetDividerMin = 1.12f;
+            cfg.longDowntrendTargetDividerMax = 1.42f;
+            cfg.longDowntrendNoiseStrength = 0.260f;
+            cfg.longDowntrendRallyChancePerTick = 0.30f;
+            cfg.longDowntrendRallyStrength = 0.200f;
+            cfg.longDowntrendRallyDurationMinSeconds = 2.0f;
+            cfg.longDowntrendRallyDurationMaxSeconds = 5.8f;
+            cfg.longDowntrendRallyCooldownSeconds = 2.4f;
+            cfg.longDowntrendRecoveryDurationSeconds = 3.2f;
+            cfg.longDowntrendRecoveryCatchupMultiplier = 2.00f;
+            cfg.longDowntrendMaxPriceChangePerTick01 = 0.095f;
 
             cfg.spikeDumpGrowPercentMin = 0.14f;
             cfg.spikeDumpGrowPercentMax = 0.38f;
-            cfg.spikeDumpGrowDurationMinSeconds = 14f;
-            cfg.spikeDumpGrowDurationMaxSeconds = 38f;
-            cfg.spikeDumpMaxDropPercent = 0.42f;
-            cfg.spikeDumpMaxPriceChangePerTick01 = 0.15f;
+            cfg.spikeDumpGrowDurationMinSeconds = 18f;
+            cfg.spikeDumpGrowDurationMaxSeconds = 46f;
+            cfg.spikeDumpDropOverGrowMin = 1.02f;
+            cfg.spikeDumpDropOverGrowMax = 1.28f;
+            cfg.spikeDumpMaxDropPercent = 0.34f;
+            cfg.spikeDumpDumpDurationMinSeconds = 6f;
+            cfg.spikeDumpDumpDurationMaxSeconds = 13f;
+            cfg.spikeDumpShakeDurationMinSeconds = 5f;
+            cfg.spikeDumpShakeDurationMaxSeconds = 13f;
+            cfg.spikeDumpMaxPriceChangePerTick01 = 0.105f;
 
             cfg.dipPumpDipPercentMin = 0.10f;
             cfg.dipPumpDipPercentMax = 0.28f;
-            cfg.dipPumpDipDurationMinSeconds = 14f;
-            cfg.dipPumpDipDurationMaxSeconds = 42f;
-            cfg.dipPumpMaxPumpPercent = 0.52f;
-            cfg.dipPumpMaxPriceChangePerTick01 = 0.15f;
+            cfg.dipPumpDipDurationMinSeconds = 18f;
+            cfg.dipPumpDipDurationMaxSeconds = 48f;
+            cfg.dipPumpPumpOverDipMin = 1.25f;
+            cfg.dipPumpPumpOverDipMax = 1.85f;
+            cfg.dipPumpMaxPumpPercent = 0.58f;
+            cfg.dipPumpPumpDurationMinSeconds = 6f;
+            cfg.dipPumpPumpDurationMaxSeconds = 13f;
+            cfg.dipPumpShakeDurationMinSeconds = 5f;
+            cfg.dipPumpShakeDurationMaxSeconds = 13f;
+            cfg.dipPumpMaxPriceChangePerTick01 = 0.115f;
 
-            cfg.deadFlatRocketFlatDurationMinSeconds = 5f;
-            cfg.deadFlatRocketFlatDurationMaxSeconds = 13f;
+            cfg.deadFlatRocketFlatDurationMinSeconds = 7f;
+            cfg.deadFlatRocketFlatDurationMaxSeconds = 15f;
             cfg.deadFlatRocketFlatRange01 = 0.045f;
             cfg.deadFlatRocketNoiseStrength = 0.090f;
             cfg.deadFlatRocketPumpPercentMin = 0.12f;
             cfg.deadFlatRocketPumpPercentMax = 0.34f;
-            cfg.deadFlatDumpFlatDurationMinSeconds = 5f;
-            cfg.deadFlatDumpFlatDurationMaxSeconds = 12f;
+            cfg.deadFlatRocketPumpDurationMinSeconds = 3f;
+            cfg.deadFlatRocketPumpDurationMaxSeconds = 7f;
+            cfg.deadFlatDumpFlatDurationMinSeconds = 7f;
+            cfg.deadFlatDumpFlatDurationMaxSeconds = 15f;
             cfg.deadFlatDumpFlatRange01 = 0.045f;
             cfg.deadFlatDumpNoiseStrength = 0.095f;
             cfg.deadFlatDumpDropPercentMin = 0.10f;
             cfg.deadFlatDumpDropPercentMax = 0.28f;
+            cfg.deadFlatDumpDurationMinSeconds = 3f;
+            cfg.deadFlatDumpDurationMaxSeconds = 7f;
 
             cfg.normalMaxPriceChangePerTick01 = 0.105f;
-            cfg.pumpMaxPriceChangePerTick01 = 0.24f;
-            cfg.crashMaxPriceChangePerTick01 = 0.32f;
+            cfg.pumpMaxPriceChangePerTick01 = 0.22f;
+            cfg.crashMaxPriceChangePerTick01 = 0.28f;
         }
 
         private static void ApplyBtcMarketTuning(CoinSimulationConfig cfg)
         {
-            cfg.tickIntervalSeconds = 0.82f;
+            cfg.tickIntervalSeconds = 0.74f;
             cfg.normalTickSpeedMultiplier = 1f;
-            cfg.pumpTickSpeedMultiplier = 1.24f;
-            cfg.crashTickSpeedMultiplier = 1.42f;
+            cfg.pumpTickSpeedMultiplier = 1.12f;
+            cfg.crashTickSpeedMultiplier = 1.20f;
             cfg.plannedStatesCount = 4;
-            cfg.stateDurationMinSeconds = 36f;
-            cfg.stateDurationMaxSeconds = 122f;
+            cfg.stateDurationMinSeconds = 18f;
+            cfg.stateDurationMaxSeconds = 62f;
             cfg.plannedStateWeights = new[]
             {
-                new MarketStateWeight { type = MarketStateType.AccumulationRun, weight = 1.45f },
-                new MarketStateWeight { type = MarketStateType.StairUp, weight = 0.54f },
-                new MarketStateWeight { type = MarketStateType.CompressionBreakout, weight = 0.38f },
-                new MarketStateWeight { type = MarketStateType.SlowUpThenDump, weight = 0.30f },
-                new MarketStateWeight { type = MarketStateType.LowRangeRecovery, weight = 0.24f },
-                new MarketStateWeight { type = MarketStateType.ChopInCorridor, weight = 0.28f },
-                new MarketStateWeight { type = MarketStateType.StairDown, weight = 0.18f },
-                new MarketStateWeight { type = MarketStateType.DeadFlatThenRocketPump, weight = 0.06f },
+                new MarketStateWeight { type = MarketStateType.AccumulationRun, weight = 1.35f },
+                new MarketStateWeight { type = MarketStateType.StairUp, weight = 0.74f },
+                new MarketStateWeight { type = MarketStateType.CompressionBreakout, weight = 0.58f },
+                new MarketStateWeight { type = MarketStateType.SlowUpThenDump, weight = 0.24f },
+                new MarketStateWeight { type = MarketStateType.LowRangeRecovery, weight = 0.38f },
+                new MarketStateWeight { type = MarketStateType.ChopInCorridor, weight = 0.40f },
+                new MarketStateWeight { type = MarketStateType.StairDown, weight = 0.14f },
+                new MarketStateWeight { type = MarketStateType.DeadFlatThenRocketPump, weight = 0.09f },
                 new MarketStateWeight { type = MarketStateType.DeadFlatThenRocketDump, weight = 0.05f },
             };
 
@@ -4413,36 +4765,36 @@ namespace TraidingIDLE.Currencies.Simulation
             cfg.minCorridorLowFromInitial = 0.42f;
             cfg.calmCorridorWidth = 1.14f;
             cfg.calmCorridorPullStrength = 0.28f;
-            cfg.chopCorridorWidthMin = 1.75f;
-            cfg.chopCorridorWidthMax = 2.75f;
-            cfg.chopCorridorPullStrength = 0.22f;
-            cfg.trendCorridorWidth = 1.92f;
-            cfg.trendCorridorPullStrength = 0.040f;
-            cfg.scenarioCorridorWidth = 1.70f;
-            cfg.scenarioCorridorPullStrength = 0.045f;
-            cfg.noiseStrength = 0.55f;
-            cfg.trendStrength = 0.33f;
-            cfg.meanReversionStrength = 0.17f;
+            cfg.chopCorridorWidthMin = 1.95f;
+            cfg.chopCorridorWidthMax = 3.05f;
+            cfg.chopCorridorPullStrength = 0.20f;
+            cfg.trendCorridorWidth = 2.10f;
+            cfg.trendCorridorPullStrength = 0.036f;
+            cfg.scenarioCorridorWidth = 1.86f;
+            cfg.scenarioCorridorPullStrength = 0.040f;
+            cfg.noiseStrength = 0.68f;
+            cfg.trendStrength = 0.39f;
+            cfg.meanReversionStrength = 0.15f;
 
             cfg.chopPhaseDurationMinSeconds = 11f;
             cfg.chopPhaseDurationMaxSeconds = 34f;
-            cfg.chopFakeoutChancePerPhase = 0.74f;
-            cfg.chopFakeoutDurationMinSeconds = 2.4f;
-            cfg.chopFakeoutDurationMaxSeconds = 7f;
-            cfg.chopFakeoutStrength = 0.52f;
-            cfg.chopRecoveryDurationSeconds = 4.2f;
+            cfg.chopFakeoutChancePerPhase = 0.80f;
+            cfg.chopFakeoutDurationMinSeconds = 3f;
+            cfg.chopFakeoutDurationMaxSeconds = 8f;
+            cfg.chopFakeoutStrength = 0.60f;
+            cfg.chopRecoveryDurationSeconds = 4.8f;
             cfg.chopRecoveryBoost = 1.55f;
 
             cfg.longUptrendDurationMinSeconds = 70f;
             cfg.longUptrendDurationMaxSeconds = 185f;
-            cfg.longUptrendTargetMultiplierMin = 1.26f;
-            cfg.longUptrendTargetMultiplierMax = 2.05f;
-            cfg.longUptrendMaxEffectiveMultiplier = 1.88f;
-            cfg.longUptrendNoiseStrength = 0.120f;
-            cfg.longUptrendWobbleStrength = 0.58f;
-            cfg.longUptrendDownWobbleChance = 0.44f;
-            cfg.longUptrendDownWobbleMultiplier = 1.34f;
-            cfg.longUptrendUpWobbleMultiplier = 1.02f;
+            cfg.longUptrendTargetMultiplierMin = 1.34f;
+            cfg.longUptrendTargetMultiplierMax = 2.28f;
+            cfg.longUptrendMaxEffectiveMultiplier = 2.05f;
+            cfg.longUptrendNoiseStrength = 0.155f;
+            cfg.longUptrendWobbleStrength = 0.72f;
+            cfg.longUptrendDownWobbleChance = 0.48f;
+            cfg.longUptrendDownWobbleMultiplier = 1.48f;
+            cfg.longUptrendUpWobbleMultiplier = 1.12f;
             cfg.longUptrendPullbackChancePerTick = 0.19f;
             cfg.longUptrendPullbackStrength = 0.105f;
             cfg.longUptrendPullbackDurationMinSeconds = 1.8f;
@@ -4450,50 +4802,64 @@ namespace TraidingIDLE.Currencies.Simulation
             cfg.longUptrendPullbackCooldownSeconds = 2.6f;
             cfg.longUptrendRecoveryDurationSeconds = 4.0f;
             cfg.longUptrendRecoveryCatchupMultiplier = 1.75f;
-            cfg.longUptrendMaxPriceChangePerTick01 = 0.075f;
+            cfg.longUptrendMaxPriceChangePerTick01 = 0.064f;
 
             cfg.longDowntrendDurationMinSeconds = 48f;
             cfg.longDowntrendDurationMaxSeconds = 118f;
-            cfg.longDowntrendTargetDividerMin = 1.20f;
-            cfg.longDowntrendTargetDividerMax = 1.88f;
-            cfg.longDowntrendNoiseStrength = 0.115f;
-            cfg.longDowntrendRallyChancePerTick = 0.18f;
-            cfg.longDowntrendRallyStrength = 0.105f;
-            cfg.longDowntrendRallyDurationMinSeconds = 2.0f;
-            cfg.longDowntrendRallyDurationMaxSeconds = 7.0f;
-            cfg.longDowntrendRallyCooldownSeconds = 3.0f;
-            cfg.longDowntrendRecoveryDurationSeconds = 4.5f;
+            cfg.longDowntrendTargetDividerMin = 1.12f;
+            cfg.longDowntrendTargetDividerMax = 1.48f;
+            cfg.longDowntrendNoiseStrength = 0.155f;
+            cfg.longDowntrendRallyChancePerTick = 0.26f;
+            cfg.longDowntrendRallyStrength = 0.140f;
+            cfg.longDowntrendRallyDurationMinSeconds = 3.0f;
+            cfg.longDowntrendRallyDurationMaxSeconds = 8.5f;
+            cfg.longDowntrendRallyCooldownSeconds = 4.2f;
+            cfg.longDowntrendRecoveryDurationSeconds = 5.2f;
             cfg.longDowntrendRecoveryCatchupMultiplier = 1.65f;
-            cfg.longDowntrendMaxPriceChangePerTick01 = 0.078f;
+            cfg.longDowntrendMaxPriceChangePerTick01 = 0.070f;
 
             cfg.spikeDumpGrowPercentMin = 0.16f;
             cfg.spikeDumpGrowPercentMax = 0.46f;
             cfg.spikeDumpGrowDurationMinSeconds = 35f;
             cfg.spikeDumpGrowDurationMaxSeconds = 90f;
-            cfg.spikeDumpMaxDropPercent = 0.42f;
-            cfg.spikeDumpDumpDurationMinSeconds = 4f;
-            cfg.spikeDumpDumpDurationMaxSeconds = 12f;
-            cfg.spikeDumpMaxPriceChangePerTick01 = 0.11f;
+            cfg.spikeDumpDropOverGrowMin = 1.02f;
+            cfg.spikeDumpDropOverGrowMax = 1.30f;
+            cfg.spikeDumpMaxDropPercent = 0.34f;
+            cfg.spikeDumpDumpDurationMinSeconds = 10f;
+            cfg.spikeDumpDumpDurationMaxSeconds = 22f;
+            cfg.spikeDumpShakeDurationMinSeconds = 8f;
+            cfg.spikeDumpShakeDurationMaxSeconds = 20f;
+            cfg.spikeDumpMaxPriceChangePerTick01 = 0.085f;
 
             cfg.dipPumpDipPercentMin = 0.10f;
             cfg.dipPumpDipPercentMax = 0.26f;
             cfg.dipPumpDipDurationMinSeconds = 32f;
             cfg.dipPumpDipDurationMaxSeconds = 90f;
-            cfg.dipPumpMaxPumpPercent = 0.55f;
-            cfg.dipPumpMaxPriceChangePerTick01 = 0.11f;
+            cfg.dipPumpPumpOverDipMin = 1.25f;
+            cfg.dipPumpPumpOverDipMax = 1.82f;
+            cfg.dipPumpMaxPumpPercent = 0.60f;
+            cfg.dipPumpPumpDurationMinSeconds = 10f;
+            cfg.dipPumpPumpDurationMaxSeconds = 24f;
+            cfg.dipPumpShakeDurationMinSeconds = 8f;
+            cfg.dipPumpShakeDurationMaxSeconds = 20f;
+            cfg.dipPumpMaxPriceChangePerTick01 = 0.090f;
 
             cfg.deadFlatRocketFlatDurationMinSeconds = 36f;
             cfg.deadFlatRocketFlatDurationMaxSeconds = 90f;
             cfg.deadFlatRocketPumpPercentMin = 0.12f;
             cfg.deadFlatRocketPumpPercentMax = 0.34f;
+            cfg.deadFlatRocketPumpDurationMinSeconds = 8f;
+            cfg.deadFlatRocketPumpDurationMaxSeconds = 20f;
             cfg.deadFlatDumpFlatDurationMinSeconds = 28f;
             cfg.deadFlatDumpFlatDurationMaxSeconds = 75f;
             cfg.deadFlatDumpDropPercentMin = 0.12f;
             cfg.deadFlatDumpDropPercentMax = 0.32f;
+            cfg.deadFlatDumpDurationMinSeconds = 8f;
+            cfg.deadFlatDumpDurationMaxSeconds = 20f;
 
-            cfg.normalMaxPriceChangePerTick01 = 0.075f;
-            cfg.pumpMaxPriceChangePerTick01 = 0.17f;
-            cfg.crashMaxPriceChangePerTick01 = 0.26f;
+            cfg.normalMaxPriceChangePerTick01 = 0.080f;
+            cfg.pumpMaxPriceChangePerTick01 = 0.160f;
+            cfg.crashMaxPriceChangePerTick01 = 0.220f;
         }
 
         private static void NormalizeConfig(CoinSimulationConfig cfg)

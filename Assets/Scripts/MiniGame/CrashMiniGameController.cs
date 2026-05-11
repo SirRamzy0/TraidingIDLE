@@ -188,11 +188,16 @@ namespace TraidingIDLE.MiniGame
 
             public static void Unregister(CrashMiniGameController controller)
             {
+                Unregister(controller, immediateDestroy: false);
+            }
+
+            public static void Unregister(CrashMiniGameController controller, bool immediateDestroy)
+            {
                 if (_backgroundRunner == null || controller == null)
                     return;
 
                 _backgroundRunner._controllers.Remove(controller);
-                _backgroundRunner.DestroyIfEmpty();
+                _backgroundRunner.DestroyIfEmpty(immediateDestroy);
             }
 
             private static BackgroundRunner GetOrCreate()
@@ -224,7 +229,7 @@ namespace TraidingIDLE.MiniGame
                     controller.AdvanceInBackground(dt);
                 }
 
-                DestroyIfEmpty();
+                DestroyIfEmpty(immediateDestroy: false);
             }
 
             private void OnDestroy()
@@ -233,7 +238,7 @@ namespace TraidingIDLE.MiniGame
                     _backgroundRunner = null;
             }
 
-            private void DestroyIfEmpty()
+            private void DestroyIfEmpty(bool immediateDestroy)
             {
                 if (_controllers.Count > 0)
                     return;
@@ -241,7 +246,7 @@ namespace TraidingIDLE.MiniGame
                 if (_backgroundRunner == this)
                     _backgroundRunner = null;
 
-                if (Application.isPlaying)
+                if (Application.isPlaying && !immediateDestroy)
                     Destroy(gameObject);
                 else
                     DestroyImmediate(gameObject);
@@ -289,7 +294,7 @@ namespace TraidingIDLE.MiniGame
 
         private void OnDestroy()
         {
-            BackgroundRunner.Unregister(this);
+            BackgroundRunner.Unregister(this, immediateDestroy: true);
         }
 
         private void OnApplicationPause(bool pause)

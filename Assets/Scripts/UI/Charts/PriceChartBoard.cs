@@ -63,6 +63,12 @@ namespace TraidingIDLE.UI.Charts
         [Range(0.01f, 1f)]
         [SerializeField] private float viewportFloorSmooth = 0.18f;
 
+        [Header("Viewport stability")]
+        [SerializeField] private bool stabilizeViewportUntilEdge = true;
+        [Tooltip("Viewport will not rescale while current candles stay inside this inner edge zone.")]
+        [Range(0.02f, 0.35f)]
+        [SerializeField] private float viewportRelayoutEdgeZone01 = 0.16f;
+
         [Header("Render target")]
         [SerializeField] private UICandlestickChartGraphic candlestickChart = null!;
 
@@ -205,6 +211,7 @@ namespace TraidingIDLE.UI.Charts
             btcCandleVisualRangeMultiplier = Mathf.Max(0.5f, btcCandleVisualRangeMultiplier);
             expandViewport = Mathf.Clamp01(expandViewport);
             viewportFloorSmooth = Mathf.Clamp01(viewportFloorSmooth);
+            viewportRelayoutEdgeZone01 = Mathf.Clamp(viewportRelayoutEdgeZone01, 0.02f, 0.35f);
         }
 
         private void OnActiveCurrencyChanged(CurrencyId id)
@@ -382,6 +389,9 @@ namespace TraidingIDLE.UI.Charts
                 return;
             }
 
+            if (ShouldKeepViewportStable(latestPrice))
+                return;
+
             // Expand faster than shrink/shift, but not instantly: instant expansion makes pumps look like
             // the chart scale jumps in a single frame.
             var needsExpansion = targetMin < _viewMin || targetMax > _viewMax;
@@ -389,6 +399,38 @@ namespace TraidingIDLE.UI.Charts
             _viewMin = Mathf.Lerp(_viewMin, targetMin, t);
             _viewMax = Mathf.Lerp(_viewMax, targetMax, t);
             ViewportChanged?.Invoke(_viewMin, _viewMax);
+        }
+
+        private bool ShouldKeepViewportStable(float latestPrice)
+        {
+            if (!stabilizeViewportUntilEdge || !_hasViewport)
+                return false;
+
+            var range = _viewMax - _viewMin;
+            if (range <= 0.000001f)
+                return false;
+
+            var edge = range * viewportRelayoutEdgeZone01;
+            var safeMin = _viewMin + edge;
+            var safeMax = _viewMax - edge;
+            if (safeMax <= safeMin)
+                return false;
+
+            var min = latestPrice;
+            var max = latestPrice;
+            if (_candles.Count > 0)
+            {
+                var latestCandle = _candles[_candles.Count - 1];
+                min = Mathf.Min(min, latestCandle.low);
+                max = Mathf.Max(max, latestCandle.high);
+            }
+            else if (_history.TryGetMinMax(out var historyMin, out var historyMax))
+            {
+                min = Mathf.Min(min, historyMin);
+                max = Mathf.Max(max, historyMax);
+            }
+
+            return min >= safeMin && max <= safeMax;
         }
 
         private float GetSmoothedViewportRangeFloor(float latestPrice, float observedRange, bool force)

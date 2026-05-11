@@ -38,7 +38,7 @@ MonoBehaviour:
     priceRubles: 150000
   - saveId: branded_clothes_card_04
     title: "\u041C\u043E\u043D\u0441\u043B\u0435\u0440"
-    background: {fileID: 21300000, guid: 18210976a5efb00449593b44eadcf5f6, type: 3}
+    background: {fileID: 21300000, guid: 30f061215691c6f4fadfd8a62d6b037a, type: 3}
     artwork: {fileID: 21300000, guid: 57053a1fb1b83bd49a4484e8f4915a22, type: 3}
     priceRubles: 220000
   - saveId: branded_clothes_card_05
@@ -48,22 +48,22 @@ MonoBehaviour:
     priceRubles: 350000
   - saveId: branded_clothes_card_06
     title: "\u0417\u043E\u043B\u043E\u0442\u044B\u0435 \u0440\u043E\u043B\u0435\u0445\u0441\u044B"
-    background: {fileID: 21300000, guid: 30f061215691c6f4fadfd8a62d6b037a, type: 3}
+    background: {fileID: 21300000, guid: 75f00f6a96c1bb64da30f3f404f04088, type: 3}
     artwork: {fileID: 21300000, guid: a7185545998add44f9b9830300a55861, type: 3}
     priceRubles: 3200000
   - saveId: branded_clothes_card_07
     title: "\u041F\u0438\u0436\u0435\u0442 \u0440\u043E\u044F\u043B"
-    background: {fileID: 21300000, guid: 30f061215691c6f4fadfd8a62d6b037a, type: 3}
+    background: {fileID: 21300000, guid: 75f00f6a96c1bb64da30f3f404f04088, type: 3}
     artwork: {fileID: 21300000, guid: d00ec9c436e781448b4482759765b070, type: 3}
     priceRubles: 4500000
   - saveId: branded_clothes_card_08
     title: "\u0420\u041C 11"
-    background: {fileID: 21300000, guid: 75f00f6a96c1bb64da30f3f404f04088, type: 3}
+    background: {fileID: 21300000, guid: aff2564508024c44d93bc98c16251325, type: 3}
     artwork: {fileID: 21300000, guid: 610df040bdec36c4cbd8d45b2c9348fa, type: 3}
     priceRubles: 22000000
   - saveId: branded_clothes_card_09
     title: "\u0411\u0440\u0430\u0441\u043B\u0435\u0442 \u043A\u0430\u0442\u044C\u0435"
-    background: {fileID: 21300000, guid: 75f00f6a96c1bb64da30f3f404f04088, type: 3}
+    background: {fileID: 21300000, guid: aff2564508024c44d93bc98c16251325, type: 3}
     artwork: {fileID: 21300000, guid: 6656e2069b037cd4ba58f58cb7b2ad51, type: 3}
     priceRubles: 28000000
   - saveId: branded_clothes_card_10

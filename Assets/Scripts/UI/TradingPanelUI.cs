@@ -1,9 +1,12 @@
 using System;
+using System.Collections;
+using System.Collections.Generic;
 using System.Globalization;
 using TMPro;
 using TraidingIDLE.Currencies;
 using TraidingIDLE.Player;
 using UnityEngine;
+using UnityEngine.EventSystems;
 using UnityEngine.UI;
 
 namespace TraidingIDLE.UI
@@ -45,9 +48,18 @@ namespace TraidingIDLE.UI
         [SerializeField] private TMP_Text sellCountText = null!;
         [SerializeField] private string sellTotalFormat = "Р {0}";
 
+        [Header("Unavailable feedback")]
+        [SerializeField] private Color unavailableFlashColor = new(1f, 0.18f, 0.25f, 1f);
+        [SerializeField, Min(0.05f)] private float unavailableFlashDuration = 0.35f;
+        [SerializeField, Min(1)] private int unavailableFlashPulses = 2;
+
         private CurrencyId _activeCurrency;
         private int _maxBuyCount;
         private int _maxSellCount;
+        private readonly Dictionary<CurrencyId, float> _buySliderValues = new();
+        private readonly Dictionary<CurrencyId, float> _sellSliderValues = new();
+        private readonly Dictionary<Graphic, Coroutine> _feedbackCoroutines = new();
+        private readonly Dictionary<Graphic, Color> _feedbackOriginalColors = new();
 
         private void Awake()
         {
@@ -59,6 +71,8 @@ namespace TraidingIDLE.UI
 
             ConfigureSlider(buySlider);
             ConfigureSlider(sellSlider);
+            RegisterPointerDown(buySlider, OnBuySliderPointerDown);
+            RegisterPointerDown(sellSlider, OnSellSliderPointerDown);
         }
 
         private void OnEnable()
@@ -75,6 +89,8 @@ namespace TraidingIDLE.UI
                 market.PriceChanged += OnPriceChanged;
                 _activeCurrency = market.ActiveCurrency;
             }
+
+            RestoreSliderState(_activeCurrency);
 
             if (buyButton != null) buyButton.onClick.AddListener(OnBuyClicked);
             if (sellButton != null) sellButton.onClick.AddListener(OnSellClicked);
@@ -95,6 +111,8 @@ namespace TraidingIDLE.UI
 
         private void OnDisable()
         {
+            SaveActiveSliderState();
+
             if (profile != null)
             {
                 profile.RublesChanged -= OnRublesChanged;
@@ -117,9 +135,9 @@ namespace TraidingIDLE.UI
 
         private void OnActiveCurrencyChanged(CurrencyId id)
         {
+            SaveActiveSliderState();
             _activeCurrency = id;
-            ResetSlider(buySlider);
-            ResetSlider(sellSlider);
+            RestoreSliderState(id);
             RefreshHoldings();
             RefreshValueAndProfit();
             RefreshTransaction();
@@ -157,7 +175,14 @@ namespace TraidingIDLE.UI
                 return;
 
             if (profile.TryBuy(_activeCurrency, count, unitPrice))
-                ResetSlider(buySlider);
+            {
+                ResetActiveBuySlider();
+            }
+            else
+            {
+                FlashUnavailable(buyButton);
+                FlashUnavailable(buySlider);
+            }
         }
 
         private void OnSellClicked()
@@ -168,7 +193,14 @@ namespace TraidingIDLE.UI
                 return;
 
             if (profile.TrySell(_activeCurrency, count, unitPrice))
-                ResetSlider(sellSlider);
+            {
+                ResetActiveSellSlider();
+            }
+            else
+            {
+                FlashUnavailable(sellButton);
+                FlashUnavailable(sellSlider);
+            }
         }
 
         private void OnBuyMaxClicked()
@@ -176,7 +208,15 @@ namespace TraidingIDLE.UI
             if (buySlider == null)
                 return;
 
+            if (_maxBuyCount <= 0)
+            {
+                FlashUnavailable(buyMaxButton);
+                FlashUnavailable(buySlider);
+                return;
+            }
+
             buySlider.SetValueWithoutNotify(GetAllowedSliderMax(_maxBuyCount));
+            SaveActiveSliderState();
             RefreshTransaction();
         }
 
@@ -185,12 +225,47 @@ namespace TraidingIDLE.UI
             if (sellSlider == null)
                 return;
 
+            if (_maxSellCount <= 0)
+            {
+                FlashUnavailable(sellMaxButton);
+                FlashUnavailable(sellSlider);
+                return;
+            }
+
             sellSlider.SetValueWithoutNotify(GetAllowedSliderMax(_maxSellCount));
+            SaveActiveSliderState();
             RefreshTransaction();
         }
 
-        private void OnBuySliderChanged(float _) => RefreshTransaction();
-        private void OnSellSliderChanged(float _) => RefreshTransaction();
+        private void OnBuySliderChanged(float value)
+        {
+            if (IsUnavailableSliderAttempt(value, _maxBuyCount))
+                FlashUnavailable(buySlider);
+
+            SaveActiveSliderState();
+            RefreshTransaction();
+        }
+
+        private void OnSellSliderChanged(float value)
+        {
+            if (IsUnavailableSliderAttempt(value, _maxSellCount))
+                FlashUnavailable(sellSlider);
+
+            SaveActiveSliderState();
+            RefreshTransaction();
+        }
+
+        private void OnBuySliderPointerDown()
+        {
+            if (_maxBuyCount <= 0)
+                FlashUnavailable(buySlider);
+        }
+
+        private void OnSellSliderPointerDown()
+        {
+            if (_maxSellCount <= 0)
+                FlashUnavailable(sellSlider);
+        }
 
         private void RefreshTransaction()
         {
@@ -201,6 +276,7 @@ namespace TraidingIDLE.UI
             var cap = profile == null ? 0 : profile.GetCap(_activeCurrency);
             UpdateRow(buySlider, buyMaxButton, buyButton, buyTotalText, buyCountText, buyTotalFormat, _maxBuyCount, cap, unitPrice);
             UpdateRow(sellSlider, sellMaxButton, sellButton, sellTotalText, sellCountText, sellTotalFormat, _maxSellCount, cap, unitPrice);
+            SaveActiveSliderState();
         }
 
         private void RefreshHoldings()
@@ -270,7 +346,7 @@ namespace TraidingIDLE.UI
                 totalText.text = string.Format(SafeFormat(totalFormat, "{0}"), FormatThousands(total));
 
             if (maxButton != null)
-                maxButton.interactable = maxCount > 0;
+                maxButton.interactable = true;
 
             if (actionButton != null)
                 actionButton.interactable = count > 0;
@@ -354,6 +430,126 @@ namespace TraidingIDLE.UI
         {
             if (slider != null)
                 slider.SetValueWithoutNotify(0);
+        }
+
+        private void SaveActiveSliderState()
+        {
+            if (buySlider != null)
+                _buySliderValues[_activeCurrency] = buySlider.value;
+            if (sellSlider != null)
+                _sellSliderValues[_activeCurrency] = sellSlider.value;
+        }
+
+        private void RestoreSliderState(CurrencyId id)
+        {
+            if (buySlider != null)
+                buySlider.SetValueWithoutNotify(_buySliderValues.TryGetValue(id, out var buyValue) ? buyValue : 0f);
+            if (sellSlider != null)
+                sellSlider.SetValueWithoutNotify(_sellSliderValues.TryGetValue(id, out var sellValue) ? sellValue : 0f);
+        }
+
+        private void ResetActiveBuySlider()
+        {
+            ResetSlider(buySlider);
+            _buySliderValues[_activeCurrency] = 0f;
+            RefreshTransaction();
+        }
+
+        private void ResetActiveSellSlider()
+        {
+            ResetSlider(sellSlider);
+            _sellSliderValues[_activeCurrency] = 0f;
+            RefreshTransaction();
+        }
+
+        private static bool IsUnavailableSliderAttempt(float value, int maxCount)
+        {
+            return maxCount <= 0 || value > GetAllowedSliderMax(maxCount) + 0.001f;
+        }
+
+        private static void RegisterPointerDown(Component target, Action callback)
+        {
+            if (target == null || callback == null)
+                return;
+
+            var eventTrigger = target.GetComponent<EventTrigger>();
+            if (eventTrigger == null)
+                eventTrigger = target.gameObject.AddComponent<EventTrigger>();
+
+            eventTrigger.triggers ??= new List<EventTrigger.Entry>();
+
+            var entry = new EventTrigger.Entry { eventID = EventTriggerType.PointerDown };
+            entry.callback.AddListener(_ => callback());
+            eventTrigger.triggers.Add(entry);
+        }
+
+        private void FlashUnavailable(Button button)
+        {
+            if (button == null)
+                return;
+
+            FlashGraphic(button.targetGraphic);
+        }
+
+        private void FlashUnavailable(Slider slider)
+        {
+            if (slider == null)
+                return;
+
+            FlashGraphic(GetSliderHandleGraphic(slider));
+        }
+
+        private static Graphic GetSliderHandleGraphic(Slider slider)
+        {
+            if (slider == null)
+                return null;
+
+            if (slider.handleRect != null && slider.handleRect.TryGetComponent<Graphic>(out var handleGraphic))
+                return handleGraphic;
+
+            return slider.targetGraphic;
+        }
+
+        private void FlashGraphic(Graphic graphic)
+        {
+            if (graphic == null)
+                return;
+
+            if (!_feedbackOriginalColors.ContainsKey(graphic))
+                _feedbackOriginalColors[graphic] = graphic.color;
+
+            if (_feedbackCoroutines.TryGetValue(graphic, out var existing) && existing != null)
+                StopCoroutine(existing);
+
+            _feedbackCoroutines[graphic] = StartCoroutine(FlashGraphicRoutine(graphic));
+        }
+
+        private IEnumerator FlashGraphicRoutine(Graphic graphic)
+        {
+            var baseColor = _feedbackOriginalColors.TryGetValue(graphic, out var stored)
+                ? stored
+                : graphic.color;
+
+            var duration = Mathf.Max(0.05f, unavailableFlashDuration);
+            var pulses = Mathf.Max(1, unavailableFlashPulses);
+            var elapsed = 0f;
+
+            while (elapsed < duration && graphic != null)
+            {
+                elapsed += Time.unscaledDeltaTime;
+                var t = Mathf.Clamp01(elapsed / duration);
+                var wave = Mathf.Sin(t * Mathf.PI * pulses);
+                var strength = Mathf.Clamp01(wave);
+                graphic.color = Color.Lerp(baseColor, unavailableFlashColor, strength);
+                yield return null;
+            }
+
+            if (graphic != null)
+            {
+                graphic.color = baseColor;
+                _feedbackCoroutines.Remove(graphic);
+                _feedbackOriginalColors.Remove(graphic);
+            }
         }
 
         private static string FormatThousands(long value)

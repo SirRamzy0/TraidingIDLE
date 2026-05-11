@@ -38,7 +38,7 @@ MonoBehaviour:
     priceRubles: 4000000
   - saveId: yachts_and_boats_card_04
     title: "\u0410\u043A\u0441\u043F\u0430\u0440"
-    background: {fileID: 21300000, guid: 18210976a5efb00449593b44eadcf5f6, type: 3}
+    background: {fileID: 21300000, guid: 30f061215691c6f4fadfd8a62d6b037a, type: 3}
     artwork: {fileID: 21300000, guid: a27d1b5a3c5fcab4699057bab959c512, type: 3}
     priceRubles: 40000000
   - saveId: yachts_and_boats_card_05
@@ -53,7 +53,7 @@ MonoBehaviour:
     priceRubles: 180000000
   - saveId: yachts_and_boats_card_07
     title: "\u0424\u0435\u0440\u0440\u0435\u0442\u0442\u0438"
-    background: {fileID: 21300000, guid: 30f061215691c6f4fadfd8a62d6b037a, type: 3}
+    background: {fileID: 21300000, guid: 75f00f6a96c1bb64da30f3f404f04088, type: 3}
     artwork: {fileID: 21300000, guid: eba41de8c9131114fbc5f27371938f36, type: 3}
     priceRubles: 220000000
   - saveId: yachts_and_boats_card_08
@@ -63,7 +63,7 @@ MonoBehaviour:
     priceRubles: 650000000
   - saveId: yachts_and_boats_card_09
     title: "\u0411\u0435\u043D\u0435\u0442\u0442\u0438 \u041E\u0430\u0437\u0438\u0441"
-    background: {fileID: 21300000, guid: 75f00f6a96c1bb64da30f3f404f04088, type: 3}
+    background: {fileID: 21300000, guid: aff2564508024c44d93bc98c16251325, type: 3}
     artwork: {fileID: 21300000, guid: 9f662905a6f75cb45acb5e5378b65aa4, type: 3}
     priceRubles: 2500000000
   - saveId: yachts_and_boats_card_10
