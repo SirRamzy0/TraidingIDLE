@@ -1,4 +1,7 @@
 using UnityEngine;
+#if RedefinePlayerPrefs_yg
+using PlayerPrefs = RedefineYG.PlayerPrefs;
+#endif
 
 namespace TraidingIDLE.Saves
 {

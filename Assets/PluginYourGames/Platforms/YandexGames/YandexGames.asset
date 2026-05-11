@@ -15,7 +15,7 @@ MonoBehaviour:
   nameFull: YandexGamesPlatform
   projectSettings:
     showFirstAdv: 0
-    interAdvInterval: 60
+    interAdvInterval: 300
     postponeCallByFail: 0
     setLanguageMod: 1
     useYandexMetrica: 1

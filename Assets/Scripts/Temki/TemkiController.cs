@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using TMPro;
+using TraidingIDLE.Integrations;
 using TraidingIDLE.Player;
 using TraidingIDLE.Saves;
 using TraidingIDLE.UI;
@@ -239,7 +240,7 @@ namespace TraidingIDLE.Temki
                 resultDialog.ShowSuccess(
                     FormatRubles(item.rewardRubles),
                     ClaimPendingReward,
-                    null);
+                    item.rewardRubles > 0 ? RequestDoublePendingReward : null);
             }
             else
             {
@@ -252,12 +253,30 @@ namespace TraidingIDLE.Temki
 
         private void ClaimPendingReward()
         {
+            ClaimPendingReward(multiplier: 1);
+        }
+
+        private void RequestDoublePendingReward()
+        {
+            if (!IsValidIndex(_pendingDialogIndex))
+                return;
+
+            YandexRewardedAds.Show(YandexRewardedAds.TemkiDoubleRewardId, ClaimDoublePendingReward);
+        }
+
+        private void ClaimDoublePendingReward()
+        {
+            ClaimPendingReward(multiplier: 2);
+        }
+
+        private void ClaimPendingReward(int multiplier)
+        {
             if (!IsValidIndex(_pendingDialogIndex))
                 return;
 
             var item = _runtime[_pendingDialogIndex];
             if (profile != null && item.rewardRubles > 0)
-                profile.AddRubles(item.rewardRubles);
+                profile.AddRubles(ToSaturatedLong(item.rewardRubles * Math.Max(1d, multiplier)));
 
             ResetTemka(item);
             _pendingDialogIndex = -1;

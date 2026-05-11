@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Globalization;
 using TMPro;
 using TraidingIDLE.Currencies;
+using TraidingIDLE.Integrations;
 using TraidingIDLE.Player;
 using TraidingIDLE.Saves;
 using TraidingIDLE.UI;
@@ -441,6 +442,14 @@ namespace TraidingIDLE.Mining
             RefreshAll();
         }
 
+        private void RequestAdSpeedBoostRewarded()
+        {
+            if (_adSpeedTimeLeft > 0f)
+                return;
+
+            YandexRewardedAds.Show(YandexRewardedAds.MiningAdSpeedBoostId, ActivateAdSpeedBoost);
+        }
+
         private void ActivateAdSpeedBoost()
         {
             if (_adSpeedTimeLeft > 0f)
@@ -662,7 +671,7 @@ namespace TraidingIDLE.Mining
                     FormatOne(adSpeedBoostText.descriptionFormat, "На {0}", FormatDuration(adSpeedDurationSeconds)),
                     activeText,
                     !isActive,
-                    ActivateAdSpeedBoost);
+                    RequestAdSpeedBoostRewarded);
             }
 
             if (gemSpeedBoostCard != null)
