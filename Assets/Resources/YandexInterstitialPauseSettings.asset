@@ -12,6 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: c6b7b3d610e94887a1c65e59da06ad30, type: 3}
   m_Name: YandexInterstitialPauseSettings
   m_EditorClassIdentifier: 
-  firstInterstitialDelaySeconds: 10
+  firstInterstitialDelaySeconds: 600
   repeatInterstitialDelaySeconds: 300
-  countdownSeconds: 3
+  countdownSeconds: 5
+  pauseOverlayPrefab: {fileID: 100000, guid: 7d2b6df61d34a1841aa1911e607a41e1, type: 3}

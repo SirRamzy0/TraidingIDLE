@@ -85,6 +85,14 @@ namespace TraidingIDLE.Mining
 
         [Header("Passive links")]
         [SerializeField] private Business.BusinessController? businessPassiveLink;
+        [SerializeField] private bool scaleMiningWithBusinessIncome = true;
+        [Range(0f, 1f)]
+        [SerializeField] private float shtTargetBusinessIncomeShare = 0.06f;
+        [Range(0f, 1f)]
+        [SerializeField] private float ethTargetBusinessIncomeShare = 0.09f;
+        [Range(0f, 1f)]
+        [SerializeField] private float btcTargetBusinessIncomeShare = 0.14f;
+        [SerializeField, Min(1f)] private float maxBusinessMiningCatchUpMultiplier = 6f;
 
         [Header("Top UI")]
         [SerializeField] private TMP_Text totalIncomePerHourText = null!;
@@ -228,9 +236,11 @@ namespace TraidingIDLE.Mining
         private void Awake()
         {
             if (profile == null)
-                profile = FindAnyObjectByType<PlayerProfile>();
+                profile = FindAnyObjectByType<PlayerProfile>(FindObjectsInactive.Include);
             if (market == null)
-                market = FindAnyObjectByType<CurrencyMarket>();
+                market = FindAnyObjectByType<CurrencyMarket>(FindObjectsInactive.Include);
+            if (businessPassiveLink == null)
+                businessPassiveLink = FindAnyObjectByType<Business.BusinessController>(FindObjectsInactive.Include);
 
             EnsureStateArrays();
             LoadFromStorage();
@@ -796,7 +806,59 @@ namespace TraidingIDLE.Mining
         {
             var fromBoost = _coinIncomeTimeLeft > 0f ? Math.Max(1f, coinIncomeMultiplier) : 1d;
             var business = businessPassiveLink != null ? businessPassiveLink.GetMiningIncomeMultiplierFromBusinessSkills() : 1d;
-            return fromBoost * business;
+            var economy = GetBusinessEconomyMiningMultiplier(ActiveCurrency);
+            return fromBoost * business * economy;
+        }
+
+        private double GetBusinessEconomyMiningMultiplier(CurrencyId currency)
+        {
+            if (!scaleMiningWithBusinessIncome || businessPassiveLink == null || market == null)
+                return 1d;
+
+            var businessIncomePerHour = businessPassiveLink.GetTotalEffectiveIncomePerHour();
+            if (businessIncomePerHour <= 0d)
+                return 1d;
+
+            var baseCoinIncomePerHour = 0d;
+            for (var i = 0; i < _rigStateLevels.Length; i++)
+            {
+                if (_rigStateLevels[i] > 0)
+                    baseCoinIncomePerHour += GetRigIncomePerHour(_rigStateLevels[i], currency);
+            }
+
+            if (baseCoinIncomePerHour <= 0d)
+                return 1d;
+
+            var coinPrice = Math.Max(1d, market.GetPrice(currency));
+            var baseRublesPerHour = baseCoinIncomePerHour * coinPrice;
+            var targetRublesPerHour = businessIncomePerHour * GetTargetBusinessIncomeShare(currency);
+            if (targetRublesPerHour <= baseRublesPerHour)
+                return 1d;
+
+            var catchUp = Math.Sqrt(targetRublesPerHour / Math.Max(1d, baseRublesPerHour));
+            return ClampDouble(catchUp, 1d, Math.Max(1f, maxBusinessMiningCatchUpMultiplier));
+        }
+
+        private float GetTargetBusinessIncomeShare(CurrencyId currency)
+        {
+            return currency switch
+            {
+                CurrencyId.SHT => shtTargetBusinessIncomeShare,
+                CurrencyId.ETH => ethTargetBusinessIncomeShare,
+                CurrencyId.BTC => btcTargetBusinessIncomeShare,
+                _ => ethTargetBusinessIncomeShare,
+            };
+        }
+
+        private static double ClampDouble(double value, double min, double max)
+        {
+            if (max < min)
+                (min, max) = (max, min);
+            if (value < min)
+                return min;
+            if (value > max)
+                return max;
+            return value;
         }
 
         private double GetSpeedMultiplier()

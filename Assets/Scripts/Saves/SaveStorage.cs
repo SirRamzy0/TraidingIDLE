@@ -7,10 +7,15 @@ namespace TraidingIDLE.Saves
 {
     public static class SaveStorage
     {
+        private static bool _writesSuspended;
+
         public static bool HasKey(string key) => PlayerPrefs.HasKey(key);
 
         public static void SaveJson<T>(string key, T data) where T : class
         {
+            if (_writesSuspended)
+                return;
+
             if (data == null)
                 return;
 
@@ -45,8 +50,26 @@ namespace TraidingIDLE.Saves
                 PlayerPrefs.DeleteKey(key);
         }
 
+        public static void DeleteAll()
+        {
+            PlayerPrefs.DeleteAll();
+        }
+
+        public static void SuspendWrites()
+        {
+            _writesSuspended = true;
+        }
+
+        public static void ResumeWrites()
+        {
+            _writesSuspended = false;
+        }
+
         public static void Flush()
         {
+            if (_writesSuspended)
+                return;
+
             PlayerPrefs.Save();
         }
     }

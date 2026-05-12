@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Serialization;
 using TraidingIDLE.Currencies;
@@ -109,6 +110,21 @@ namespace TraidingIDLE.UI.Charts
         [Range(0f, 0.35f)]
         [SerializeField] private float wickBalanceRandomness = 0.20f;
 
+        [Header("Long wick accents")]
+        [Tooltip("Scales regular wick length. Long wick accents still use their own multiplier.")]
+        [Range(0.25f, 1f)]
+        [SerializeField] private float regularWickScale = 0.55f;
+        [Range(0f, 0.20f)]
+        [SerializeField] private float longUpperWickChance = 0.045f;
+        [Range(0f, 0.20f)]
+        [SerializeField] private float longLowerWickChance = 0.045f;
+        [Range(0f, 0.10f)]
+        [SerializeField] private float longBothWicksChance = 0.012f;
+        [Range(1f, 8f)]
+        [SerializeField] private float longWickMultiplierMin = 2.8f;
+        [Range(1f, 8f)]
+        [SerializeField] private float longWickMultiplierMax = 4.8f;
+
         [Header("Per-currency candle readability")]
         [Range(0.5f, 2.5f)]
         [SerializeField] private float shtCandleVisualRangeMultiplier = 1.45f;
@@ -119,6 +135,7 @@ namespace TraidingIDLE.UI.Charts
 
         private readonly PriceHistoryBuffer _history = new();
         private readonly CandleHistoryBuffer _candles = new();
+        private readonly Dictionary<CurrencyId, CandleSnapshot> _candleSnapshots = new();
         private UICandlestickChartGraphic.Candle01[] _candles01 = new UICandlestickChartGraphic.Candle01[50];
         private float _viewMin;
         private float _viewMax;
@@ -126,7 +143,17 @@ namespace TraidingIDLE.UI.Charts
         private float _currentPrice;
         private bool _hasViewport;
         private bool _receivedLivePrice;
+        private int _candleSequenceIndex;
         private int _seed;
+
+        private sealed class CandleSnapshot
+        {
+            public CandleHistoryBuffer.Candle[] candles = System.Array.Empty<CandleHistoryBuffer.Candle>();
+            public int count;
+            public float currentPrice;
+            public bool receivedLivePrice;
+            public int candleSequenceIndex;
+        }
 
         public event System.Action<float, float>? ViewportChanged;
         public event System.Action<float>? CurrentPriceChanged;
@@ -170,6 +197,8 @@ namespace TraidingIDLE.UI.Charts
 
         private void OnDisable()
         {
+            SaveCandleSnapshot(currency);
+
             if (market != null)
             {
                 market.PriceChanged -= OnPriceChanged;
@@ -185,6 +214,7 @@ namespace TraidingIDLE.UI.Charts
             if (id != currency)
                 return;
 
+            _candleSnapshots.Remove(id);
             SeedFromStoreOrCurrentPrice();
         }
 
@@ -199,6 +229,12 @@ namespace TraidingIDLE.UI.Charts
             wickLengthJitter01 = Mathf.Clamp01(wickLengthJitter01);
             wickAsymmetry01 = Mathf.Clamp01(wickAsymmetry01);
             wickBalanceRandomness = Mathf.Clamp01(wickBalanceRandomness);
+            regularWickScale = Mathf.Clamp(regularWickScale, 0.25f, 1f);
+            longUpperWickChance = Mathf.Clamp(longUpperWickChance, 0f, 0.20f);
+            longLowerWickChance = Mathf.Clamp(longLowerWickChance, 0f, 0.20f);
+            longBothWicksChance = Mathf.Clamp(longBothWicksChance, 0f, 0.10f);
+            longWickMultiplierMin = Mathf.Clamp(longWickMultiplierMin, 1f, 8f);
+            longWickMultiplierMax = Mathf.Clamp(longWickMultiplierMax, longWickMultiplierMin, 8f);
             shtMinViewportRangeFromPrice01 = Mathf.Max(0f, shtMinViewportRangeFromPrice01);
             ethMinViewportRangeFromPrice01 = Mathf.Max(0f, ethMinViewportRangeFromPrice01);
             btcMinViewportRangeFromPrice01 = Mathf.Max(0f, btcMinViewportRangeFromPrice01);
@@ -219,11 +255,13 @@ namespace TraidingIDLE.UI.Charts
             if (!followActiveCurrency)
                 return;
 
+            SaveCandleSnapshot(currency);
             currency = id;
             _history.Clear();
             _candles.Clear();
             _hasViewport = false;
             _receivedLivePrice = false;
+            _candleSequenceIndex = 0;
             SeedFromStoreOrCurrentPrice();
         }
 
@@ -254,10 +292,11 @@ namespace TraidingIDLE.UI.Charts
             _history.Push(price);
 
             var prevClose = _candles.Count > 0 ? _candles[_candles.Count - 1].close : prev;
-            _candles.Push(BuildCandle(prev, price, prevClose, _candles.Count));
+            _candles.Push(BuildCandle(prev, price, prevClose, _candleSequenceIndex++));
 
             UpdateViewport(price);
             Render();
+            SaveCandleSnapshot(currency);
         }
 
         private void SeedWithCurrentPrice()
@@ -271,6 +310,9 @@ namespace TraidingIDLE.UI.Charts
 
         private void SeedFromStoreOrCurrentPrice()
         {
+            if (TryRestoreCandleSnapshot(currency))
+                return;
+
             if (priceHistoryStore != null && priceHistoryStore.TryGet(currency, out var saved) && saved.Count >= 2)
             {
                 SeedFromHistory(saved);
@@ -280,10 +322,11 @@ namespace TraidingIDLE.UI.Charts
             SeedWithCurrentPrice();
         }
 
-        private void SeedFromHistory(System.Collections.Generic.IReadOnlyList<float> saved)
+        private void SeedFromHistory(IReadOnlyList<float> saved)
         {
             _history.Clear();
             _candles.Clear();
+            _candleSequenceIndex = 0;
             if (_history.Capacity != historySize + 1)
                 _history.SetCapacity(historySize + 1);
             if (_candles.Capacity != historySize)
@@ -295,17 +338,15 @@ namespace TraidingIDLE.UI.Charts
             _history.Push(first);
 
             var prevClose = first;
-            var index = 0;
             for (var i = start + 1; i < saved.Count; i++)
             {
                 var open = prevClose;
                 var close = Mathf.Max(0.000001f, saved[i]);
                 _history.Push(close);
 
-                var candle = BuildCandle(open, close, prevClose, index);
+                var candle = BuildCandle(open, close, prevClose, _candleSequenceIndex++);
                 _candles.Push(candle);
                 prevClose = candle.close;
-                index++;
             }
 
             _currentPrice = prevClose;
@@ -314,6 +355,7 @@ namespace TraidingIDLE.UI.Charts
 
             UpdateViewport(prevClose, force: true);
             Render();
+            SaveCandleSnapshot(currency);
         }
 
         private void SeedAroundPrice(float price)
@@ -323,6 +365,7 @@ namespace TraidingIDLE.UI.Charts
 
             _history.Clear();
             _candles.Clear();
+            _candleSequenceIndex = 0;
             if (_history.Capacity != historySize + 1)
                 _history.SetCapacity(historySize + 1);
             if (_candles.Capacity != historySize)
@@ -349,11 +392,119 @@ namespace TraidingIDLE.UI.Charts
 
                 _history.Push(close);
                 var prevClose = i > 0 ? _candles[i - 1].close : open;
-                _candles.Push(BuildCandle(open, close, prevClose, i));
+                _candles.Push(BuildCandle(open, close, prevClose, _candleSequenceIndex++));
             }
 
             UpdateViewport(close, force: true);
             Render();
+            SaveCandleSnapshot(currency);
+        }
+
+        private void SaveCandleSnapshot(CurrencyId id)
+        {
+            if (_candles.Count <= 0)
+                return;
+
+            if (!_candleSnapshots.TryGetValue(id, out var snapshot))
+            {
+                snapshot = new CandleSnapshot();
+                _candleSnapshots[id] = snapshot;
+            }
+
+            if (snapshot.candles == null || snapshot.candles.Length != historySize)
+                snapshot.candles = new CandleHistoryBuffer.Candle[historySize];
+
+            snapshot.count = _candles.CopyTo(snapshot.candles);
+            snapshot.currentPrice = _currentPrice;
+            snapshot.receivedLivePrice = _receivedLivePrice;
+            snapshot.candleSequenceIndex = _candleSequenceIndex;
+        }
+
+        private bool TryRestoreCandleSnapshot(CurrencyId id)
+        {
+            if (!_candleSnapshots.TryGetValue(id, out var snapshot) || snapshot.count <= 0 || snapshot.candles == null)
+                return false;
+
+            var count = System.Math.Min(snapshot.count, System.Math.Min(snapshot.candles.Length, historySize));
+            if (count <= 0)
+                return false;
+
+            var savedStartIndex = -1;
+            IReadOnlyList<float>? saved = null;
+            if (priceHistoryStore != null && priceHistoryStore.TryGet(id, out saved) && saved.Count >= 2)
+            {
+                var snapshotLastClose = snapshot.candles[count - 1].close;
+                if (!TryFindPriceIndexFromEnd(saved, snapshotLastClose, out savedStartIndex))
+                    return false;
+            }
+
+            _history.Clear();
+            _candles.Clear();
+            _candleSequenceIndex = 0;
+            if (_history.Capacity != historySize + 1)
+                _history.SetCapacity(historySize + 1);
+            if (_candles.Capacity != historySize)
+                _candles.SetCapacity(historySize);
+
+            _history.Push(Mathf.Max(0.000001f, snapshot.candles[0].open));
+            for (var i = 0; i < count; i++)
+            {
+                var candle = snapshot.candles[i];
+                _candles.Push(candle);
+                _history.Push(Mathf.Max(0.000001f, candle.close));
+            }
+
+            _candleSequenceIndex = Mathf.Max(snapshot.candleSequenceIndex, _candles.Count);
+
+            if (saved != null && savedStartIndex >= 0)
+                AppendSavedPrices(saved, savedStartIndex + 1);
+
+            _currentPrice = _history.Count > 0
+                ? _history[_history.Count - 1]
+                : snapshot.currentPrice > 0f
+                    ? snapshot.currentPrice
+                    : _candles[_candles.Count - 1].close;
+            _receivedLivePrice = snapshot.receivedLivePrice;
+            CurrentPriceChanged?.Invoke(_currentPrice);
+
+            UpdateViewport(_currentPrice, force: true);
+            Render();
+            SaveCandleSnapshot(id);
+            return true;
+        }
+
+        private void AppendSavedPrices(IReadOnlyList<float> saved, int startIndex)
+        {
+            for (var i = Mathf.Max(0, startIndex); i < saved.Count; i++)
+            {
+                var price = Mathf.Max(0.000001f, saved[i]);
+                var prev = _history.Count > 0 ? _history[_history.Count - 1] : price;
+                var prevClose = _candles.Count > 0 ? _candles[_candles.Count - 1].close : prev;
+
+                _history.Push(price);
+                _candles.Push(BuildCandle(prev, price, prevClose, _candleSequenceIndex++));
+            }
+        }
+
+        private static bool TryFindPriceIndexFromEnd(IReadOnlyList<float> prices, float target, out int index)
+        {
+            for (var i = prices.Count - 1; i >= 0; i--)
+            {
+                if (ApproximatelySamePrice(prices[i], target))
+                {
+                    index = i;
+                    return true;
+                }
+            }
+
+            index = -1;
+            return false;
+        }
+
+        private static bool ApproximatelySamePrice(float a, float b)
+        {
+            var tolerance = Mathf.Max(0.0001f, Mathf.Max(Mathf.Abs(a), Mathf.Abs(b)) * 0.00001f);
+            return Mathf.Abs(a - b) <= tolerance;
         }
 
         private void UpdateViewport(float latestPrice, bool force = false)
@@ -616,7 +767,7 @@ namespace TraidingIDLE.UI.Charts
             var low = Mathf.Min(absOpen, absClose, realClose);
 
             // Most candles keep short readable wicks; long wick profiles are occasional accents.
-            var minWick = visualReferenceRange * minCandleWickFromViewport01 * visualRangeMultiplier;
+            var minWick = visualReferenceRange * minCandleWickFromViewport01 * visualRangeMultiplier * regularWickScale;
             var smallWick = Mathf.Max(
                 minWick,
                 Mathf.Abs(absClose - absOpen) * candleWickNoise01 * 0.35f);
@@ -626,24 +777,29 @@ namespace TraidingIDLE.UI.Charts
             var upWick = commonWick * balance;
             var downWick = commonWick / balance;
             var profile = r5;
+            var longUpperThreshold = longUpperWickChance;
+            var longLowerThreshold = longUpperThreshold + longLowerWickChance;
+            var longBothThreshold = longLowerThreshold + longBothWicksChance;
+            var longMultiplierA = Mathf.Lerp(longWickMultiplierMin, longWickMultiplierMax, r6);
+            var longMultiplierB = Mathf.Lerp(longWickMultiplierMin, longWickMultiplierMax, r1);
 
-            if (profile < 0.10f)
+            if (profile < longUpperThreshold)
             {
                 // Long upper wick, lower stays modest.
-                upWick = commonWick * Mathf.Lerp(2f, 3f, r6);
+                upWick = commonWick * longMultiplierA;
                 downWick = commonWick * Mathf.Lerp(0.80f, 1.15f, r2);
             }
-            else if (profile < 0.20f)
+            else if (profile < longLowerThreshold)
             {
                 // Long lower wick, upper stays modest.
                 upWick = commonWick * Mathf.Lerp(0.80f, 1.15f, r1);
-                downWick = commonWick * Mathf.Lerp(2f, 3f, r6);
+                downWick = commonWick * longMultiplierA;
             }
-            else if (profile < 0.26f)
+            else if (profile < longBothThreshold)
             {
                 // Rare: both wicks are long.
-                upWick = commonWick * Mathf.Lerp(1.8f, 2.7f, r1);
-                downWick = commonWick * Mathf.Lerp(1.8f, 2.7f, r2);
+                upWick = commonWick * longMultiplierA;
+                downWick = commonWick * longMultiplierB;
             }
 
             high += upWick;

@@ -62,6 +62,18 @@ namespace TraidingIDLE.UI.Charts
             _start = (_start + 1) % capacity;
         }
 
+        public int CopyTo(Candle[] destination)
+        {
+            if (destination == null)
+                return 0;
+
+            var copy = Mathf.Min(_count, destination.Length);
+            for (var i = 0; i < copy; i++)
+                destination[i] = this[i];
+
+            return copy;
+        }
+
         public Candle this[int index]
         {
             get
@@ -101,4 +113,3 @@ namespace TraidingIDLE.UI.Charts
         }
     }
 }
-

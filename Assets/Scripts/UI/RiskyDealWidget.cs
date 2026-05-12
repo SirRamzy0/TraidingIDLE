@@ -1,6 +1,8 @@
 using System;
 using System.Globalization;
 using TMPro;
+using TraidingIDLE.Business;
+using TraidingIDLE.Currencies;
 using TraidingIDLE.Player;
 using TraidingIDLE.Saves;
 using UnityEngine;
@@ -21,6 +23,8 @@ namespace TraidingIDLE.UI
 
         [Header("Refs")]
         [SerializeField] private PlayerProfile profile = null!;
+        [SerializeField] private CurrencyMarket market = null!;
+        [SerializeField] private BusinessController businessProgressLink = null!;
 
         [Header("Dialogs (roots)")]
         [SerializeField] private GameObject dealOfferDialog = null!;
@@ -74,6 +78,19 @@ namespace TraidingIDLE.UI
 
         [SerializeField, Min(0)] private long stakeMinRubles = 100_000;
         [SerializeField, Min(0)] private long stakeMaxRubles = 5_000_000;
+
+        [Header("Adaptive stake")]
+        [SerializeField] private bool useAdaptiveStake = true;
+        [SerializeField, Min(0)] private long adaptiveStakeHardMinRubles = 5_000;
+        [SerializeField, Min(0)] private long adaptiveStakeHardMaxRubles = 150_000_000;
+        [SerializeField, Min(0)] private long noIncomeStakeMinRubles = 5_000;
+        [SerializeField, Min(0)] private long noIncomeStakeMaxRubles = 8_000;
+        [SerializeField, Min(0f)] private float incomeStakeMinSeconds = 20f;
+        [SerializeField, Min(0f)] private float incomeStakeMaxSeconds = 180f;
+        [Range(0f, 1f)]
+        [SerializeField] private float portfolioStakeMin01 = 0.008f;
+        [Range(0f, 1f)]
+        [SerializeField] private float portfolioStakeMax01 = 0.030f;
 
         [Header("Payout multipliers")]
         [Tooltip("If player placed a bet, payout multiplier is picked as: x2(50%), x3(30%), x5(20%).")]
@@ -131,7 +148,11 @@ namespace TraidingIDLE.UI
         private void Awake()
         {
             if (profile == null)
-                profile = FindFirstObjectByType<PlayerProfile>();
+                profile = FindAnyObjectByType<PlayerProfile>(FindObjectsInactive.Include);
+            if (market == null)
+                market = FindAnyObjectByType<CurrencyMarket>(FindObjectsInactive.Include);
+            if (businessProgressLink == null)
+                businessProgressLink = FindAnyObjectByType<BusinessController>(FindObjectsInactive.Include);
 
             CacheButtonLabelsIfNeeded();
             ResetOfferBetButtonLabel();
@@ -476,6 +497,9 @@ namespace TraidingIDLE.UI
 
         private long RollStake()
         {
+            if (useAdaptiveStake && TryRollAdaptiveStake(out var adaptiveStake))
+                return adaptiveStake;
+
             var min = Math.Min(stakeMinRubles, stakeMaxRubles);
             var max = Math.Max(stakeMinRubles, stakeMaxRubles);
             if (max <= 0)
@@ -490,14 +514,100 @@ namespace TraidingIDLE.UI
             return QuantizeStakeToStep(Math.Max(0, rolled));
         }
 
+        private bool TryRollAdaptiveStake(out long stake)
+        {
+            stake = 0;
+            if (profile == null)
+                return false;
+
+            var incomePerHour = businessProgressLink != null
+                ? Math.Max(0d, businessProgressLink.GetTotalEffectiveIncomePerHour())
+                : 0d;
+            var portfolioValue = GetLiquidPortfolioValueRubles();
+            var incomePerSecond = incomePerHour / 3600d;
+
+            double min;
+            double max;
+            if (incomePerHour > 0d)
+            {
+                min = Math.Max(incomePerSecond * incomeStakeMinSeconds, portfolioValue * portfolioStakeMin01);
+                max = Math.Max(incomePerSecond * incomeStakeMaxSeconds, portfolioValue * portfolioStakeMax01);
+            }
+            else
+            {
+                min = Math.Max(noIncomeStakeMinRubles, portfolioValue * portfolioStakeMin01);
+                max = Math.Max(Math.Max(noIncomeStakeMinRubles, noIncomeStakeMaxRubles), portfolioValue * portfolioStakeMax01);
+            }
+
+            var hardMin = Math.Max(0, adaptiveStakeHardMinRubles);
+            var hardMax = Math.Max(hardMin, adaptiveStakeHardMaxRubles);
+
+            min = ClampDouble(min, hardMin, hardMax);
+            max = ClampDouble(max, min, hardMax);
+
+            if (max <= 0d)
+                return false;
+
+            var rolled = min + (max - min) * UnityEngine.Random.value;
+            stake = QuantizeStakeToStep((long)Math.Round(rolled));
+
+            return stake > 0;
+        }
+
+        private double GetLiquidPortfolioValueRubles()
+        {
+            if (profile == null)
+                return 0d;
+
+            double total = Math.Max(0, profile.Rubles);
+            if (market == null)
+                return total;
+
+            total += GetCoinValueRubles(CurrencyId.SHT);
+            total += GetCoinValueRubles(CurrencyId.ETH);
+            total += GetCoinValueRubles(CurrencyId.BTC);
+            return total;
+        }
+
+        private double GetCoinValueRubles(CurrencyId id)
+        {
+            if (profile == null || market == null)
+                return 0d;
+
+            var amount = Math.Max(0, profile.GetAmount(id));
+            if (amount <= 0)
+                return 0d;
+
+            return amount * Math.Max(1d, market.GetPrice(id));
+        }
+
+        private static double ClampDouble(double value, double min, double max)
+        {
+            if (max < min)
+                (min, max) = (max, min);
+            if (value < min)
+                return min;
+            if (value > max)
+                return max;
+            return value;
+        }
+
         private static long QuantizeStakeToStep(long value)
         {
-            const long StakeStep = 20_000;
             if (value <= 0)
                 return 0;
 
-            var quantized = (long)Math.Round((double)value / StakeStep) * StakeStep;
-            return Math.Max(StakeStep, quantized);
+            var stakeStep = value switch
+            {
+                < 50_000 => 1_000,
+                < 200_000 => 5_000,
+                < 2_000_000 => 20_000,
+                < 20_000_000 => 100_000,
+                _ => 1_000_000,
+            };
+
+            var quantized = (long)Math.Round((double)value / stakeStep) * stakeStep;
+            return Math.Max(stakeStep, quantized);
         }
 
         private float RollChance01()

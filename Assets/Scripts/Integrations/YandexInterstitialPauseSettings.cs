@@ -14,6 +14,9 @@ namespace TraidingIDLE.Integrations
         [Min(1f)] public float repeatInterstitialDelaySeconds = 300f;
         [Min(1)] public int countdownSeconds = 3;
 
+        [Header("Pause overlay")]
+        public GameObject pauseOverlayPrefab;
+
         public float FirstInterstitialDelaySeconds => Mathf.Max(1f, firstInterstitialDelaySeconds);
         public float RepeatInterstitialDelaySeconds => Mathf.Max(1f, repeatInterstitialDelaySeconds);
         public int CountdownSeconds => Mathf.Max(1, countdownSeconds);

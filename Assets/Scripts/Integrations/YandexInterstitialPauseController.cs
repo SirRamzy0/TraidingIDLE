@@ -8,8 +8,10 @@ namespace TraidingIDLE.Integrations
 {
     public sealed class YandexInterstitialPauseController : MonoBehaviour
     {
+        private const string DefaultOverlayResourceName = "YandexInterstitialPauseOverlay";
+
         private YandexInterstitialPauseSettings _settings;
-        private Canvas _canvas;
+        private GameObject _overlayInstance;
         private TMP_Text _messageText;
         private float _nextInterstitialTime;
         private bool _waitingForAd;
@@ -120,12 +122,55 @@ namespace TraidingIDLE.Integrations
 
         private void CreateOverlay()
         {
+            var prefab = _settings != null && _settings.pauseOverlayPrefab != null
+                ? _settings.pauseOverlayPrefab
+                : Resources.Load<GameObject>(DefaultOverlayResourceName);
+
+            if (prefab != null)
+            {
+                _overlayInstance = Instantiate(prefab, transform, false);
+                _overlayInstance.name = prefab.name;
+
+                var canvas = _overlayInstance.GetComponentInChildren<Canvas>(true);
+                if (canvas != null)
+                    canvas.sortingOrder = short.MaxValue;
+
+                _messageText = FindMessageText(_overlayInstance.transform);
+                return;
+            }
+
+            CreateFallbackOverlay();
+        }
+
+        private static TMP_Text FindMessageText(Transform root)
+        {
+            if (root == null)
+                return null;
+
+            var children = root.GetComponentsInChildren<Transform>(true);
+            for (var i = 0; i < children.Length; i++)
+            {
+                var child = children[i];
+                if (child == null || child.name != "Message")
+                    continue;
+
+                var text = child.GetComponent<TMP_Text>();
+                if (text != null)
+                    return text;
+            }
+
+            return root.GetComponentInChildren<TMP_Text>(true);
+        }
+
+        private void CreateFallbackOverlay()
+        {
             var canvasGo = new GameObject("InterstitialPauseOverlay", typeof(Canvas), typeof(CanvasScaler), typeof(GraphicRaycaster));
             canvasGo.transform.SetParent(transform, false);
+            _overlayInstance = canvasGo;
 
-            _canvas = canvasGo.GetComponent<Canvas>();
-            _canvas.renderMode = RenderMode.ScreenSpaceOverlay;
-            _canvas.sortingOrder = short.MaxValue;
+            var canvas = canvasGo.GetComponent<Canvas>();
+            canvas.renderMode = RenderMode.ScreenSpaceOverlay;
+            canvas.sortingOrder = short.MaxValue;
 
             var scaler = canvasGo.GetComponent<CanvasScaler>();
             scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
@@ -158,14 +203,14 @@ namespace TraidingIDLE.Integrations
 
         private void ShowOverlay()
         {
-            if (_canvas != null)
-                _canvas.gameObject.SetActive(true);
+            if (_overlayInstance != null)
+                _overlayInstance.SetActive(true);
         }
 
         private void HideOverlay()
         {
-            if (_canvas != null)
-                _canvas.gameObject.SetActive(false);
+            if (_overlayInstance != null)
+                _overlayInstance.SetActive(false);
         }
 
         private void SetMessage(int secondsLeft)
@@ -173,7 +218,7 @@ namespace TraidingIDLE.Integrations
             if (_messageText == null)
                 return;
 
-            _messageText.text = $"игра приостановлена, вам будет показана реклама через {secondsLeft} сек";
+            _messageText.text = $"Игра приостановлена. Реклама через {secondsLeft} сек";
         }
     }
 }

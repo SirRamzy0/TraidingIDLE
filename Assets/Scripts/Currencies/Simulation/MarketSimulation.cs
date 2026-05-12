@@ -3,7 +3,9 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using UnityEngine;
+using TraidingIDLE.Business;
 using TraidingIDLE.Currencies;
+using TraidingIDLE.Player;
 
 namespace TraidingIDLE.Currencies.Simulation
 {
@@ -229,6 +231,7 @@ namespace TraidingIDLE.Currencies.Simulation
 
             public float starterAssistTimeLeft;
             public float starterAssistElapsed;
+            public float economyPriceTarget;
 
             public int seed;
             public float time;
@@ -237,6 +240,8 @@ namespace TraidingIDLE.Currencies.Simulation
         [Header("Target market")]
         [SerializeField] private CurrencyMarket market = null!;
         [SerializeField] private PriceHistoryStore? priceHistoryStore = null;
+        [SerializeField] private PlayerProfile? playerProfile = null;
+        [SerializeField] private BusinessController? businessProgressLink = null;
         [SerializeField] private bool useCurrencyMarketPricesOnStart = false;
         [Tooltip("On first launch (no saved history), warm up each coin by running this many ticks so the chart isn't empty.")]
         [SerializeField, Min(0)] private int initialHistoryWarmupTicks = 50;
@@ -789,6 +794,19 @@ namespace TraidingIDLE.Currencies.Simulation
         [SerializeField] private float btcGlobalGrowthMultiplier = 0.70f;
         [Range(0f, 1f)]
         [SerializeField] private float globalGrowthNoiseStrength = 0.20f;
+        [Tooltip("Softly raises coin price corridors when business income grows, so trading remains worth attention later.")]
+        [SerializeField] private bool scaleMarketWithBusinessIncome = true;
+        [SerializeField, Min(0.5f)] private float economyTargetRefreshSeconds = 5f;
+        [Min(0)]
+        [SerializeField] private double businessIncomeIgnoredBelowRublesPerHour = 100_000d;
+        [Range(0f, 0.95f)]
+        [SerializeField] private float economyCorridorCatchUpPerMinute01 = 0.55f;
+        [Range(0f, 3f)]
+        [SerializeField] private float shtTargetExposureHours = 0.22f;
+        [Range(0f, 3f)]
+        [SerializeField] private float ethTargetExposureHours = 0.90f;
+        [Range(0f, 3f)]
+        [SerializeField] private float btcTargetExposureHours = 1.75f;
 
         [Header("SHT action assist")]
         [SerializeField] private bool useShtStarterAssist = true;
@@ -807,6 +825,16 @@ namespace TraidingIDLE.Currencies.Simulation
         [SerializeField] private float shtStarterAssistReboundPerMinute01 = 2.20f;
         [Range(0f, 1f)]
         [SerializeField] private float shtStarterAssistDownMoveDamping = 0.45f;
+        [Tooltip("Extra protection for the first minutes of a save: avoids the player buying SHT and being stuck with nothing to do.")]
+        [SerializeField] private bool useEarlyPlayerShtAssist = true;
+        [Min(0)]
+        [SerializeField] private long earlyAssistRublesThreshold = 250_000;
+        [Min(0)]
+        [SerializeField] private double earlyAssistBusinessIncomeThresholdPerHour = 100_000d;
+        [Range(0f, 1f)]
+        [SerializeField] private float earlyAssistDownMoveDamping = 0.72f;
+        [Range(0f, 5f)]
+        [SerializeField] private float earlyAssistReboundMultiplier = 1.75f;
 
         [Header("Balance simulation")]
         [SerializeField, Min(1)] private int balanceSimulationRuns = 24;
@@ -837,6 +865,8 @@ namespace TraidingIDLE.Currencies.Simulation
         private bool _balanceSimulationInProgress;
         private double _lastRealtimeUtcSeconds;
         private bool _resumeCatchUpPending;
+        private float _economyTargetRefreshTimer;
+        private double _cachedBusinessIncomePerHour;
 
         private void Awake()
         {
@@ -847,6 +877,10 @@ namespace TraidingIDLE.Currencies.Simulation
                 priceHistoryStore = GetComponent<PriceHistoryStore>();
             if (priceHistoryStore == null)
                 priceHistoryStore = FindFirstObjectByType<PriceHistoryStore>();
+            if (playerProfile == null)
+                playerProfile = FindAnyObjectByType<PlayerProfile>(FindObjectsInactive.Include);
+            if (businessProgressLink == null)
+                businessProgressLink = FindAnyObjectByType<BusinessController>(FindObjectsInactive.Include);
         }
 
         private void Start()
@@ -898,6 +932,7 @@ namespace TraidingIDLE.Currencies.Simulation
                     market.SetPrice(cfg.id, r.visiblePrice);
             }
 
+            RefreshEconomyPriceTargets(force: true);
             SanitizeStoredHistoryFloors();
             WarmupHistoryIfNeeded();
             ActivateShtStarterAssistIfNeeded(loadedFromSave);
@@ -1054,8 +1089,14 @@ namespace TraidingIDLE.Currencies.Simulation
             if (dt <= 0f)
                 return;
 
+            RefreshEconomyPriceTargets(dt);
             foreach (var kv in _runtime)
                 AdvanceRuntime(kv.Value, dt);
+        }
+
+        public void RefreshEconomyScaleNow()
+        {
+            RefreshEconomyPriceTargets(force: true);
         }
 
         private void OnApplicationPause(bool pause)
@@ -1169,6 +1210,8 @@ namespace TraidingIDLE.Currencies.Simulation
                 ForceCrashIfThresholdReached(r);
             }
 
+            ApplyEconomyCorridorShift(r, dt);
+
             var nextRaw = SimulateNextRawPrice(r, dt);
             nextRaw = ApplyShtStarterAssist(r, nextRaw, dt);
             nextRaw = ApplyGlobalMarketGrowth(r, nextRaw, dt);
@@ -1276,6 +1319,216 @@ namespace TraidingIDLE.Currencies.Simulation
             return nextRaw + drift;
         }
 
+        private void RefreshEconomyPriceTargets(float dt = 0f, bool force = false)
+        {
+            if (!scaleMarketWithBusinessIncome)
+            {
+                _cachedBusinessIncomePerHour = 0d;
+                foreach (var kv in _runtime)
+                    kv.Value.economyPriceTarget = 0f;
+                return;
+            }
+
+            _economyTargetRefreshTimer -= Mathf.Max(0f, dt);
+            if (!force && _economyTargetRefreshTimer > 0f)
+                return;
+
+            _economyTargetRefreshTimer = Mathf.Max(0.5f, economyTargetRefreshSeconds);
+            ResolveEconomyLinksIfNeeded();
+            _cachedBusinessIncomePerHour = businessProgressLink != null
+                ? Math.Max(0d, businessProgressLink.GetTotalEffectiveIncomePerHour())
+                : 0d;
+
+            foreach (var kv in _runtime)
+            {
+                var r = kv.Value;
+                r.economyPriceTarget = CalculateEconomyPriceTarget(r.config, _cachedBusinessIncomePerHour);
+
+                if (IsBelowEconomyTargetZone(r))
+                    QueueEconomyRecoveryState(r);
+            }
+        }
+
+        private void ResolveEconomyLinksIfNeeded()
+        {
+            if (playerProfile == null)
+                playerProfile = FindAnyObjectByType<PlayerProfile>(FindObjectsInactive.Include);
+            if (businessProgressLink == null)
+                businessProgressLink = FindAnyObjectByType<BusinessController>(FindObjectsInactive.Include);
+        }
+
+        private float CalculateEconomyPriceTarget(CoinSimulationConfig cfg, double incomePerHour)
+        {
+            if (cfg == null || incomePerHour <= Math.Max(0d, businessIncomeIgnoredBelowRublesPerHour))
+                return 0f;
+
+            var cap = playerProfile != null ? Math.Max(1, playerProfile.GetCap(cfg.id)) : GetDefaultTradingCap(cfg.id);
+            var capDivisor = GetEconomyTargetCapDivisor(cfg.id, cap);
+            var exposureHours = GetBusinessTargetExposureHours(cfg.id);
+            if (exposureHours <= 0f || capDivisor <= 0d)
+                return 0f;
+
+            var target = incomePerHour * exposureHours / capDivisor;
+            if (double.IsNaN(target) || double.IsInfinity(target) || target <= 0d)
+                return 0f;
+
+            return ClampToPlayableFloor(cfg, (float)Math.Min(target, float.MaxValue));
+        }
+
+        private static double GetEconomyTargetCapDivisor(CurrencyId id, int currentCap)
+        {
+            var baseCap = Math.Max(1, GetDefaultTradingCap(id));
+            var cap = Math.Max(1, currentCap);
+            return Math.Sqrt(baseCap * cap);
+        }
+
+        private void ApplyEconomyCorridorShift(CoinRuntime r, float dt)
+        {
+            if (!scaleMarketWithBusinessIncome || r.economyPriceTarget <= 0f || dt <= 0f)
+                return;
+
+            var target = Mathf.Max(GetPlayablePriceFloor(r.config), r.economyPriceTarget);
+            var catchUp = 1f - Mathf.Pow(
+                1f - Mathf.Clamp01(economyCorridorCatchUpPerMinute01),
+                dt / 60f);
+            catchUp *= GetEconomyCorridorStateMultiplier(r.currentState);
+
+            if (target < r.corridorAnchor)
+                catchUp *= 0.35f;
+
+            r.corridorAnchor = Mathf.Lerp(r.corridorAnchor, target, Mathf.Clamp01(catchUp));
+            RebuildCorridor(r, r.rawPrice, force: false);
+        }
+
+        private static float GetEconomyCorridorStateMultiplier(MarketStateType state)
+        {
+            return state switch
+            {
+                MarketStateType.MarketCrash => 0.16f,
+                MarketStateType.LongDowntrend => 0.35f,
+                MarketStateType.StairDown => 0.35f,
+                MarketStateType.SlowUpThenDump => 0.42f,
+                MarketStateType.DeadFlatThenRocketDump => 0.28f,
+                MarketStateType.BusinessSkillPumpDump => 0f,
+                MarketStateType.LowRangeRecovery => 1.55f,
+                MarketStateType.StairUp => 1.30f,
+                MarketStateType.LongUptrend => 1.22f,
+                MarketStateType.AccumulationRun => 1.25f,
+                _ => 1f,
+            };
+        }
+
+        private void QueueEconomyRecoveryState(CoinRuntime r)
+        {
+            if (r.currentState == MarketStateType.BusinessSkillPumpDump || IsEconomyRecoveryState(r.currentState))
+                return;
+
+            if (r.plan.Count > 0 && IsEconomyRecoveryState(r.plan.Peek().type))
+            {
+                r.stateTimeLeft = Mathf.Min(r.stateTimeLeft, GetEconomyRecoverySwitchDelay(r.config.id));
+                return;
+            }
+
+            var nextType = PickEconomyRecoveryState(r);
+            var planned = new PlannedState
+            {
+                type = nextType,
+                durationSeconds = PickStateDuration(r.config, nextType),
+            };
+
+            var existing = r.plan.ToArray();
+            r.plan.Clear();
+            r.plan.Enqueue(planned);
+            for (var i = 0; i < existing.Length && r.plan.Count < Mathf.Max(1, r.config.plannedStatesCount); i++)
+                r.plan.Enqueue(existing[i]);
+
+            r.stateTimeLeft = Mathf.Min(r.stateTimeLeft, GetEconomyRecoverySwitchDelay(r.config.id));
+        }
+
+        private static float GetEconomyRecoverySwitchDelay(CurrencyId id)
+        {
+            return id switch
+            {
+                CurrencyId.SHT => 4f,
+                CurrencyId.ETH => 7f,
+                CurrencyId.BTC => 12f,
+                _ => 8f,
+            };
+        }
+
+        private bool IsBelowEconomyTargetZone(CoinRuntime r)
+        {
+            if (r == null || r.economyPriceTarget <= 0f)
+                return false;
+
+            return r.rawPrice < r.economyPriceTarget * GetEconomyUndervalueThreshold(r.config.id);
+        }
+
+        private static float GetEconomyUndervalueThreshold(CurrencyId id)
+        {
+            return id switch
+            {
+                CurrencyId.SHT => 0.72f,
+                CurrencyId.ETH => 0.62f,
+                CurrencyId.BTC => 0.54f,
+                _ => 0.60f,
+            };
+        }
+
+        private static bool IsEconomyRecoveryState(MarketStateType state)
+        {
+            return state is MarketStateType.LowRangeRecovery
+                or MarketStateType.StairUp
+                or MarketStateType.LongUptrend
+                or MarketStateType.CompressionBreakout
+                or MarketStateType.AccumulationRun;
+        }
+
+        private static MarketStateType PickEconomyRecoveryState(CoinRuntime r)
+        {
+            return r.config.id switch
+            {
+                CurrencyId.SHT => PickWeightedChoice(
+                    new StateChoice(MarketStateType.LowRangeRecovery, 1.35f),
+                    new StateChoice(MarketStateType.StairUp, 1.15f),
+                    new StateChoice(MarketStateType.CompressionBreakout, 0.80f),
+                    new StateChoice(MarketStateType.ChopInCorridor, 0.25f)),
+                CurrencyId.ETH => PickWeightedChoice(
+                    new StateChoice(MarketStateType.LowRangeRecovery, 1.10f),
+                    new StateChoice(MarketStateType.StairUp, 0.95f),
+                    new StateChoice(MarketStateType.CompressionBreakout, 0.70f),
+                    new StateChoice(MarketStateType.ChopInCorridor, 0.30f)),
+                CurrencyId.BTC => PickWeightedChoice(
+                    new StateChoice(MarketStateType.AccumulationRun, 1.25f),
+                    new StateChoice(MarketStateType.LowRangeRecovery, 0.95f),
+                    new StateChoice(MarketStateType.StairUp, 0.70f),
+                    new StateChoice(MarketStateType.ChopInCorridor, 0.25f)),
+                _ => MarketStateType.LowRangeRecovery,
+            };
+        }
+
+        private float GetBusinessTargetExposureHours(CurrencyId id)
+        {
+            return id switch
+            {
+                CurrencyId.SHT => shtTargetExposureHours,
+                CurrencyId.ETH => ethTargetExposureHours,
+                CurrencyId.BTC => btcTargetExposureHours,
+                _ => ethTargetExposureHours,
+            };
+        }
+
+        private static int GetDefaultTradingCap(CurrencyId id)
+        {
+            return id switch
+            {
+                CurrencyId.SHT => 500,
+                CurrencyId.ETH => 150,
+                CurrencyId.BTC => 50,
+                _ => 100,
+            };
+        }
+
         private float GetGlobalGrowthCoinMultiplier(CurrencyId id)
         {
             return id switch
@@ -1337,9 +1590,13 @@ namespace TraidingIDLE.Currencies.Simulation
             var startPrice = Mathf.Max(GetPlayablePriceFloor(cfg), cfg.initialPrice);
             var softFloor = Mathf.Max(GetPlayablePriceFloor(cfg), startPrice * shtStarterAssistSoftFloorFromInitial);
             var protectedNext = nextRaw;
+            var earlyAssist = IsEarlyPlayerShtAssistActive();
+            var downMoveDamping = earlyAssist
+                ? Mathf.Max(shtStarterAssistDownMoveDamping, earlyAssistDownMoveDamping)
+                : shtStarterAssistDownMoveDamping;
 
             if (IsNegativeStarterAssistState(r.currentState) && protectedNext < r.rawPrice)
-                protectedNext = Mathf.Lerp(protectedNext, r.rawPrice, shtStarterAssistDownMoveDamping);
+                protectedNext = Mathf.Lerp(protectedNext, r.rawPrice, downMoveDamping);
 
             if (protectedNext < softFloor)
             {
@@ -1353,7 +1610,8 @@ namespace TraidingIDLE.Currencies.Simulation
             if (drawdown01 > 0.05f)
             {
                 var reboundPower = Mathf.InverseLerp(0.05f, 0.28f, drawdown01);
-                var perTick01 = Mathf.Max(0f, shtStarterAssistReboundPerMinute01) * dt / 60f;
+                var reboundMultiplier = earlyAssist ? Mathf.Max(1f, earlyAssistReboundMultiplier) : 1f;
+                var perTick01 = Mathf.Max(0f, shtStarterAssistReboundPerMinute01) * reboundMultiplier * dt / 60f;
                 protectedNext += startPrice * perTick01 * reboundPower;
             }
 
@@ -1364,6 +1622,18 @@ namespace TraidingIDLE.Currencies.Simulation
             }
 
             return protectedNext;
+        }
+
+        private bool IsEarlyPlayerShtAssistActive()
+        {
+            if (!useEarlyPlayerShtAssist)
+                return false;
+
+            var rubles = playerProfile != null ? playerProfile.Rubles : long.MaxValue;
+            if (rubles > Math.Max(0, earlyAssistRublesThreshold))
+                return false;
+
+            return _cachedBusinessIncomePerHour <= Math.Max(0d, earlyAssistBusinessIncomeThresholdPerHour);
         }
 
         private void AdvanceShtStarterAssist(CoinRuntime r, float dt)
@@ -3247,13 +3517,10 @@ namespace TraidingIDLE.Currencies.Simulation
             LogActiveMarketStates("Manual market states log");
         }
 
-        [ContextMenu("Debug/Reset all saves (player, market, history, risky)")]
+        [ContextMenu("Debug/Reset all saves")]
         private void Debug_ResetAllSaves()
         {
-            TraidingIDLE.Saves.SaveStorage.DeleteKey("save.player.v1");
-            TraidingIDLE.Saves.SaveStorage.DeleteKey("save.market.v1");
-            TraidingIDLE.Saves.SaveStorage.DeleteKey("save.history.v1");
-            TraidingIDLE.Saves.SaveStorage.DeleteKey("save.risky.v1");
+            TraidingIDLE.Saves.SaveStorage.DeleteAll();
             TraidingIDLE.Saves.SaveStorage.Flush();
             Debug.Log($"[{nameof(MarketSimulation)}] All saves cleared. Restart Play Mode.", this);
         }
@@ -3707,7 +3974,41 @@ namespace TraidingIDLE.Currencies.Simulation
             r.stateCorridorWidth = Mathf.Max(1.01f, width);
             r.stateCorridorPullStrength = Mathf.Clamp01(pull);
             r.corridorAnchor = Mathf.Max(0.000001f, r.rawPrice);
-            RebuildCorridor(r, r.rawPrice, force: true);
+            ApplyEconomyStateChangeAnchorShift(r, state);
+            RebuildCorridor(r, r.rawPrice, force: false);
+        }
+
+        private void ApplyEconomyStateChangeAnchorShift(CoinRuntime r, MarketStateType state)
+        {
+            if (!scaleMarketWithBusinessIncome || r.economyPriceTarget <= 0f)
+                return;
+
+            var target = Mathf.Max(GetPlayablePriceFloor(r.config), r.economyPriceTarget);
+            var baseBlend = r.config.id switch
+            {
+                CurrencyId.SHT => 0.30f,
+                CurrencyId.ETH => 0.22f,
+                CurrencyId.BTC => 0.16f,
+                _ => 0.20f,
+            };
+            var stateBlend = state switch
+            {
+                MarketStateType.MarketCrash => 0.10f,
+                MarketStateType.LongDowntrend => 0.20f,
+                MarketStateType.StairDown => 0.20f,
+                MarketStateType.SlowUpThenDump => 0.24f,
+                MarketStateType.DeadFlatThenRocketDump => 0.16f,
+                MarketStateType.LowRangeRecovery => 1.35f,
+                MarketStateType.StairUp => 1.20f,
+                MarketStateType.LongUptrend => 1.10f,
+                MarketStateType.AccumulationRun => 1.10f,
+                _ => 0.75f,
+            };
+
+            if (target < r.corridorAnchor)
+                stateBlend *= 0.35f;
+
+            r.corridorAnchor = Mathf.Lerp(r.corridorAnchor, target, Mathf.Clamp01(baseBlend * stateBlend));
         }
 
         private static float GetStateCorridorWidth(CoinSimulationConfig cfg, MarketStateType state)
@@ -3817,6 +4118,9 @@ namespace TraidingIDLE.Currencies.Simulation
             }
 
             var previous = GetPlanningPreviousState(r);
+            if (IsBelowEconomyTargetZone(r))
+                return PickEconomyRecoveryState(r);
+
             if (IsShtStarterAssistActive(r))
                 return PickShtStarterAssistNextState(r, previous);
 
@@ -4413,7 +4717,23 @@ namespace TraidingIDLE.Currencies.Simulation
                 _ => 3f,
             };
 
-            return Mathf.Max(GetPlayablePriceFloor(cfg), cfg.initialPrice * baseMultiplier * timeScale);
+            var timeCeiling = cfg.initialPrice * baseMultiplier * timeScale;
+            var businessCeiling = r.economyPriceTarget > 0f
+                ? r.economyPriceTarget * GetBusinessCeilingPadding(cfg.id)
+                : 0f;
+
+            return Mathf.Max(GetPlayablePriceFloor(cfg), timeCeiling, businessCeiling);
+        }
+
+        private static float GetBusinessCeilingPadding(CurrencyId id)
+        {
+            return id switch
+            {
+                CurrencyId.SHT => 1.25f,
+                CurrencyId.ETH => 1.18f,
+                CurrencyId.BTC => 1.12f,
+                _ => 1.15f,
+            };
         }
 
         private static float GetRoundingStep(CoinSimulationConfig cfg, float price)

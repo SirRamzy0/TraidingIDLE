@@ -137,6 +137,7 @@ namespace TraidingIDLE.Business
         private float _accumulatedDisplayUpdateTimer;
         private float _accumulatedDisplayAnimationTimer;
         private float _saveTimer;
+        private bool _runtimeStateLoaded;
         private bool _dirty;
 
         public double GetMiningIncomeMultiplierFromBusinessSkills()
@@ -169,6 +170,7 @@ namespace TraidingIDLE.Business
 
         public void RefreshIncomeFromExternalBonuses()
         {
+            NotifyMarketEconomyChanged();
             RefreshAllUi();
         }
 
@@ -180,7 +182,7 @@ namespace TraidingIDLE.Business
             ResolveRows();
             BindRows();
             BindFilterButtons();
-            Load();
+            LoadRuntimeStateIfNeeded();
             ProcessOfflineCatchUp();
 
             if (claimButton != null)
@@ -481,11 +483,15 @@ namespace TraidingIDLE.Business
             if (UtcNow() < _tempBuffEndUtc)
                 return;
 
+            var changedBusinessIncome = IsBusinessIncomeTemporaryBoostKind(_tempKind);
             _tempKind = BusinessTemporaryBuffKind.None;
             _tempBuffEndUtc = 0;
             _tempMultiplier = 1f;
             _tempCategory = "";
             MarkDirty();
+
+            if (changedBusinessIncome)
+                NotifyMarketEconomyChanged();
         }
 
         private bool IsTemporaryBuffActive(out double secondsLeft)
@@ -540,6 +546,7 @@ namespace TraidingIDLE.Business
 
             _levels[index] = currentLevel + 1;
             MarkDirty();
+            NotifyMarketEconomyChanged();
             RefreshAllUi();
         }
 
@@ -646,7 +653,20 @@ namespace TraidingIDLE.Business
                 : "";
             _tempBuffEndUtc = UtcNow() + (long)Mathf.Max(1f, durationSeconds);
             MarkDirty();
+
+            if (IsBusinessIncomeTemporaryBoostKind(kind))
+                NotifyMarketEconomyChanged();
+
             return true;
+        }
+
+        private void NotifyMarketEconomyChanged()
+        {
+            if (marketSimulation == null)
+                marketSimulation = FindAnyObjectByType<MarketSimulation>(FindObjectsInactive.Include);
+
+            if (marketSimulation != null)
+                marketSimulation.RefreshEconomyScaleNow();
         }
 
         private void Claim()
@@ -718,8 +738,10 @@ namespace TraidingIDLE.Business
             return sum;
         }
 
-        private double GetTotalEffectiveIncomePerHour()
+        public double GetTotalEffectiveIncomePerHour()
         {
+            EnsureRuntimeStateForExternalQuery();
+
             var sum = 0d;
             for (var i = 0; i < _entries.Count; i++)
             {
@@ -731,6 +753,18 @@ namespace TraidingIDLE.Business
             }
 
             return sum;
+        }
+
+        private void EnsureRuntimeStateForExternalQuery()
+        {
+            if (_runtimeStateLoaded && _entries.Count > 0 && _levels != null && _levels.Length == _entries.Count)
+                return;
+
+            if (_entries.Count == 0 && businesses != null && businesses.Length > 0)
+                RebuildRuntimeBusinesses();
+
+            EnsureArrays();
+            LoadRuntimeStateIfNeeded();
         }
 
         private double GetBusinessIncomePerHourWithBonuses(int index, int level)
@@ -1288,6 +1322,15 @@ namespace TraidingIDLE.Business
                 _nextEnergyAtUtc = UtcNow() + (long)Mathf.Max(1f, energyChunkRegenSeconds);
 
             EnsureArrays();
+        }
+
+        private void LoadRuntimeStateIfNeeded()
+        {
+            if (_runtimeStateLoaded)
+                return;
+
+            Load();
+            _runtimeStateLoaded = true;
         }
 
         private void LoadLevelsById(BusinessLevelSave[] saved)
