@@ -802,11 +802,11 @@ namespace TraidingIDLE.Currencies.Simulation
         [Range(0f, 0.95f)]
         [SerializeField] private float economyCorridorCatchUpPerMinute01 = 0.55f;
         [Range(0f, 3f)]
-        [SerializeField] private float shtTargetExposureHours = 0.22f;
+        [SerializeField] private float shtTargetExposureHours = 0.045f;
         [Range(0f, 3f)]
-        [SerializeField] private float ethTargetExposureHours = 0.90f;
+        [SerializeField] private float ethTargetExposureHours = 0.25f;
         [Range(0f, 3f)]
-        [SerializeField] private float btcTargetExposureHours = 1.75f;
+        [SerializeField] private float btcTargetExposureHours = 0.60f;
 
         [Header("SHT action assist")]
         [SerializeField] private bool useShtStarterAssist = true;
@@ -1216,6 +1216,7 @@ namespace TraidingIDLE.Currencies.Simulation
             nextRaw = ApplyShtStarterAssist(r, nextRaw, dt);
             nextRaw = ApplyGlobalMarketGrowth(r, nextRaw, dt);
             nextRaw = ApplyHighPriceCooling(r, nextRaw, dt);
+            nextRaw = ApplyEconomyCorridorFloorPressure(r, nextRaw, dt);
             nextRaw = ClampToPlayableFloor(r.config, nextRaw);
             nextRaw = ApplyLowPriceRecovery(r, nextRaw);
             nextRaw = LimitPriceChangePerTick(r, nextRaw);
@@ -1372,7 +1373,27 @@ namespace TraidingIDLE.Currencies.Simulation
             if (double.IsNaN(target) || double.IsInfinity(target) || target <= 0d)
                 return 0f;
 
+            var targetCeiling = GetEconomyTargetPriceCeiling(cfg);
+            if (targetCeiling > 0f)
+                target = Math.Min(target, targetCeiling);
+
             return ClampToPlayableFloor(cfg, (float)Math.Min(target, float.MaxValue));
+        }
+
+        private static float GetEconomyTargetPriceCeiling(CoinSimulationConfig cfg)
+        {
+            if (cfg == null)
+                return 0f;
+
+            var multiplier = cfg.id switch
+            {
+                CurrencyId.SHT => 14f,
+                CurrencyId.ETH => 18f,
+                CurrencyId.BTC => 8f,
+                _ => 32f,
+            };
+
+            return Mathf.Max(0f, cfg.initialPrice * multiplier);
         }
 
         private static double GetEconomyTargetCapDivisor(CurrencyId id, int currentCap)
@@ -1392,12 +1413,34 @@ namespace TraidingIDLE.Currencies.Simulation
                 1f - Mathf.Clamp01(economyCorridorCatchUpPerMinute01),
                 dt / 60f);
             catchUp *= GetEconomyCorridorStateMultiplier(r.currentState);
+            catchUp *= GetEconomyCorridorCoinMultiplier(r.config.id);
 
             if (target < r.corridorAnchor)
                 catchUp *= 0.35f;
 
             r.corridorAnchor = Mathf.Lerp(r.corridorAnchor, target, Mathf.Clamp01(catchUp));
             RebuildCorridor(r, r.rawPrice, force: false);
+        }
+
+        private static float ApplyEconomyCorridorFloorPressure(CoinRuntime r, float nextRaw, float dt)
+        {
+            if (r.config == null || r.economyPriceTarget <= 0f || dt <= 0f)
+                return nextRaw;
+
+            var floor = GetEconomyCorridorLowFloor(r);
+            if (floor <= 0f || nextRaw >= floor)
+                return nextRaw;
+
+            var depth = Mathf.Clamp01(floor / Mathf.Max(1f, nextRaw) - 1f);
+            var pullPerSecond = r.config.id switch
+            {
+                CurrencyId.SHT => 0.95f,
+                CurrencyId.ETH => 0.80f,
+                CurrencyId.BTC => 0.55f,
+                _ => 0.50f,
+            };
+            var strength = Mathf.Clamp01(pullPerSecond * dt * Mathf.Lerp(0.35f, 1f, depth));
+            return Mathf.Lerp(nextRaw, floor, strength);
         }
 
         private static float GetEconomyCorridorStateMultiplier(MarketStateType state)
@@ -1414,6 +1457,17 @@ namespace TraidingIDLE.Currencies.Simulation
                 MarketStateType.StairUp => 1.30f,
                 MarketStateType.LongUptrend => 1.22f,
                 MarketStateType.AccumulationRun => 1.25f,
+                _ => 1f,
+            };
+        }
+
+        private static float GetEconomyCorridorCoinMultiplier(CurrencyId id)
+        {
+            return id switch
+            {
+                CurrencyId.SHT => 0.45f,
+                CurrencyId.ETH => 0.75f,
+                CurrencyId.BTC => 0.60f,
                 _ => 1f,
             };
         }
@@ -1468,7 +1522,7 @@ namespace TraidingIDLE.Currencies.Simulation
         {
             return id switch
             {
-                CurrencyId.SHT => 0.72f,
+                CurrencyId.SHT => 0.50f,
                 CurrencyId.ETH => 0.62f,
                 CurrencyId.BTC => 0.54f,
                 _ => 0.60f,
@@ -1489,10 +1543,10 @@ namespace TraidingIDLE.Currencies.Simulation
             return r.config.id switch
             {
                 CurrencyId.SHT => PickWeightedChoice(
-                    new StateChoice(MarketStateType.LowRangeRecovery, 1.35f),
-                    new StateChoice(MarketStateType.StairUp, 1.15f),
-                    new StateChoice(MarketStateType.CompressionBreakout, 0.80f),
-                    new StateChoice(MarketStateType.ChopInCorridor, 0.25f)),
+                    new StateChoice(MarketStateType.LowRangeRecovery, 0.85f),
+                    new StateChoice(MarketStateType.StairUp, 0.65f),
+                    new StateChoice(MarketStateType.CompressionBreakout, 0.35f),
+                    new StateChoice(MarketStateType.ChopInCorridor, 0.65f)),
                 CurrencyId.ETH => PickWeightedChoice(
                     new StateChoice(MarketStateType.LowRangeRecovery, 1.10f),
                     new StateChoice(MarketStateType.StairUp, 0.95f),
@@ -3893,8 +3947,8 @@ namespace TraidingIDLE.Currencies.Simulation
                 if (aroundPrice > high) high = Mathf.Lerp(high, aroundPrice, 0.65f);
             }
 
-            // Clamp minimum low relative to initial price.
-            var minLow = GetPlayablePriceFloor(cfg);
+            // Clamp minimum low relative to initial price and the current economy tier.
+            var minLow = Mathf.Max(GetPlayablePriceFloor(cfg), GetEconomyCorridorLowFloor(r));
             if (low < minLow)
             {
                 var shift = minLow - low;
@@ -3908,6 +3962,22 @@ namespace TraidingIDLE.Currencies.Simulation
 
             r.corridorLow = low;
             r.corridorHigh = high;
+        }
+
+        private static float GetEconomyCorridorLowFloor(CoinRuntime r)
+        {
+            if (r == null || r.economyPriceTarget <= 0f)
+                return 0f;
+
+            var floorMultiplier = r.config.id switch
+            {
+                CurrencyId.SHT => 0.38f,
+                CurrencyId.ETH => 0.58f,
+                CurrencyId.BTC => 0.72f,
+                _ => 0.50f,
+            };
+
+            return Mathf.Max(GetPlayablePriceFloor(r.config), r.economyPriceTarget * floorMultiplier);
         }
 
         private void ApplyNextPlannedState(CoinRuntime r)
@@ -3986,9 +4056,9 @@ namespace TraidingIDLE.Currencies.Simulation
             var target = Mathf.Max(GetPlayablePriceFloor(r.config), r.economyPriceTarget);
             var baseBlend = r.config.id switch
             {
-                CurrencyId.SHT => 0.30f,
-                CurrencyId.ETH => 0.22f,
-                CurrencyId.BTC => 0.16f,
+                CurrencyId.SHT => 0.12f,
+                CurrencyId.ETH => 0.16f,
+                CurrencyId.BTC => 0.10f,
                 _ => 0.20f,
             };
             var stateBlend = state switch
@@ -4729,7 +4799,7 @@ namespace TraidingIDLE.Currencies.Simulation
         {
             return id switch
             {
-                CurrencyId.SHT => 1.25f,
+                CurrencyId.SHT => 1.05f,
                 CurrencyId.ETH => 1.18f,
                 CurrencyId.BTC => 1.12f,
                 _ => 1.15f,

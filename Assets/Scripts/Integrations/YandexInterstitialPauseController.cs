@@ -1,5 +1,6 @@
 using System.Collections;
 using TMPro;
+using TraidingIDLE.Monetization;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -57,6 +58,9 @@ namespace TraidingIDLE.Integrations
 
         private void Update()
         {
+            if (MonetizationState.NoAdsPurchased)
+                return;
+
             if (_waitingForAd || YG.YG2.nowAdsShow || YG.YG2.isPauseGame)
                 return;
 
@@ -66,6 +70,9 @@ namespace TraidingIDLE.Integrations
 
         private IEnumerator ShowInterstitialWithCountdown()
         {
+            if (MonetizationState.NoAdsPurchased)
+                yield break;
+
             _waitingForAd = true;
             _pausedByController = true;
             YG.YG2.PauseGame(true);

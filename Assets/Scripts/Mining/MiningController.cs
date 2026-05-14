@@ -753,7 +753,7 @@ namespace TraidingIDLE.Mining
                 maxedRigsStatText.text = string.Format(SafeFormat(maxedRigsStatFormat, "{0}/{1}"), maxed, maxRigCount);
 
             if (incomeBonusStatText != null)
-                incomeBonusStatText.text = string.Format(SafeFormat(bonusPercentFormat, "+{0}%"), Mathf.RoundToInt((float)((GetIncomeMultiplier() - 1d) * 100d)));
+                incomeBonusStatText.text = string.Format(SafeFormat(bonusPercentFormat, "+{0}%"), Mathf.RoundToInt((float)((GetDisplayedIncomeBonusMultiplier() - 1d) * 100d)));
 
             if (speedBonusStatText != null)
                 speedBonusStatText.text = string.Format(SafeFormat(bonusPercentFormat, "+{0}%"), Mathf.RoundToInt((float)((GetSpeedMultiplier() - 1d) * 100d)));
@@ -800,6 +800,14 @@ namespace TraidingIDLE.Mining
             }
 
             return null;
+        }
+
+        // В статистике «Бонус к доходу» только явные бафы; catch-up от бизнеса зависит от ригов и туда не входит.
+        private double GetDisplayedIncomeBonusMultiplier()
+        {
+            var fromBoost = _coinIncomeTimeLeft > 0f ? Math.Max(1f, coinIncomeMultiplier) : 1d;
+            var business = businessPassiveLink != null ? businessPassiveLink.GetMiningIncomeMultiplierFromBusinessSkills() : 1d;
+            return fromBoost * business;
         }
 
         private double GetIncomeMultiplier()
