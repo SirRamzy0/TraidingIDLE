@@ -187,9 +187,9 @@ namespace TraidingIDLE.Temki
 
         private Color GetChanceColor(int percent)
         {
-            if (percent < 25)
+            if (percent < 35)
                 return lowChanceColor;
-            if (percent < 45)
+            if (percent < 55)
                 return mediumChanceColor;
 
             return highChanceColor;

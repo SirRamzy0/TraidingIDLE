@@ -278,7 +278,7 @@ MonoBehaviour:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 7442660658336639961}
-  m_Enabled: 0
+  m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: fe87c0e1cc204ed48ad3b37840f39efc, type: 3}
   m_Name: 
@@ -669,7 +669,7 @@ RectTransform:
   m_AnchorMin: {x: 0, y: 0}
   m_AnchorMax: {x: 0, y: 0}
   m_AnchoredPosition: {x: 0, y: 0}
-  m_SizeDelta: {x: 0, y: 0}
+  m_SizeDelta: {x: 500, y: 40}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &8698046654409556971
 MonoBehaviour:
@@ -688,6 +688,10 @@ MonoBehaviour:
     rank: {fileID: 7442660659715647009}
     name: {fileID: 7442660659084700632}
     score: {fileID: 7442660659206096142}
+  textMP:
+    rank: {fileID: 0}
+    name: {fileID: 0}
+    score: {fileID: 0}
   topPlayerActivityComponents:
   - {fileID: 8311217508094180555}
   currentPlayerActivityComponents:

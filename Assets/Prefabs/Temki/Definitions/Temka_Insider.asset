@@ -18,9 +18,9 @@ MonoBehaviour:
     \u043D\u0430 \u0441\u0442\u0430\u0440\u0442\u0435, \u0432\u0434\u0440\u0443\u0433
     \u0432\u0437\u043B\u0435\u0442\u0438\u0442"
   artwork: {fileID: 21300000, guid: b762ce25882a0604cb766268f8b455b0, type: 3}
-  successChance: 0.31
+  successChance: 0.1
   displayedSuccessChance: 0.35
   rewardMultiplier: 5
-  durationSeconds: 720
+  durationSeconds: 300
   stakeRubles: 2000000
   stakeGrowthPerUse: 1.7

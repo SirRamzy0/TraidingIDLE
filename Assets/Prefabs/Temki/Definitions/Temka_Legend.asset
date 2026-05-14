@@ -20,6 +20,6 @@ MonoBehaviour:
   successChance: 0.02
   displayedSuccessChance: 0.75
   rewardMultiplier: 10
-  durationSeconds: 240
+  durationSeconds: 15
   stakeRubles: 1000000
   stakeGrowthPerUse: 2

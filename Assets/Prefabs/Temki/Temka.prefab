@@ -695,7 +695,7 @@ MonoBehaviour:
   m_faceColor:
     serializedVersion: 2
     rgba: 4294967295
-  m_fontSize: 26
+  m_fontSize: 10
   m_fontSizeBase: 36
   m_fontWeight: 400
   m_enableAutoSizing: 1
@@ -835,7 +835,7 @@ MonoBehaviour:
   m_faceColor:
     serializedVersion: 2
     rgba: 4294967295
-  m_fontSize: 14
+  m_fontSize: 8
   m_fontSizeBase: 36
   m_fontWeight: 400
   m_enableAutoSizing: 1
@@ -1140,15 +1140,15 @@ MonoBehaviour:
   m_faceColor:
     serializedVersion: 2
     rgba: 4294967295
-  m_fontSize: 21
+  m_fontSize: 12
   m_fontSizeBase: 36
   m_fontWeight: 400
   m_enableAutoSizing: 1
   m_fontSizeMin: 12
   m_fontSizeMax: 21
   m_fontStyle: 0
-  m_HorizontalAlignment: 1
-  m_VerticalAlignment: 256
+  m_HorizontalAlignment: 2
+  m_VerticalAlignment: 512
   m_textAlignment: 65535
   m_characterSpacing: 0
   m_characterHorizontalScale: 1
@@ -1398,7 +1398,7 @@ MonoBehaviour:
   m_faceColor:
     serializedVersion: 2
     rgba: 4294967295
-  m_fontSize: 26
+  m_fontSize: 10
   m_fontSizeBase: 36
   m_fontWeight: 400
   m_enableAutoSizing: 1
@@ -1535,7 +1535,7 @@ MonoBehaviour:
   m_faceColor:
     serializedVersion: 2
     rgba: 4294967295
-  m_fontSize: 26
+  m_fontSize: 10
   m_fontSizeBase: 36
   m_fontWeight: 400
   m_enableAutoSizing: 1
@@ -1672,7 +1672,7 @@ MonoBehaviour:
   m_faceColor:
     serializedVersion: 2
     rgba: 4294967295
-  m_fontSize: 26
+  m_fontSize: 10
   m_fontSizeBase: 36
   m_fontWeight: 400
   m_enableAutoSizing: 1
@@ -1966,6 +1966,9 @@ MonoBehaviour:
   riskButtonSprite: {fileID: 21300000, guid: d76a5a0f6287d6e4e8897061fe028c61, type: 3}
   timerButtonSprite: {fileID: 21300000, guid: 49dabcd9d50822d4783272b90d86e696, type: 3}
   checkButtonSprite: {fileID: 21300000, guid: 069a3df46b958b9469e85c2a3bc240f2, type: 3}
+  lowChanceColor: {r: 0.95, g: 0.24, b: 0.34, a: 1}
+  mediumChanceColor: {r: 1, g: 0.82, b: 0.24, a: 1}
+  highChanceColor: {r: 0.25, g: 0.95, b: 0.52, a: 1}
   chanceFormat: '{0}%'
   multiplierFormat: x{0}
   durationFormat: '{0}'

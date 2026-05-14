@@ -33,7 +33,6 @@ RectTransform:
   m_Children:
   - {fileID: 1705290334665254439}
   m_Father: {fileID: 0}
-  m_RootOrder: 0
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
@@ -69,7 +68,7 @@ MonoBehaviour:
   advanced: 1
   rootSpawnPlayersData: {fileID: 1705290334665254439}
   playerDataPrefab: {fileID: 7442660659306160117, guid: c66c7bac89f010b47979344bbb77584b, type: 3}
-  playerPhoto: 1
+  playerPhoto: 2
   isHiddenPlayerPhoto: {fileID: 0}
   timeTypeConvert: 0
   decimalSize: 0
@@ -136,7 +135,6 @@ RectTransform:
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 1705290334077199573}
-  m_RootOrder: 0
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 0}
   m_AnchorMax: {x: 1, y: 1}
