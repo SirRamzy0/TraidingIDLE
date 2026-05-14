@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Globalization;
 using TMPro;
@@ -9,6 +10,8 @@ using TraidingIDLE.Saves;
 using TraidingIDLE.UI;
 using UnityEngine;
 using UnityEngine.UI;
+using TraidingIDLE.Integrations;
+using TraidingIDLE.Monetization;
 
 namespace TraidingIDLE.Business
 {
@@ -36,6 +39,7 @@ namespace TraidingIDLE.Business
             public int selectedBusinessIndex;
             public bool hasActiveCategoryFilter;
             public string activeCategoryFilter = "";
+            public long nextEnergyAdAtUtc;
         }
 
         private sealed class RuntimeBusinessEntry
@@ -65,6 +69,7 @@ namespace TraidingIDLE.Business
         }
 
         private const string SaveKey = "save.business.v2";
+        private const long MaxOfflineIncomeSeconds = 21600;
 
         [Header("Refs")]
         [SerializeField] private PlayerProfile profile;
@@ -90,6 +95,24 @@ namespace TraidingIDLE.Business
         [Header("Energy")]
         [SerializeField, Min(1)] private int energyMax = 5;
         [SerializeField, Min(1f)] private float energyChunkRegenSeconds = 900f;
+
+        [Header("Energy Refill")]
+        [SerializeField] private Button energyRefillAdButton;
+        [SerializeField] private TMP_Text energyRefillAdLabelText;
+        [SerializeField] private Button energyRefillGemButton;
+        [SerializeField] private TMP_Text energyRefillGemCostText;
+        [SerializeField, Min(0)] private int energyRefillGemCost = 5;
+        [SerializeField, Min(1f)] private float energyRefillAdCooldownSeconds = 3600f;
+        [SerializeField] private Graphic energyRefillAdFlashGraphic;
+        [SerializeField] private Graphic energyRefillGemFlashGraphic;
+        [SerializeField] private string energyRefillAdCaption = "Энергия за рекламу";
+        [SerializeField] private string energyRefillGemCostFormat = "{0}";
+        [SerializeField] private Color energyRefillFlashColor = new(1f, 0.35f, 0.35f, 1f);
+
+        [Header("x5 income boost")]
+        [SerializeField, Min(0)] private int x5BoostGemCost = 10;
+        [SerializeField, Min(1f)] private float x5BoostDurationSeconds = 3600f;
+        [SerializeField, Min(1f)] private float x5BoostMultiplier = 5f;
 
         [Header("Top UI")]
         [SerializeField] private TMP_Text energyCountText;
@@ -126,6 +149,7 @@ namespace TraidingIDLE.Business
         private int _energy;
         private long _lastSimUtcSeconds;
         private long _nextEnergyAtUtc;
+        private long _nextEnergyAdAtUtc;
         private BusinessTemporaryBuffKind _tempKind;
         private long _tempBuffEndUtc;
         private float _tempMultiplier = 1f;
@@ -137,8 +161,10 @@ namespace TraidingIDLE.Business
         private float _accumulatedDisplayUpdateTimer;
         private float _accumulatedDisplayAnimationTimer;
         private float _saveTimer;
+        private float _lastSimSaveTimer;
         private bool _runtimeStateLoaded;
         private bool _dirty;
+        private Coroutine _energyRefillFlashRoutine;
 
         public double GetMiningIncomeMultiplierFromBusinessSkills()
         {
@@ -191,6 +217,18 @@ namespace TraidingIDLE.Business
                 claimButton.onClick.AddListener(Claim);
             }
 
+            if (energyRefillAdButton != null)
+            {
+                energyRefillAdButton.onClick.RemoveListener(TryRefillEnergyByAd);
+                energyRefillAdButton.onClick.AddListener(TryRefillEnergyByAd);
+            }
+
+            if (energyRefillGemButton != null)
+            {
+                energyRefillGemButton.onClick.RemoveListener(TryRefillEnergyByGems);
+                energyRefillGemButton.onClick.AddListener(TryRefillEnergyByGems);
+            }
+
             if (skillPanel != null)
                 skillPanel.SetLaunchListener(TryLaunchSkillForSelection);
 
@@ -231,6 +269,14 @@ namespace TraidingIDLE.Business
             RegenEnergy(now);
             ClearTemporaryBuffIfExpired();
             SimulateTick(Time.deltaTime);
+
+            _lastSimSaveTimer -= Time.unscaledDeltaTime;
+            if (_lastSimSaveTimer <= 0f)
+            {
+                _lastSimSaveTimer = 5f;
+                _lastSimUtcSeconds = now;
+                MarkDirty();
+            }
 
             RefreshDynamicUi(UpdateAccumulatedDisplay(Time.unscaledDeltaTime));
 
@@ -404,7 +450,7 @@ namespace TraidingIDLE.Business
             var elapsed = now - _lastSimUtcSeconds;
             if (elapsed > 0)
             {
-                var simulatedEnd = _lastSimUtcSeconds + Math.Min(elapsed, 86400);
+                var simulatedEnd = _lastSimUtcSeconds + Math.Min(elapsed, MaxOfflineIncomeSeconds);
                 AccumulatePassiveIncome(_lastSimUtcSeconds, simulatedEnd);
                 _lastSimUtcSeconds = now;
             }
@@ -553,6 +599,27 @@ namespace TraidingIDLE.Business
         private void BuyOrUpgradeSelected()
         {
             BuyOrUpgrade(_selectedIndex);
+        }
+
+        private void TryBuyX5AllBusinessIncome()
+        {
+            if (profile == null)
+                return;
+
+            if (IsGlobalTemporaryBuffBlocking())
+                return;
+
+            if (!profile.TrySpendGems(x5BoostGemCost))
+                return;
+
+            _tempKind = BusinessTemporaryBuffKind.AllBusinessIncome;
+            _tempMultiplier = Mathf.Max(1f, x5BoostMultiplier);
+            _tempCategory = "";
+            _tempBuffEndUtc = UtcNow() + (long)Mathf.Max(1f, x5BoostDurationSeconds);
+
+            MarkDirty();
+            NotifyMarketEconomyChanged();
+            RefreshAllUi();
         }
 
         private void TryLaunchSkillForSelection()
@@ -930,6 +997,18 @@ namespace TraidingIDLE.Business
                 canUpgrade || !unlocked,
                 canUpgrade && CanSpendRubles(cost),
                 BuyOrUpgradeSelected);
+
+            double boostSecondsLeft = 0d;
+
+            var boostActive =
+                _tempKind == BusinessTemporaryBuffKind.AllBusinessIncome
+                && IsTemporaryBuffActive(out boostSecondsLeft);
+
+            detailCard.ConfigureX5Boost(
+                boostActive,
+                boostActive ? FormatBoostCountdown(boostSecondsLeft) : "",
+                !boostActive && profile != null && profile.Gems >= x5BoostGemCost,
+                TryBuyX5AllBusinessIncome);
         }
 
         private void RefreshTopStaticUi()
@@ -1018,6 +1097,133 @@ namespace TraidingIDLE.Business
                 claimButton.interactable = profile != null && Math.Floor(_accumulatedRubles) > 0d;
 
             RefreshSkillPanel();
+            RefreshX5BoostDynamicUi();
+            RefreshEnergyRefillButtons();
+        }
+
+        private void RefreshX5BoostDynamicUi()
+        {
+            if (detailCard == null)
+                return;
+
+            double boostSecondsLeft = 0d;
+
+            var boostActive =
+                _tempKind == BusinessTemporaryBuffKind.AllBusinessIncome
+                && IsTemporaryBuffActive(out boostSecondsLeft);
+
+            detailCard.ConfigureX5Boost(
+                boostActive,
+                boostActive ? FormatBoostCountdown(boostSecondsLeft) : "",
+                !boostActive && profile != null && profile.Gems >= x5BoostGemCost,
+                TryBuyX5AllBusinessIncome);
+        }
+
+        private void RefreshEnergyRefillButtons()
+        {
+            var adReady = UtcNow() >= _nextEnergyAdAtUtc;
+
+            if (energyRefillAdButton != null)
+            {
+                if (energyRefillAdButton.gameObject.activeSelf != adReady)
+                    energyRefillAdButton.gameObject.SetActive(adReady);
+
+                energyRefillAdButton.interactable = true;
+
+                if (energyRefillAdLabelText != null)
+                    energyRefillAdLabelText.text = energyRefillAdCaption;
+            }
+
+            if (energyRefillGemButton != null)
+            {
+                var showGem = !adReady;
+                if (energyRefillGemButton.gameObject.activeSelf != showGem)
+                    energyRefillGemButton.gameObject.SetActive(showGem);
+
+                energyRefillGemButton.interactable =
+                    profile != null && profile.Gems >= energyRefillGemCost;
+            }
+
+            if (energyRefillGemCostText != null)
+            {
+                energyRefillGemCostText.text = GameTextFormatter.Format(
+                    energyRefillGemCostFormat,
+                    "{0}",
+                    energyRefillGemCost);
+            }
+        }
+
+        private void TryRefillEnergyByAd()
+        {
+            if (_energy >= energyMax)
+            {
+                FlashEnergyRefillButton(energyRefillAdFlashGraphic);
+                return;
+            }
+
+            if (UtcNow() < _nextEnergyAdAtUtc)
+            {
+                RefreshAllUi();
+                return;
+            }
+
+            YandexRewardedAds.Show(YandexRewardedAds.EnergyRefillId, OnEnergyAdRewarded);
+        }
+
+        private void OnEnergyAdRewarded()
+        {
+            _nextEnergyAdAtUtc = UtcNow() + (long)Mathf.Max(1f, energyRefillAdCooldownSeconds);
+
+            if (_energy < energyMax)
+            {
+                _energy = energyMax;
+                _nextEnergyAtUtc = 0;
+            }
+
+            MarkDirty();
+            RefreshAllUi();
+        }
+
+        private void TryRefillEnergyByGems()
+        {
+            if (_energy >= energyMax)
+            {
+                FlashEnergyRefillButton(energyRefillGemFlashGraphic);
+                return;
+            }
+
+            if (profile == null || !profile.TrySpendGems(energyRefillGemCost))
+                return;
+
+            _energy = energyMax;
+            _nextEnergyAtUtc = 0;
+
+            MarkDirty();
+            RefreshAllUi();
+        }
+
+        private void FlashEnergyRefillButton(Graphic graphic)
+        {
+            if (graphic == null)
+                return;
+
+            if (_energyRefillFlashRoutine != null)
+                StopCoroutine(_energyRefillFlashRoutine);
+
+            _energyRefillFlashRoutine = StartCoroutine(FlashEnergyRefillButtonRoutine(graphic));
+        }
+
+        private IEnumerator FlashEnergyRefillButtonRoutine(Graphic graphic)
+        {
+            var originalColor = graphic.color;
+            graphic.color = energyRefillFlashColor;
+
+            yield return new WaitForSecondsRealtime(0.15f);
+
+            if (graphic != null)
+                graphic.color = originalColor;
+
+            _energyRefillFlashRoutine = null;
         }
 
         private void RefreshSkillPanel()
@@ -1275,6 +1481,7 @@ namespace TraidingIDLE.Business
                 selectedBusinessIndex = _selectedIndex,
                 hasActiveCategoryFilter = true,
                 activeCategoryFilter = _activeCategoryFilter,
+                nextEnergyAdAtUtc = _nextEnergyAdAtUtc,
             };
 
             SaveStorage.SaveJson(SaveKey, data);
@@ -1294,6 +1501,7 @@ namespace TraidingIDLE.Business
                 EnsureSelectedBusinessVisible();
                 _lastSimUtcSeconds = UtcNow();
                 _displayAccumRubles = _accumulatedRubles;
+                _nextEnergyAdAtUtc = 0;
                 return;
             }
 
@@ -1301,6 +1509,7 @@ namespace TraidingIDLE.Business
             _energy = Mathf.Clamp(data.energyCurrent, 0, energyMax);
             _lastSimUtcSeconds = data.lastSimUtcSeconds > 0 ? data.lastSimUtcSeconds : UtcNow();
             _nextEnergyAtUtc = data.nextEnergyAtUtc;
+            _nextEnergyAdAtUtc = Math.Max(0, data.nextEnergyAdAtUtc);
 
             if (data.businessLevels != null && data.businessLevels.Length > 0)
                 LoadLevelsById(data.businessLevels);
@@ -1393,6 +1602,16 @@ namespace TraidingIDLE.Business
                 return (value / 1000d).ToString("0.0", CultureInfo.InvariantCulture) + thousandSuffix;
 
             return FormatNumberMoney(value);
+        }
+
+        private static string FormatBoostCountdown(double seconds)
+        {
+            seconds = Math.Max(0, seconds);
+            var ts = TimeSpan.FromSeconds(seconds);
+
+            return ts.TotalHours >= 1d
+                ? $"{ts.Hours:00}:{ts.Minutes:00}:{ts.Seconds:00}"
+                : $"{ts.Minutes:00}:{ts.Seconds:00}";
         }
 
         private static long UtcNow() => DateTimeOffset.UtcNow.ToUnixTimeSeconds();

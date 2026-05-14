@@ -33,19 +33,33 @@ namespace TraidingIDLE.Business
         [SerializeField] private Color actionButtonEnabledColor = new(0.25f, 0.95f, 0.52f, 1f);
         [SerializeField] private Color actionButtonDisabledColor = new(0.55f, 0.57f, 0.62f, 1f);
 
+        [Header("x5 boost")]
+        [SerializeField] private Button x5BoostButton;
+        [SerializeField] private GameObject x5BoostDisabledState;
+        [SerializeField] private TMP_Text x5BoostStatusText;
+        [SerializeField] private TMP_Text x5BoostTimerText;
+
         private Action _action;
+        private Action _x5BoostAction;
 
         private void Awake()
         {
             AutoResolveMissingReferences();
+
             if (actionButton != null)
                 actionButton.onClick.AddListener(OnActionClicked);
+
+            if (x5BoostButton != null)
+                x5BoostButton.onClick.AddListener(OnX5BoostClicked);
         }
 
         private void OnDestroy()
         {
             if (actionButton != null)
                 actionButton.onClick.RemoveListener(OnActionClicked);
+
+            if (x5BoostButton != null)
+                x5BoostButton.onClick.RemoveListener(OnX5BoostClicked);
         }
 
         public void Configure(
@@ -112,9 +126,40 @@ namespace TraidingIDLE.Business
                     : actionButtonDisabledColor;
         }
 
+        public void ConfigureX5Boost(
+            bool active,
+            string timer,
+            bool interactable,
+            Action action)
+        {
+            _x5BoostAction = action;
+
+            if (x5BoostButton != null)
+            {
+                x5BoostButton.gameObject.SetActive(!active);
+                x5BoostButton.interactable = interactable;
+            }
+
+            if (x5BoostDisabledState != null)
+                x5BoostDisabledState.SetActive(active);
+
+            if (x5BoostStatusText != null)
+                x5BoostStatusText.text = active
+                    ? "Доход увеличен"
+                    : "Увеличь доход на час!";
+
+            if (x5BoostTimerText != null)
+                x5BoostTimerText.text = active ? timer : "";
+        }
+
         private void OnActionClicked()
         {
             _action?.Invoke();
+        }
+
+        private void OnX5BoostClicked()
+        {
+            _x5BoostAction?.Invoke();
         }
 
         private void AutoResolveMissingReferences()
@@ -179,6 +224,5 @@ namespace TraidingIDLE.Business
                 }
             }
         }
-
     }
 }

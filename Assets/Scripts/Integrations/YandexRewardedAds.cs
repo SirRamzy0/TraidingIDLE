@@ -6,6 +6,7 @@ namespace TraidingIDLE.Integrations
     {
         public const string TemkiDoubleRewardId = "temki_double_reward";
         public const string MiningAdSpeedBoostId = "mining_ad_speed_boost";
+        public const string EnergyRefillId = "energy_refill";
 
         public static void Show(string id, Action rewarded)
         {
