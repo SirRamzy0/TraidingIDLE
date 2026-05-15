@@ -51404,8 +51404,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::TraidingIDLE.Currencies.Simulation.MarketSimulation
   market: {fileID: 1136403799}
   priceHistoryStore: {fileID: 1136403801}
-  playerProfile: {fileID: 0}
-  businessProgressLink: {fileID: 0}
+  playerProfile: {fileID: 1555327066}
+  businessProgressLink: {fileID: 277380260}
   useCurrencyMarketPricesOnStart: 0
   initialHistoryWarmupTicks: 50
   applyGameStartSettings: 1
@@ -51420,327 +51420,425 @@ MonoBehaviour:
   coins:
   - id: 0
     tickIntervalSeconds: 0.6
-    normalTickSpeedMultiplier: 1
-    pumpTickSpeedMultiplier: 1.55
-    crashTickSpeedMultiplier: 1.85
     plannedStatesCount: 4
     initialPrice: 5000
-    stateDurationMinSeconds: 8
-    stateDurationMaxSeconds: 42
-    plannedStateWeights:
-    - type: 7
-      weight: 0.04
-    - type: 0
-      weight: 1.95
-    - type: 4
-      weight: 0.85
-    - type: 5
-      weight: 0.62
-    - type: 2
-      weight: 0.62
-    - type: 3
-      weight: 0.82
-    - type: 8
-      weight: 0.16
-    - type: 9
-      weight: 0.14
-    corridorWidthAtLowPrice: 4.4
-    corridorWidthAtHighPrice: 1.65
-    highPriceReference: 120000
-    corridorWidthRandomJitter: 0.22
-    minCorridorLowFromInitial: 0.25
-    calmCorridorWidth: 1.55
-    calmCorridorPullStrength: 0.2
-    chopCorridorWidthMin: 3.4
-    chopCorridorWidthMax: 6.2
-    chopCorridorPullStrength: 0.18
-    trendCorridorWidth: 2.55
-    trendCorridorPullStrength: 0.045
-    scenarioCorridorWidth: 2.2
-    scenarioCorridorPullStrength: 0.045
-    deadFlatCorridorWidth: 1.08
-    deadFlatCorridorPullStrength: 0.01
-    crashCorridorWidth: 1.35
-    crashCorridorPullStrength: 0.16
-    noiseStrength: 0.88
-    trendStrength: 0.44
-    meanReversionStrength: 0.16
-    chopPhaseDurationMinSeconds: 3.5
-    chopPhaseDurationMaxSeconds: 11
-    chopFakeoutChancePerPhase: 0.92
-    chopFakeoutDurationMinSeconds: 0.8
-    chopFakeoutDurationMaxSeconds: 3.2
-    chopFakeoutStrength: 0.78
-    chopRecoveryDurationSeconds: 1.4
-    chopRecoveryBoost: 2.8
-    calmOffsetFromHalfMin01: 0.14
-    calmOffsetFromHalfMax01: 0.42
-    calmLegDurationMinSeconds: 2.5
-    calmLegDurationMaxSeconds: 8
-    calmShortLegMaxSeconds: 4
-    calmSmallMoveRelativeThreshold: 0.08
-    calmMaxPriceChangePerTick01: 0.12
-    calmNoiseStrength: 0.32
-    calmApproachStrength: 0.36
-    longUptrendDurationMinSeconds: 9
-    longUptrendDurationMaxSeconds: 32
-    longUptrendTargetMultiplierMin: 2
-    longUptrendTargetMultiplierMax: 5.2
-    longUptrendSoftCapAtHighReference01: 0.55
-    longUptrendMinBoostAfterSoftCap01: 0.35
-    longUptrendMaxEffectiveMultiplier: 4.8
-    longUptrendTargetCorridorPos: 0.74
-    longUptrendApproachStrength: 0.48
-    longUptrendNoiseStrength: 0.3
-    longUptrendWobbleStrength: 0.92
-    longUptrendDownWobbleChance: 0.52
-    longUptrendDownWobbleMultiplier: 1.8
-    longUptrendUpWobbleMultiplier: 0.85
-    longUptrendPullbackChancePerTick: 0.3
-    longUptrendPullbackStrength: 0.2
-    longUptrendPullbackDurationMinSeconds: 0.6
-    longUptrendPullbackDurationMaxSeconds: 1.8
-    longUptrendPullbackCooldownSeconds: 1.1
-    longUptrendRecoveryDurationSeconds: 1
-    longUptrendRecoveryCatchupMultiplier: 3
-    longUptrendMaxPriceChangePerTick01: 0.22
-    longDowntrendDurationMinSeconds: 8
-    longDowntrendDurationMaxSeconds: 28
-    longDowntrendTargetDividerMin: 1.75
-    longDowntrendTargetDividerMax: 4.2
-    longDowntrendTargetCorridorPos: 0.22
-    longDowntrendApproachStrength: 0.48
-    longDowntrendNoiseStrength: 0.28
-    longDowntrendRallyChancePerTick: 0.3
-    longDowntrendRallyStrength: 0.22
-    longDowntrendRallyDurationMinSeconds: 0.9
-    longDowntrendRallyDurationMaxSeconds: 3.5
-    longDowntrendRallyCooldownSeconds: 2.2
-    longDowntrendRecoveryDurationSeconds: 1.8
-    longDowntrendRecoveryCatchupMultiplier: 2.8
-    longDowntrendMaxPriceChangePerTick01: 0.24
-    spikeDumpGrowPercentMin: 0.55
-    spikeDumpGrowPercentMax: 1.45
-    spikeDumpGrowDurationMinSeconds: 5
-    spikeDumpGrowDurationMaxSeconds: 16
-    spikeDumpDropOverGrowMin: 1.05
-    spikeDumpDropOverGrowMax: 1.75
-    spikeDumpMaxDropPercent: 0.92
-    spikeDumpDumpDurationMinSeconds: 1
-    spikeDumpDumpDurationMaxSeconds: 4
-    spikeDumpShakeMovesMin: 3
-    spikeDumpShakeMovesMax: 7
-    spikeDumpShakeDurationMinSeconds: 1.5
-    spikeDumpShakeDurationMaxSeconds: 6
-    spikeDumpShakeMovePercentMin: 0.1
-    spikeDumpShakeMovePercentMax: 0.38
-    spikeDumpNoiseStrength: 0.2
-    spikeDumpMaxPriceChangePerTick01: 0.34
-    dipPumpDipPercentMin: 0.35
-    dipPumpDipPercentMax: 0.72
-    dipPumpDipDurationMinSeconds: 5
-    dipPumpDipDurationMaxSeconds: 16
-    dipPumpPumpOverDipMin: 1.25
-    dipPumpPumpOverDipMax: 2.4
-    dipPumpMaxPumpPercent: 1.85
-    dipPumpPumpDurationMinSeconds: 1
-    dipPumpPumpDurationMaxSeconds: 4
-    dipPumpShakeMovesMin: 3
-    dipPumpShakeMovesMax: 7
-    dipPumpShakeDurationMinSeconds: 1.5
-    dipPumpShakeDurationMaxSeconds: 6
-    dipPumpShakeMovePercentMin: 0.1
-    dipPumpShakeMovePercentMax: 0.38
-    dipPumpNoiseStrength: 0.2
-    dipPumpMaxPriceChangePerTick01: 0.34
-    deadFlatRocketFlatDurationMinSeconds: 3
-    deadFlatRocketFlatDurationMaxSeconds: 8
-    deadFlatRocketFlatRange01: 0.045
-    deadFlatRocketNoiseStrength: 0.055
-    deadFlatRocketPumpPercentMin: 0.6
-    deadFlatRocketPumpPercentMax: 1.9
-    deadFlatRocketPumpDurationMinSeconds: 0.8
-    deadFlatRocketPumpDurationMaxSeconds: 3.2
-    deadFlatRocketMaxPriceChangePerTick01: 0.48
-    deadFlatDumpFlatDurationMinSeconds: 3
-    deadFlatDumpFlatDurationMaxSeconds: 8
-    deadFlatDumpFlatRange01: 0.045
-    deadFlatDumpNoiseStrength: 0.055
-    deadFlatDumpDropPercentMin: 0.35
-    deadFlatDumpDropPercentMax: 0.78
-    deadFlatDumpDurationMinSeconds: 0.8
-    deadFlatDumpDurationMaxSeconds: 3.2
-    deadFlatDumpMaxPriceChangePerTick01: 0.48
-    normalMaxPriceChangePerTick01: 0.18
-    pumpMaxPriceChangePerTick01: 0.48
-    crashMaxPriceChangePerTick01: 0.6
-    crashFirstTriggerPrice: 120000
-    crashThresholdRandomMin: 150000
-    crashThresholdRandomMax: 650000
-    crashRecoverToInitialMultiplier: 1.05
+    startCorridorWidthPercent: 0.25
+    minCorridorWidthPercent: 0.12
+    maxCorridorWidthPercent: 0.55
+    corridorShiftUpMinPercent: 0.08
+    corridorShiftUpMaxPercent: 0.35
+    corridorShiftDownMinPercent: 0.08
+    corridorShiftDownMaxPercent: 0.3
+    priceReturnToCorridorStrength: 0.55
+    borderBounceStrength: 0.45
+    allowSoftBreakOutsideCorridor: 1
+    minStateDurationSeconds: 8
+    maxStateDurationSeconds: 42
+    minPatternCooldownSeconds: 5
+    maxPatternCooldownSeconds: 25
+    chanceToStartPatternAfterState: 0.25
+    stateWeights: []
+    patternWeights: []
+    calmCorridor:
+      directionalBias: 0
+      noiseAmountPercent: 0.15
+      noiseSmoothness: 0.15
+      reverseMoveChance: 0.35
+      maxTickChangePercent: 0.03
+      centerAttraction: 0.25
+      edgeAttraction: 0.45
+    activeCorridor:
+      directionalBias: 0
+      noiseAmountPercent: 0.15
+      noiseSmoothness: 0.15
+      reverseMoveChance: 0.35
+      maxTickChangePercent: 0.03
+      centerAttraction: 0.25
+      edgeAttraction: 0.45
+    scalpingWindow:
+      directionalBias: 0
+      noiseAmountPercent: 0.1
+      noiseSmoothness: 0.15
+      reverseMoveChance: 0.35
+      maxTickChangePercent: 0.05
+      centerAttraction: 0.25
+      edgeAttraction: 0.45
+    pressureUp:
+      directionalBias: 0.6
+      noiseAmountPercent: 0.15
+      noiseSmoothness: 0.15
+      reverseMoveChance: 0.35
+      maxTickChangePercent: 0.04
+      centerAttraction: 0.25
+      edgeAttraction: 0.45
+    pressureDown:
+      directionalBias: -0.6
+      noiseAmountPercent: 0.15
+      noiseSmoothness: 0.15
+      reverseMoveChance: 0.35
+      maxTickChangePercent: 0.04
+      centerAttraction: 0.25
+      edgeAttraction: 0.45
+    slowTrendUp:
+      directionalBias: 0.45
+      noiseAmountPercent: 0.1
+      noiseSmoothness: 0.15
+      reverseMoveChance: 0.35
+      maxTickChangePercent: 0.035
+      centerAttraction: 0.25
+      edgeAttraction: 0.45
+    slowTrendDown:
+      directionalBias: -0.45
+      noiseAmountPercent: 0.1
+      noiseSmoothness: 0.15
+      reverseMoveChance: 0.35
+      maxTickChangePercent: 0.035
+      centerAttraction: 0.25
+      edgeAttraction: 0.45
+    volatileChop:
+      directionalBias: 0
+      noiseAmountPercent: 0.25
+      noiseSmoothness: 0.15
+      reverseMoveChance: 0.55
+      maxTickChangePercent: 0.06
+      centerAttraction: 0.25
+      edgeAttraction: 0.45
+    accumulation:
+      directionalBias: 0.1
+      noiseAmountPercent: 0.08
+      noiseSmoothness: 0.15
+      reverseMoveChance: 0.35
+      maxTickChangePercent: 0.025
+      centerAttraction: 0.25
+      edgeAttraction: 0.45
+    distribution:
+      directionalBias: -0.1
+      noiseAmountPercent: 0.08
+      noiseSmoothness: 0.15
+      reverseMoveChance: 0.35
+      maxTickChangePercent: 0.025
+      centerAttraction: 0.25
+      edgeAttraction: 0.45
+    bigSaw:
+      minDurationSeconds: 3
+      maxDurationSeconds: 12
+      minWaves: 3
+      maxWaves: 7
+      minAmplitudePercentOfCorridor: 0.4
+      maxAmplitudePercentOfCorridor: 0.9
+      chanceToShiftCorridor: 0.3
+      minCorridorShiftPercent: 0.1
+      maxCorridorShiftPercent: 0.5
+      noiseAmountPercent: 0.08
+      noiseSmoothness: 0.3
+      maxTickChangePercent: 0.05
+    staircaseShiftUp:
+      minDurationSeconds: 3
+      maxDurationSeconds: 12
+      minWaves: 3
+      maxWaves: 7
+      minAmplitudePercentOfCorridor: 0.4
+      maxAmplitudePercentOfCorridor: 0.9
+      chanceToShiftCorridor: 0.85
+      minCorridorShiftPercent: 0.08
+      maxCorridorShiftPercent: 0.35
+      noiseAmountPercent: 0.08
+      noiseSmoothness: 0.3
+      maxTickChangePercent: 0.05
+    staircaseShiftDown:
+      minDurationSeconds: 3
+      maxDurationSeconds: 12
+      minWaves: 3
+      maxWaves: 7
+      minAmplitudePercentOfCorridor: 0.4
+      maxAmplitudePercentOfCorridor: 0.9
+      chanceToShiftCorridor: 0.85
+      minCorridorShiftPercent: 0.08
+      maxCorridorShiftPercent: 0.3
+      noiseAmountPercent: 0.08
+      noiseSmoothness: 0.3
+      maxTickChangePercent: 0.05
+    falseBreakoutUp:
+      minDurationSeconds: 2
+      maxDurationSeconds: 6
+      minWaves: 3
+      maxWaves: 7
+      minAmplitudePercentOfCorridor: 0.4
+      maxAmplitudePercentOfCorridor: 0.9
+      chanceToShiftCorridor: 0
+      minCorridorShiftPercent: 0.1
+      maxCorridorShiftPercent: 0.5
+      noiseAmountPercent: 0.08
+      noiseSmoothness: 0.3
+      maxTickChangePercent: 0.05
+    falseBreakoutDown:
+      minDurationSeconds: 2
+      maxDurationSeconds: 6
+      minWaves: 3
+      maxWaves: 7
+      minAmplitudePercentOfCorridor: 0.4
+      maxAmplitudePercentOfCorridor: 0.9
+      chanceToShiftCorridor: 0
+      minCorridorShiftPercent: 0.1
+      maxCorridorShiftPercent: 0.5
+      noiseAmountPercent: 0.08
+      noiseSmoothness: 0.3
+      maxTickChangePercent: 0.05
+    pumpAndCorrection:
+      minDurationSeconds: 4
+      maxDurationSeconds: 14
+      minWaves: 3
+      maxWaves: 7
+      minAmplitudePercentOfCorridor: 0.4
+      maxAmplitudePercentOfCorridor: 0.9
+      chanceToShiftCorridor: 0.15
+      minCorridorShiftPercent: 0.1
+      maxCorridorShiftPercent: 0.5
+      noiseAmountPercent: 0.08
+      noiseSmoothness: 0.3
+      maxTickChangePercent: 0.05
+    dumpAndRecovery:
+      minDurationSeconds: 4
+      maxDurationSeconds: 14
+      minWaves: 3
+      maxWaves: 7
+      minAmplitudePercentOfCorridor: 0.4
+      maxAmplitudePercentOfCorridor: 0.9
+      chanceToShiftCorridor: 0.15
+      minCorridorShiftPercent: 0.1
+      maxCorridorShiftPercent: 0.5
+      noiseAmountPercent: 0.08
+      noiseSmoothness: 0.3
+      maxTickChangePercent: 0.05
+    compressionBreakoutNew:
+      minDurationSeconds: 5
+      maxDurationSeconds: 18
+      minWaves: 3
+      maxWaves: 7
+      minAmplitudePercentOfCorridor: 0.4
+      maxAmplitudePercentOfCorridor: 0.9
+      chanceToShiftCorridor: 0.5
+      minCorridorShiftPercent: 0.05
+      maxCorridorShiftPercent: 0.4
+      noiseAmountPercent: 0.08
+      noiseSmoothness: 0.3
+      maxTickChangePercent: 0.05
+    minPrice: 1
+    maxPrice: 1e+9
+    maxNormalTickChangePercent: 0.06
+    maxEventTickChangePercent: 0.1
     roundingRules:
     - minPrice: 0
       step: 1
   - id: 1
     tickIntervalSeconds: 0.85
-    normalTickSpeedMultiplier: 1
-    pumpTickSpeedMultiplier: 1.18
-    crashTickSpeedMultiplier: 1.35
     plannedStatesCount: 3
     initialPrice: 100000
-    stateDurationMinSeconds: 45
-    stateDurationMaxSeconds: 170
-    plannedStateWeights:
-    - type: 7
-      weight: 1.4
-    - type: 0
-      weight: 0.8
-    - type: 4
-      weight: 0.28
-    - type: 5
-      weight: 0.35
-    - type: 2
-      weight: 0.25
-    - type: 3
-      weight: 0.22
-    - type: 8
-      weight: 0.08
-    - type: 9
-      weight: 0.12
-    corridorWidthAtLowPrice: 1.55
-    corridorWidthAtHighPrice: 1.2
-    highPriceReference: 2000000
-    corridorWidthRandomJitter: 0.06
-    minCorridorLowFromInitial: 0.55
-    calmCorridorWidth: 1.06
-    calmCorridorPullStrength: 0.48
-    chopCorridorWidthMin: 1.35
-    chopCorridorWidthMax: 2.1
-    chopCorridorPullStrength: 0.38
-    trendCorridorWidth: 1.45
-    trendCorridorPullStrength: 0.075
-    scenarioCorridorWidth: 1.28
-    scenarioCorridorPullStrength: 0.065
-    deadFlatCorridorWidth: 1.025
-    deadFlatCorridorPullStrength: 0.018
-    crashCorridorWidth: 1.38
-    crashCorridorPullStrength: 0.14
-    noiseStrength: 0.26
-    trendStrength: 0.24
-    meanReversionStrength: 0.42
-    chopPhaseDurationMinSeconds: 16
-    chopPhaseDurationMaxSeconds: 46
-    chopFakeoutChancePerPhase: 0.55
-    chopFakeoutDurationMinSeconds: 3
-    chopFakeoutDurationMaxSeconds: 8
-    chopFakeoutStrength: 0.32
-    chopRecoveryDurationSeconds: 5
-    chopRecoveryBoost: 1.55
-    calmOffsetFromHalfMin01: 0.08
-    calmOffsetFromHalfMax01: 0.24
-    calmLegDurationMinSeconds: 16
-    calmLegDurationMaxSeconds: 65
-    calmShortLegMaxSeconds: 22
-    calmSmallMoveRelativeThreshold: 0.24
-    calmMaxPriceChangePerTick01: 0.028
-    calmNoiseStrength: 0.045
-    calmApproachStrength: 0.18
-    longUptrendDurationMinSeconds: 50
-    longUptrendDurationMaxSeconds: 145
-    longUptrendTargetMultiplierMin: 1.75
-    longUptrendTargetMultiplierMax: 3.2
-    longUptrendSoftCapAtHighReference01: 0.3
-    longUptrendMinBoostAfterSoftCap01: 0.22
-    longUptrendMaxEffectiveMultiplier: 2.8
-    longUptrendTargetCorridorPos: 0.66
-    longUptrendApproachStrength: 0.27
-    longUptrendNoiseStrength: 0.055
-    longUptrendWobbleStrength: 0.26
-    longUptrendDownWobbleChance: 0.54
-    longUptrendDownWobbleMultiplier: 1.15
-    longUptrendUpWobbleMultiplier: 0.45
-    longUptrendPullbackChancePerTick: 0.12
-    longUptrendPullbackStrength: 0.075
-    longUptrendPullbackDurationMinSeconds: 1.5
-    longUptrendPullbackDurationMaxSeconds: 4.5
-    longUptrendPullbackCooldownSeconds: 5
-    longUptrendRecoveryDurationSeconds: 4
-    longUptrendRecoveryCatchupMultiplier: 1.65
-    longUptrendMaxPriceChangePerTick01: 0.055
-    longDowntrendDurationMinSeconds: 45
-    longDowntrendDurationMaxSeconds: 140
-    longDowntrendTargetDividerMin: 1.3
-    longDowntrendTargetDividerMax: 2.25
-    longDowntrendTargetCorridorPos: 0.33
-    longDowntrendApproachStrength: 0.3
-    longDowntrendNoiseStrength: 0.06
-    longDowntrendRallyChancePerTick: 0.12
-    longDowntrendRallyStrength: 0.08
-    longDowntrendRallyDurationMinSeconds: 3
-    longDowntrendRallyDurationMaxSeconds: 8
-    longDowntrendRallyCooldownSeconds: 10
-    longDowntrendRecoveryDurationSeconds: 7
-    longDowntrendRecoveryCatchupMultiplier: 1.55
-    longDowntrendMaxPriceChangePerTick01: 0.055
-    spikeDumpGrowPercentMin: 0.3
-    spikeDumpGrowPercentMax: 0.95
-    spikeDumpGrowDurationMinSeconds: 18
-    spikeDumpGrowDurationMaxSeconds: 48
-    spikeDumpDropOverGrowMin: 1.05
-    spikeDumpDropOverGrowMax: 1.45
-    spikeDumpMaxDropPercent: 0.82
-    spikeDumpDumpDurationMinSeconds: 3
-    spikeDumpDumpDurationMaxSeconds: 9
-    spikeDumpShakeMovesMin: 2
-    spikeDumpShakeMovesMax: 4
-    spikeDumpShakeDurationMinSeconds: 5
-    spikeDumpShakeDurationMaxSeconds: 14
-    spikeDumpShakeMovePercentMin: 0.04
-    spikeDumpShakeMovePercentMax: 0.14
-    spikeDumpNoiseStrength: 0.045
-    spikeDumpMaxPriceChangePerTick01: 0.14
-    dipPumpDipPercentMin: 0.18
-    dipPumpDipPercentMax: 0.5
-    dipPumpDipDurationMinSeconds: 18
-    dipPumpDipDurationMaxSeconds: 52
-    dipPumpPumpOverDipMin: 1.25
-    dipPumpPumpOverDipMax: 1.95
-    dipPumpMaxPumpPercent: 1.3
-    dipPumpPumpDurationMinSeconds: 3
-    dipPumpPumpDurationMaxSeconds: 9
-    dipPumpShakeMovesMin: 2
-    dipPumpShakeMovesMax: 4
-    dipPumpShakeDurationMinSeconds: 5
-    dipPumpShakeDurationMaxSeconds: 14
-    dipPumpShakeMovePercentMin: 0.04
-    dipPumpShakeMovePercentMax: 0.14
-    dipPumpNoiseStrength: 0.045
-    dipPumpMaxPriceChangePerTick01: 0.14
-    deadFlatRocketFlatDurationMinSeconds: 45
-    deadFlatRocketFlatDurationMaxSeconds: 110
-    deadFlatRocketFlatRange01: 0.007
-    deadFlatRocketNoiseStrength: 0.006
-    deadFlatRocketPumpPercentMin: 0.45
-    deadFlatRocketPumpPercentMax: 1.2
-    deadFlatRocketPumpDurationMinSeconds: 4
-    deadFlatRocketPumpDurationMaxSeconds: 10
-    deadFlatRocketMaxPriceChangePerTick01: 0.18
-    deadFlatDumpFlatDurationMinSeconds: 35
-    deadFlatDumpFlatDurationMaxSeconds: 95
-    deadFlatDumpFlatRange01: 0.007
-    deadFlatDumpNoiseStrength: 0.006
-    deadFlatDumpDropPercentMin: 0.22
-    deadFlatDumpDropPercentMax: 0.58
-    deadFlatDumpDurationMinSeconds: 4
-    deadFlatDumpDurationMaxSeconds: 10
-    deadFlatDumpMaxPriceChangePerTick01: 0.18
-    normalMaxPriceChangePerTick01: 0.045
-    pumpMaxPriceChangePerTick01: 0.18
-    crashMaxPriceChangePerTick01: 0.28
-    crashFirstTriggerPrice: 500000
-    crashThresholdRandomMin: 650000
-    crashThresholdRandomMax: 2500000
-    crashRecoverToInitialMultiplier: 1.02
+    startCorridorWidthPercent: 0.25
+    minCorridorWidthPercent: 0.12
+    maxCorridorWidthPercent: 0.55
+    corridorShiftUpMinPercent: 0.08
+    corridorShiftUpMaxPercent: 0.35
+    corridorShiftDownMinPercent: 0.08
+    corridorShiftDownMaxPercent: 0.3
+    priceReturnToCorridorStrength: 0.55
+    borderBounceStrength: 0.45
+    allowSoftBreakOutsideCorridor: 1
+    minStateDurationSeconds: 8
+    maxStateDurationSeconds: 42
+    minPatternCooldownSeconds: 5
+    maxPatternCooldownSeconds: 25
+    chanceToStartPatternAfterState: 0.25
+    stateWeights: []
+    patternWeights: []
+    calmCorridor:
+      directionalBias: 0
+      noiseAmountPercent: 0.15
+      noiseSmoothness: 0.15
+      reverseMoveChance: 0.35
+      maxTickChangePercent: 0.03
+      centerAttraction: 0.25
+      edgeAttraction: 0.45
+    activeCorridor:
+      directionalBias: 0
+      noiseAmountPercent: 0.15
+      noiseSmoothness: 0.15
+      reverseMoveChance: 0.35
+      maxTickChangePercent: 0.03
+      centerAttraction: 0.25
+      edgeAttraction: 0.45
+    scalpingWindow:
+      directionalBias: 0
+      noiseAmountPercent: 0.1
+      noiseSmoothness: 0.15
+      reverseMoveChance: 0.35
+      maxTickChangePercent: 0.05
+      centerAttraction: 0.25
+      edgeAttraction: 0.45
+    pressureUp:
+      directionalBias: 0.6
+      noiseAmountPercent: 0.15
+      noiseSmoothness: 0.15
+      reverseMoveChance: 0.35
+      maxTickChangePercent: 0.04
+      centerAttraction: 0.25
+      edgeAttraction: 0.45
+    pressureDown:
+      directionalBias: -0.6
+      noiseAmountPercent: 0.15
+      noiseSmoothness: 0.15
+      reverseMoveChance: 0.35
+      maxTickChangePercent: 0.04
+      centerAttraction: 0.25
+      edgeAttraction: 0.45
+    slowTrendUp:
+      directionalBias: 0.45
+      noiseAmountPercent: 0.1
+      noiseSmoothness: 0.15
+      reverseMoveChance: 0.35
+      maxTickChangePercent: 0.035
+      centerAttraction: 0.25
+      edgeAttraction: 0.45
+    slowTrendDown:
+      directionalBias: -0.45
+      noiseAmountPercent: 0.1
+      noiseSmoothness: 0.15
+      reverseMoveChance: 0.35
+      maxTickChangePercent: 0.035
+      centerAttraction: 0.25
+      edgeAttraction: 0.45
+    volatileChop:
+      directionalBias: 0
+      noiseAmountPercent: 0.25
+      noiseSmoothness: 0.15
+      reverseMoveChance: 0.55
+      maxTickChangePercent: 0.06
+      centerAttraction: 0.25
+      edgeAttraction: 0.45
+    accumulation:
+      directionalBias: 0.1
+      noiseAmountPercent: 0.08
+      noiseSmoothness: 0.15
+      reverseMoveChance: 0.35
+      maxTickChangePercent: 0.025
+      centerAttraction: 0.25
+      edgeAttraction: 0.45
+    distribution:
+      directionalBias: -0.1
+      noiseAmountPercent: 0.08
+      noiseSmoothness: 0.15
+      reverseMoveChance: 0.35
+      maxTickChangePercent: 0.025
+      centerAttraction: 0.25
+      edgeAttraction: 0.45
+    bigSaw:
+      minDurationSeconds: 3
+      maxDurationSeconds: 12
+      minWaves: 3
+      maxWaves: 7
+      minAmplitudePercentOfCorridor: 0.4
+      maxAmplitudePercentOfCorridor: 0.9
+      chanceToShiftCorridor: 0.3
+      minCorridorShiftPercent: 0.1
+      maxCorridorShiftPercent: 0.5
+      noiseAmountPercent: 0.08
+      noiseSmoothness: 0.3
+      maxTickChangePercent: 0.05
+    staircaseShiftUp:
+      minDurationSeconds: 3
+      maxDurationSeconds: 12
+      minWaves: 3
+      maxWaves: 7
+      minAmplitudePercentOfCorridor: 0.4
+      maxAmplitudePercentOfCorridor: 0.9
+      chanceToShiftCorridor: 0.85
+      minCorridorShiftPercent: 0.08
+      maxCorridorShiftPercent: 0.35
+      noiseAmountPercent: 0.08
+      noiseSmoothness: 0.3
+      maxTickChangePercent: 0.05
+    staircaseShiftDown:
+      minDurationSeconds: 3
+      maxDurationSeconds: 12
+      minWaves: 3
+      maxWaves: 7
+      minAmplitudePercentOfCorridor: 0.4
+      maxAmplitudePercentOfCorridor: 0.9
+      chanceToShiftCorridor: 0.85
+      minCorridorShiftPercent: 0.08
+      maxCorridorShiftPercent: 0.3
+      noiseAmountPercent: 0.08
+      noiseSmoothness: 0.3
+      maxTickChangePercent: 0.05
+    falseBreakoutUp:
+      minDurationSeconds: 2
+      maxDurationSeconds: 6
+      minWaves: 3
+      maxWaves: 7
+      minAmplitudePercentOfCorridor: 0.4
+      maxAmplitudePercentOfCorridor: 0.9
+      chanceToShiftCorridor: 0
+      minCorridorShiftPercent: 0.1
+      maxCorridorShiftPercent: 0.5
+      noiseAmountPercent: 0.08
+      noiseSmoothness: 0.3
+      maxTickChangePercent: 0.05
+    falseBreakoutDown:
+      minDurationSeconds: 2
+      maxDurationSeconds: 6
+      minWaves: 3
+      maxWaves: 7
+      minAmplitudePercentOfCorridor: 0.4
+      maxAmplitudePercentOfCorridor: 0.9
+      chanceToShiftCorridor: 0
+      minCorridorShiftPercent: 0.1
+      maxCorridorShiftPercent: 0.5
+      noiseAmountPercent: 0.08
+      noiseSmoothness: 0.3
+      maxTickChangePercent: 0.05
+    pumpAndCorrection:
+      minDurationSeconds: 4
+      maxDurationSeconds: 14
+      minWaves: 3
+      maxWaves: 7
+      minAmplitudePercentOfCorridor: 0.4
+      maxAmplitudePercentOfCorridor: 0.9
+      chanceToShiftCorridor: 0.15
+      minCorridorShiftPercent: 0.1
+      maxCorridorShiftPercent: 0.5
+      noiseAmountPercent: 0.08
+      noiseSmoothness: 0.3
+      maxTickChangePercent: 0.05
+    dumpAndRecovery:
+      minDurationSeconds: 4
+      maxDurationSeconds: 14
+      minWaves: 3
+      maxWaves: 7
+      minAmplitudePercentOfCorridor: 0.4
+      maxAmplitudePercentOfCorridor: 0.9
+      chanceToShiftCorridor: 0.15
+      minCorridorShiftPercent: 0.1
+      maxCorridorShiftPercent: 0.5
+      noiseAmountPercent: 0.08
+      noiseSmoothness: 0.3
+      maxTickChangePercent: 0.05
+    compressionBreakoutNew:
+      minDurationSeconds: 5
+      maxDurationSeconds: 18
+      minWaves: 3
+      maxWaves: 7
+      minAmplitudePercentOfCorridor: 0.4
+      maxAmplitudePercentOfCorridor: 0.9
+      chanceToShiftCorridor: 0.5
+      minCorridorShiftPercent: 0.05
+      maxCorridorShiftPercent: 0.4
+      noiseAmountPercent: 0.08
+      noiseSmoothness: 0.3
+      maxTickChangePercent: 0.05
+    minPrice: 1
+    maxPrice: 1e+9
+    maxNormalTickChangePercent: 0.06
+    maxEventTickChangePercent: 0.1
     roundingRules:
     - minPrice: 0
       step: 1
@@ -51752,164 +51850,213 @@ MonoBehaviour:
       step: 50
   - id: 2
     tickIntervalSeconds: 0.95
-    normalTickSpeedMultiplier: 1
-    pumpTickSpeedMultiplier: 1.25
-    crashTickSpeedMultiplier: 1.45
     plannedStatesCount: 3
     initialPrice: 2500000
-    stateDurationMinSeconds: 35
-    stateDurationMaxSeconds: 130
-    plannedStateWeights:
-    - type: 7
-      weight: 0.45
-    - type: 0
-      weight: 1.15
-    - type: 4
-      weight: 0.36
-    - type: 5
-      weight: 0.62
-    - type: 2
-      weight: 0.36
-    - type: 3
-      weight: 0.48
-    - type: 8
-      weight: 0.07
-    - type: 9
-      weight: 0.14
-    corridorWidthAtLowPrice: 2.2
-    corridorWidthAtHighPrice: 1.35
-    highPriceReference: 25000000
-    corridorWidthRandomJitter: 0.14
-    minCorridorLowFromInitial: 0.45
-    calmCorridorWidth: 1.16
-    calmCorridorPullStrength: 0.3
-    chopCorridorWidthMin: 1.95
-    chopCorridorWidthMax: 3.45
-    chopCorridorPullStrength: 0.24
-    trendCorridorWidth: 1.9
-    trendCorridorPullStrength: 0.05
-    scenarioCorridorWidth: 1.7
-    scenarioCorridorPullStrength: 0.05
-    deadFlatCorridorWidth: 1.06
-    deadFlatCorridorPullStrength: 0.012
-    crashCorridorWidth: 1.55
-    crashCorridorPullStrength: 0.13
-    noiseStrength: 0.62
-    trendStrength: 0.28
-    meanReversionStrength: 0.26
-    chopPhaseDurationMinSeconds: 9
-    chopPhaseDurationMaxSeconds: 28
-    chopFakeoutChancePerPhase: 0.78
-    chopFakeoutDurationMinSeconds: 2
-    chopFakeoutDurationMaxSeconds: 6
-    chopFakeoutStrength: 0.52
-    chopRecoveryDurationSeconds: 3.6
-    chopRecoveryBoost: 1.85
-    calmOffsetFromHalfMin01: 0.1
-    calmOffsetFromHalfMax01: 0.34
-    calmLegDurationMinSeconds: 10
-    calmLegDurationMaxSeconds: 38
-    calmShortLegMaxSeconds: 14
-    calmSmallMoveRelativeThreshold: 0.16
-    calmMaxPriceChangePerTick01: 0.045
-    calmNoiseStrength: 0.09
-    calmApproachStrength: 0.22
-    longUptrendDurationMinSeconds: 55
-    longUptrendDurationMaxSeconds: 150
-    longUptrendTargetMultiplierMin: 1.7
-    longUptrendTargetMultiplierMax: 3.8
-    longUptrendSoftCapAtHighReference01: 0.32
-    longUptrendMinBoostAfterSoftCap01: 0.24
-    longUptrendMaxEffectiveMultiplier: 3.2
-    longUptrendTargetCorridorPos: 0.72
-    longUptrendApproachStrength: 0.3
-    longUptrendNoiseStrength: 0.12
-    longUptrendWobbleStrength: 0.52
-    longUptrendDownWobbleChance: 0.58
-    longUptrendDownWobbleMultiplier: 1.55
-    longUptrendUpWobbleMultiplier: 0.58
-    longUptrendPullbackChancePerTick: 0.2
-    longUptrendPullbackStrength: 0.12
-    longUptrendPullbackDurationMinSeconds: 1.8
-    longUptrendPullbackDurationMaxSeconds: 5
-    longUptrendPullbackCooldownSeconds: 4.5
-    longUptrendRecoveryDurationSeconds: 3.4
-    longUptrendRecoveryCatchupMultiplier: 1.8
-    longUptrendMaxPriceChangePerTick01: 0.07
-    longDowntrendDurationMinSeconds: 35
-    longDowntrendDurationMaxSeconds: 105
-    longDowntrendTargetDividerMin: 1.6
-    longDowntrendTargetDividerMax: 3.5
-    longDowntrendTargetCorridorPos: 0.26
-    longDowntrendApproachStrength: 0.36
-    longDowntrendNoiseStrength: 0.14
-    longDowntrendRallyChancePerTick: 0.18
-    longDowntrendRallyStrength: 0.13
-    longDowntrendRallyDurationMinSeconds: 2.5
-    longDowntrendRallyDurationMaxSeconds: 8
-    longDowntrendRallyCooldownSeconds: 7
-    longDowntrendRecoveryDurationSeconds: 5
-    longDowntrendRecoveryCatchupMultiplier: 1.8
-    longDowntrendMaxPriceChangePerTick01: 0.08
-    spikeDumpGrowPercentMin: 0.35
-    spikeDumpGrowPercentMax: 1.05
-    spikeDumpGrowDurationMinSeconds: 18
-    spikeDumpGrowDurationMaxSeconds: 52
-    spikeDumpDropOverGrowMin: 1.1
-    spikeDumpDropOverGrowMax: 1.7
-    spikeDumpMaxDropPercent: 0.86
-    spikeDumpDumpDurationMinSeconds: 3
-    spikeDumpDumpDurationMaxSeconds: 10
-    spikeDumpShakeMovesMin: 3
-    spikeDumpShakeMovesMax: 6
-    spikeDumpShakeDurationMinSeconds: 4
-    spikeDumpShakeDurationMaxSeconds: 12
-    spikeDumpShakeMovePercentMin: 0.07
-    spikeDumpShakeMovePercentMax: 0.24
-    spikeDumpNoiseStrength: 0.11
-    spikeDumpMaxPriceChangePerTick01: 0.14
-    dipPumpDipPercentMin: 0.26
-    dipPumpDipPercentMax: 0.66
-    dipPumpDipDurationMinSeconds: 18
-    dipPumpDipDurationMaxSeconds: 62
-    dipPumpPumpOverDipMin: 1.45
-    dipPumpPumpOverDipMax: 2.55
-    dipPumpMaxPumpPercent: 1.75
-    dipPumpPumpDurationMinSeconds: 4
-    dipPumpPumpDurationMaxSeconds: 12
-    dipPumpShakeMovesMin: 3
-    dipPumpShakeMovesMax: 6
-    dipPumpShakeDurationMinSeconds: 4
-    dipPumpShakeDurationMaxSeconds: 12
-    dipPumpShakeMovePercentMin: 0.07
-    dipPumpShakeMovePercentMax: 0.24
-    dipPumpNoiseStrength: 0.11
-    dipPumpMaxPriceChangePerTick01: 0.14
-    deadFlatRocketFlatDurationMinSeconds: 24
-    deadFlatRocketFlatDurationMaxSeconds: 70
-    deadFlatRocketFlatRange01: 0.02
-    deadFlatRocketNoiseStrength: 0.018
-    deadFlatRocketPumpPercentMin: 0.55
-    deadFlatRocketPumpPercentMax: 1.45
-    deadFlatRocketPumpDurationMinSeconds: 4
-    deadFlatRocketPumpDurationMaxSeconds: 11
-    deadFlatRocketMaxPriceChangePerTick01: 0.16
-    deadFlatDumpFlatDurationMinSeconds: 18
-    deadFlatDumpFlatDurationMaxSeconds: 58
-    deadFlatDumpFlatRange01: 0.02
-    deadFlatDumpNoiseStrength: 0.018
-    deadFlatDumpDropPercentMin: 0.32
-    deadFlatDumpDropPercentMax: 0.76
-    deadFlatDumpDurationMinSeconds: 4
-    deadFlatDumpDurationMaxSeconds: 12
-    deadFlatDumpMaxPriceChangePerTick01: 0.16
-    normalMaxPriceChangePerTick01: 0.065
-    pumpMaxPriceChangePerTick01: 0.18
-    crashMaxPriceChangePerTick01: 0.3
-    crashFirstTriggerPrice: 8500000
-    crashThresholdRandomMin: 10000000
-    crashThresholdRandomMax: 42000000
-    crashRecoverToInitialMultiplier: 0.98
+    startCorridorWidthPercent: 0.25
+    minCorridorWidthPercent: 0.12
+    maxCorridorWidthPercent: 0.55
+    corridorShiftUpMinPercent: 0.08
+    corridorShiftUpMaxPercent: 0.35
+    corridorShiftDownMinPercent: 0.08
+    corridorShiftDownMaxPercent: 0.3
+    priceReturnToCorridorStrength: 0.55
+    borderBounceStrength: 0.45
+    allowSoftBreakOutsideCorridor: 1
+    minStateDurationSeconds: 8
+    maxStateDurationSeconds: 42
+    minPatternCooldownSeconds: 5
+    maxPatternCooldownSeconds: 25
+    chanceToStartPatternAfterState: 0.25
+    stateWeights: []
+    patternWeights: []
+    calmCorridor:
+      directionalBias: 0
+      noiseAmountPercent: 0.15
+      noiseSmoothness: 0.15
+      reverseMoveChance: 0.35
+      maxTickChangePercent: 0.03
+      centerAttraction: 0.25
+      edgeAttraction: 0.45
+    activeCorridor:
+      directionalBias: 0
+      noiseAmountPercent: 0.15
+      noiseSmoothness: 0.15
+      reverseMoveChance: 0.35
+      maxTickChangePercent: 0.03
+      centerAttraction: 0.25
+      edgeAttraction: 0.45
+    scalpingWindow:
+      directionalBias: 0
+      noiseAmountPercent: 0.1
+      noiseSmoothness: 0.15
+      reverseMoveChance: 0.35
+      maxTickChangePercent: 0.05
+      centerAttraction: 0.25
+      edgeAttraction: 0.45
+    pressureUp:
+      directionalBias: 0.6
+      noiseAmountPercent: 0.15
+      noiseSmoothness: 0.15
+      reverseMoveChance: 0.35
+      maxTickChangePercent: 0.04
+      centerAttraction: 0.25
+      edgeAttraction: 0.45
+    pressureDown:
+      directionalBias: -0.6
+      noiseAmountPercent: 0.15
+      noiseSmoothness: 0.15
+      reverseMoveChance: 0.35
+      maxTickChangePercent: 0.04
+      centerAttraction: 0.25
+      edgeAttraction: 0.45
+    slowTrendUp:
+      directionalBias: 0.45
+      noiseAmountPercent: 0.1
+      noiseSmoothness: 0.15
+      reverseMoveChance: 0.35
+      maxTickChangePercent: 0.035
+      centerAttraction: 0.25
+      edgeAttraction: 0.45
+    slowTrendDown:
+      directionalBias: -0.45
+      noiseAmountPercent: 0.1
+      noiseSmoothness: 0.15
+      reverseMoveChance: 0.35
+      maxTickChangePercent: 0.035
+      centerAttraction: 0.25
+      edgeAttraction: 0.45
+    volatileChop:
+      directionalBias: 0
+      noiseAmountPercent: 0.25
+      noiseSmoothness: 0.15
+      reverseMoveChance: 0.55
+      maxTickChangePercent: 0.06
+      centerAttraction: 0.25
+      edgeAttraction: 0.45
+    accumulation:
+      directionalBias: 0.1
+      noiseAmountPercent: 0.08
+      noiseSmoothness: 0.15
+      reverseMoveChance: 0.35
+      maxTickChangePercent: 0.025
+      centerAttraction: 0.25
+      edgeAttraction: 0.45
+    distribution:
+      directionalBias: -0.1
+      noiseAmountPercent: 0.08
+      noiseSmoothness: 0.15
+      reverseMoveChance: 0.35
+      maxTickChangePercent: 0.025
+      centerAttraction: 0.25
+      edgeAttraction: 0.45
+    bigSaw:
+      minDurationSeconds: 3
+      maxDurationSeconds: 12
+      minWaves: 3
+      maxWaves: 7
+      minAmplitudePercentOfCorridor: 0.4
+      maxAmplitudePercentOfCorridor: 0.9
+      chanceToShiftCorridor: 0.3
+      minCorridorShiftPercent: 0.1
+      maxCorridorShiftPercent: 0.5
+      noiseAmountPercent: 0.08
+      noiseSmoothness: 0.3
+      maxTickChangePercent: 0.05
+    staircaseShiftUp:
+      minDurationSeconds: 3
+      maxDurationSeconds: 12
+      minWaves: 3
+      maxWaves: 7
+      minAmplitudePercentOfCorridor: 0.4
+      maxAmplitudePercentOfCorridor: 0.9
+      chanceToShiftCorridor: 0.85
+      minCorridorShiftPercent: 0.08
+      maxCorridorShiftPercent: 0.35
+      noiseAmountPercent: 0.08
+      noiseSmoothness: 0.3
+      maxTickChangePercent: 0.05
+    staircaseShiftDown:
+      minDurationSeconds: 3
+      maxDurationSeconds: 12
+      minWaves: 3
+      maxWaves: 7
+      minAmplitudePercentOfCorridor: 0.4
+      maxAmplitudePercentOfCorridor: 0.9
+      chanceToShiftCorridor: 0.85
+      minCorridorShiftPercent: 0.08
+      maxCorridorShiftPercent: 0.3
+      noiseAmountPercent: 0.08
+      noiseSmoothness: 0.3
+      maxTickChangePercent: 0.05
+    falseBreakoutUp:
+      minDurationSeconds: 2
+      maxDurationSeconds: 6
+      minWaves: 3
+      maxWaves: 7
+      minAmplitudePercentOfCorridor: 0.4
+      maxAmplitudePercentOfCorridor: 0.9
+      chanceToShiftCorridor: 0
+      minCorridorShiftPercent: 0.1
+      maxCorridorShiftPercent: 0.5
+      noiseAmountPercent: 0.08
+      noiseSmoothness: 0.3
+      maxTickChangePercent: 0.05
+    falseBreakoutDown:
+      minDurationSeconds: 2
+      maxDurationSeconds: 6
+      minWaves: 3
+      maxWaves: 7
+      minAmplitudePercentOfCorridor: 0.4
+      maxAmplitudePercentOfCorridor: 0.9
+      chanceToShiftCorridor: 0
+      minCorridorShiftPercent: 0.1
+      maxCorridorShiftPercent: 0.5
+      noiseAmountPercent: 0.08
+      noiseSmoothness: 0.3
+      maxTickChangePercent: 0.05
+    pumpAndCorrection:
+      minDurationSeconds: 4
+      maxDurationSeconds: 14
+      minWaves: 3
+      maxWaves: 7
+      minAmplitudePercentOfCorridor: 0.4
+      maxAmplitudePercentOfCorridor: 0.9
+      chanceToShiftCorridor: 0.15
+      minCorridorShiftPercent: 0.1
+      maxCorridorShiftPercent: 0.5
+      noiseAmountPercent: 0.08
+      noiseSmoothness: 0.3
+      maxTickChangePercent: 0.05
+    dumpAndRecovery:
+      minDurationSeconds: 4
+      maxDurationSeconds: 14
+      minWaves: 3
+      maxWaves: 7
+      minAmplitudePercentOfCorridor: 0.4
+      maxAmplitudePercentOfCorridor: 0.9
+      chanceToShiftCorridor: 0.15
+      minCorridorShiftPercent: 0.1
+      maxCorridorShiftPercent: 0.5
+      noiseAmountPercent: 0.08
+      noiseSmoothness: 0.3
+      maxTickChangePercent: 0.05
+    compressionBreakoutNew:
+      minDurationSeconds: 5
+      maxDurationSeconds: 18
+      minWaves: 3
+      maxWaves: 7
+      minAmplitudePercentOfCorridor: 0.4
+      maxAmplitudePercentOfCorridor: 0.9
+      chanceToShiftCorridor: 0.5
+      minCorridorShiftPercent: 0.05
+      maxCorridorShiftPercent: 0.4
+      noiseAmountPercent: 0.08
+      noiseSmoothness: 0.3
+      maxTickChangePercent: 0.05
+    minPrice: 1
+    maxPrice: 1e+9
+    maxNormalTickChangePercent: 0.06
+    maxEventTickChangePercent: 0.1
     roundingRules:
     - minPrice: 0
       step: 10
@@ -51921,54 +52068,13 @@ MonoBehaviour:
       step: 500
     - minPrice: 500000
       step: 1000
-  corridorChangeChanceOnStateChange: 0.35
-  minorChangeMinPercent: 0.1
-  minorChangeMaxPercent: 0.5
-  majorChangeMinPercent: 0.5
-  majorChangeMaxPercent: 0.9
-  hugeChangeMinMultiplier: 1
-  hugeChangeMaxMultiplier: 3
-  preventPlayablePriceCollapse: 1
-  lowPriceRecoveryTriggerMultiplier: 1.2
-  lowPriceRecoveryTargetMultiplier: 1.8
-  lowPriceRecoveryPullStrength: 0.35
-  lowPriceRecoveryDurationMinSeconds: 8
-  lowPriceRecoveryDurationMaxSeconds: 20
   useGlobalMarketGrowth: 1
-  useRecommendedMarketPersonalityTuning: 1
-  globalGrowthPerMinute01: 0.026
-  shtGlobalGrowthMultiplier: 0.85
-  ethGlobalGrowthMultiplier: 1
-  btcGlobalGrowthMultiplier: 0.72
-  globalGrowthNoiseStrength: 0.2
   scaleMarketWithBusinessIncome: 1
-  economyTargetRefreshSeconds: 5
-  businessIncomeIgnoredBelowRublesPerHour: 100000
-  economyCorridorCatchUpPerMinute01: 0.55
-  shtTargetExposureHours: 0.045
-  ethTargetExposureHours: 0.25
-  btcTargetExposureHours: 0.6
-  useShtStarterAssist: 1
-  keepShtStarterAssistAlwaysActive: 1
-  shtStarterAssistDurationSeconds: 480
-  shtStarterAssistMinimumSeconds: 180
-  shtStarterAssistProfitExitMultiplier: 2.25
-  shtStarterAssistSoftFloorFromInitial: 0.78
-  shtStarterAssistReboundPerMinute01: 2.2
-  shtStarterAssistDownMoveDamping: 0.45
-  useEarlyPlayerShtAssist: 1
-  earlyAssistRublesThreshold: 250000
-  earlyAssistBusinessIncomeThresholdPerHour: 100000
-  earlyAssistDownMoveDamping: 0.72
-  earlyAssistReboundMultiplier: 1.75
-  balanceSimulationRuns: 24
-  balanceSimulationMinutes: 60
-  useRealtimeCatchUp: 1
-  maxRealtimeCatchUpSeconds: 900
   writeToCurrencyMarket: 1
   logMarketStatesOnStart: 1
   logMarketStatesOnStateChange: 1
   logActiveCurrencyChopDebug: 1
+  showDebugLogs: 0
   debugOverrideState: 0
   debugOverrideActiveCurrencyOnly: 1
   debugOverrideCurrency: 0
