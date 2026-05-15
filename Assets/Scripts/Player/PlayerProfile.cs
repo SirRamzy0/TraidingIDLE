@@ -318,8 +318,15 @@ namespace TraidingIDLE.Player
                     continue;
 
                 var current = holdings[index];
+
                 current.amount = Mathf.Max(0, saved.amount);
-                current.cap = Mathf.Max(0, current.cap);
+
+// Важно: загружаем сохранённый лимит.
+// Если в старом сейве cap вдруг 0 или отсутствовал, оставляем дефолтный cap из инспектора.
+                current.cap = saved.cap > 0
+                    ? Mathf.Max(0, saved.cap)
+                    : Mathf.Max(0, current.cap);
+
                 current.investedRubles = Math.Max(0, saved.investedRubles);
 
                 if (current.amount > current.cap)

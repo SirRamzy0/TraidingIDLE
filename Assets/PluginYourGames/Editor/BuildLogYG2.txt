@@ -1,3 +1,3 @@
-﻿Build path: C:/GameDev/Building/TraderIDLE
-Build number: 5
+﻿Build path: C:/GameDev/Building
+Build number: 9
 PluginYG version: 2.0092
