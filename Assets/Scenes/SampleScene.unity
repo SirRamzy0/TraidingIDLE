@@ -70772,7 +70772,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 423e13a42d313f948a13bcedae13febe, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  nameLB: test
+  nameLB: Billioniers
   maxQuantityPlayers: 10
   quantityTop: 3
   quantityAround: 3
