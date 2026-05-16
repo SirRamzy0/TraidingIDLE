@@ -51418,13 +51418,14 @@ MonoBehaviour:
   - id: 2
     price: 2500000
   coins:
-  - id: 0
+  - balancePresetVersion: 0
+    id: 0
     tickIntervalSeconds: 0.6
     plannedStatesCount: 4
     initialPrice: 5000
-    startCorridorWidthPercent: 0.25
-    minCorridorWidthPercent: 0.12
-    maxCorridorWidthPercent: 0.55
+    startCorridorWidthPercent: 1
+    minCorridorWidthPercent: 0.65
+    maxCorridorWidthPercent: 1.35
     corridorShiftUpMinPercent: 0.08
     corridorShiftUpMaxPercent: 0.35
     corridorShiftDownMinPercent: 0.08
@@ -51432,6 +51433,18 @@ MonoBehaviour:
     priceReturnToCorridorStrength: 0.55
     borderBounceStrength: 0.45
     allowSoftBreakOutsideCorridor: 1
+    useBusinessIncomeEconomicCorridor: 1
+    economyBaseCoinCap: 1000
+    earlyFullCapProfitFloorRubles: 13000000
+    targetFullCapProfitHoursEarly: 3
+    targetFullCapProfitHoursLate: 0.8
+    businessIncomeForLateBalance: 50000000
+    economicCorridorRatio: 3.5
+    economicIncomeSmoothing: 0.08
+    economicCorridorRecalcSeconds: 10
+    economicShiftInfluence: 0.45
+    maxEconomicCenterGrowthPerRecalc: 0.2
+    maxEconomicCenterDropPerRecalc: 0.12
     minStateDurationSeconds: 8
     maxStateDurationSeconds: 42
     minPatternCooldownSeconds: 5
@@ -51532,6 +51545,10 @@ MonoBehaviour:
       noiseAmountPercent: 0.08
       noiseSmoothness: 0.3
       maxTickChangePercent: 0.05
+      minSpikeMultiplier: 2
+      maxSpikeMultiplier: 4
+      minHoldSeconds: 2
+      maxHoldSeconds: 5
     staircaseShiftUp:
       minDurationSeconds: 3
       maxDurationSeconds: 12
@@ -51545,6 +51562,10 @@ MonoBehaviour:
       noiseAmountPercent: 0.08
       noiseSmoothness: 0.3
       maxTickChangePercent: 0.05
+      minSpikeMultiplier: 2
+      maxSpikeMultiplier: 4
+      minHoldSeconds: 2
+      maxHoldSeconds: 5
     staircaseShiftDown:
       minDurationSeconds: 3
       maxDurationSeconds: 12
@@ -51558,6 +51579,10 @@ MonoBehaviour:
       noiseAmountPercent: 0.08
       noiseSmoothness: 0.3
       maxTickChangePercent: 0.05
+      minSpikeMultiplier: 2
+      maxSpikeMultiplier: 4
+      minHoldSeconds: 2
+      maxHoldSeconds: 5
     falseBreakoutUp:
       minDurationSeconds: 2
       maxDurationSeconds: 6
@@ -51571,6 +51596,10 @@ MonoBehaviour:
       noiseAmountPercent: 0.08
       noiseSmoothness: 0.3
       maxTickChangePercent: 0.05
+      minSpikeMultiplier: 2
+      maxSpikeMultiplier: 4
+      minHoldSeconds: 2
+      maxHoldSeconds: 5
     falseBreakoutDown:
       minDurationSeconds: 2
       maxDurationSeconds: 6
@@ -51584,6 +51613,10 @@ MonoBehaviour:
       noiseAmountPercent: 0.08
       noiseSmoothness: 0.3
       maxTickChangePercent: 0.05
+      minSpikeMultiplier: 2
+      maxSpikeMultiplier: 4
+      minHoldSeconds: 2
+      maxHoldSeconds: 5
     pumpAndCorrection:
       minDurationSeconds: 4
       maxDurationSeconds: 14
@@ -51597,6 +51630,10 @@ MonoBehaviour:
       noiseAmountPercent: 0.08
       noiseSmoothness: 0.3
       maxTickChangePercent: 0.05
+      minSpikeMultiplier: 2
+      maxSpikeMultiplier: 4
+      minHoldSeconds: 2
+      maxHoldSeconds: 5
     dumpAndRecovery:
       minDurationSeconds: 4
       maxDurationSeconds: 14
@@ -51610,6 +51647,10 @@ MonoBehaviour:
       noiseAmountPercent: 0.08
       noiseSmoothness: 0.3
       maxTickChangePercent: 0.05
+      minSpikeMultiplier: 2
+      maxSpikeMultiplier: 4
+      minHoldSeconds: 2
+      maxHoldSeconds: 5
     compressionBreakoutNew:
       minDurationSeconds: 5
       maxDurationSeconds: 18
@@ -51623,14 +51664,53 @@ MonoBehaviour:
       noiseAmountPercent: 0.08
       noiseSmoothness: 0.3
       maxTickChangePercent: 0.05
+      minSpikeMultiplier: 2
+      maxSpikeMultiplier: 4
+      minHoldSeconds: 2
+      maxHoldSeconds: 5
+    spikeUpRevert:
+      minDurationSeconds: 3
+      maxDurationSeconds: 8
+      minWaves: 3
+      maxWaves: 3
+      minAmplitudePercentOfCorridor: 0.4
+      maxAmplitudePercentOfCorridor: 0.9
+      chanceToShiftCorridor: 0
+      minCorridorShiftPercent: 0.1
+      maxCorridorShiftPercent: 0.5
+      noiseAmountPercent: 0.04
+      noiseSmoothness: 0.3
+      maxTickChangePercent: 0.1
+      minSpikeMultiplier: 2
+      maxSpikeMultiplier: 4
+      minHoldSeconds: 2
+      maxHoldSeconds: 5
+    spikeDownRevert:
+      minDurationSeconds: 3
+      maxDurationSeconds: 8
+      minWaves: 3
+      maxWaves: 3
+      minAmplitudePercentOfCorridor: 0.4
+      maxAmplitudePercentOfCorridor: 0.9
+      chanceToShiftCorridor: 0
+      minCorridorShiftPercent: 0.1
+      maxCorridorShiftPercent: 0.5
+      noiseAmountPercent: 0.04
+      noiseSmoothness: 0.3
+      maxTickChangePercent: 0.1
+      minSpikeMultiplier: 1.7
+      maxSpikeMultiplier: 2.9
+      minHoldSeconds: 2
+      maxHoldSeconds: 5
     minPrice: 1
     maxPrice: 1e+9
     maxNormalTickChangePercent: 0.06
-    maxEventTickChangePercent: 0.1
+    maxEventTickChangePercent: 0.801
     roundingRules:
     - minPrice: 0
       step: 1
-  - id: 1
+  - balancePresetVersion: 0
+    id: 1
     tickIntervalSeconds: 0.85
     plannedStatesCount: 3
     initialPrice: 100000
@@ -51644,6 +51724,18 @@ MonoBehaviour:
     priceReturnToCorridorStrength: 0.55
     borderBounceStrength: 0.45
     allowSoftBreakOutsideCorridor: 1
+    useBusinessIncomeEconomicCorridor: 1
+    economyBaseCoinCap: 1000
+    earlyFullCapProfitFloorRubles: 5000000
+    targetFullCapProfitHoursEarly: 3
+    targetFullCapProfitHoursLate: 0.8
+    businessIncomeForLateBalance: 50000000
+    economicCorridorRatio: 3.5
+    economicIncomeSmoothing: 0.08
+    economicCorridorRecalcSeconds: 10
+    economicShiftInfluence: 0.45
+    maxEconomicCenterGrowthPerRecalc: 0.2
+    maxEconomicCenterDropPerRecalc: 0.12
     minStateDurationSeconds: 8
     maxStateDurationSeconds: 42
     minPatternCooldownSeconds: 5
@@ -51744,6 +51836,10 @@ MonoBehaviour:
       noiseAmountPercent: 0.08
       noiseSmoothness: 0.3
       maxTickChangePercent: 0.05
+      minSpikeMultiplier: 2
+      maxSpikeMultiplier: 4
+      minHoldSeconds: 2
+      maxHoldSeconds: 5
     staircaseShiftUp:
       minDurationSeconds: 3
       maxDurationSeconds: 12
@@ -51757,6 +51853,10 @@ MonoBehaviour:
       noiseAmountPercent: 0.08
       noiseSmoothness: 0.3
       maxTickChangePercent: 0.05
+      minSpikeMultiplier: 2
+      maxSpikeMultiplier: 4
+      minHoldSeconds: 2
+      maxHoldSeconds: 5
     staircaseShiftDown:
       minDurationSeconds: 3
       maxDurationSeconds: 12
@@ -51770,6 +51870,10 @@ MonoBehaviour:
       noiseAmountPercent: 0.08
       noiseSmoothness: 0.3
       maxTickChangePercent: 0.05
+      minSpikeMultiplier: 2
+      maxSpikeMultiplier: 4
+      minHoldSeconds: 2
+      maxHoldSeconds: 5
     falseBreakoutUp:
       minDurationSeconds: 2
       maxDurationSeconds: 6
@@ -51783,6 +51887,10 @@ MonoBehaviour:
       noiseAmountPercent: 0.08
       noiseSmoothness: 0.3
       maxTickChangePercent: 0.05
+      minSpikeMultiplier: 2
+      maxSpikeMultiplier: 4
+      minHoldSeconds: 2
+      maxHoldSeconds: 5
     falseBreakoutDown:
       minDurationSeconds: 2
       maxDurationSeconds: 6
@@ -51796,6 +51904,10 @@ MonoBehaviour:
       noiseAmountPercent: 0.08
       noiseSmoothness: 0.3
       maxTickChangePercent: 0.05
+      minSpikeMultiplier: 2
+      maxSpikeMultiplier: 4
+      minHoldSeconds: 2
+      maxHoldSeconds: 5
     pumpAndCorrection:
       minDurationSeconds: 4
       maxDurationSeconds: 14
@@ -51809,6 +51921,10 @@ MonoBehaviour:
       noiseAmountPercent: 0.08
       noiseSmoothness: 0.3
       maxTickChangePercent: 0.05
+      minSpikeMultiplier: 2
+      maxSpikeMultiplier: 4
+      minHoldSeconds: 2
+      maxHoldSeconds: 5
     dumpAndRecovery:
       minDurationSeconds: 4
       maxDurationSeconds: 14
@@ -51822,6 +51938,10 @@ MonoBehaviour:
       noiseAmountPercent: 0.08
       noiseSmoothness: 0.3
       maxTickChangePercent: 0.05
+      minSpikeMultiplier: 2
+      maxSpikeMultiplier: 4
+      minHoldSeconds: 2
+      maxHoldSeconds: 5
     compressionBreakoutNew:
       minDurationSeconds: 5
       maxDurationSeconds: 18
@@ -51835,6 +51955,44 @@ MonoBehaviour:
       noiseAmountPercent: 0.08
       noiseSmoothness: 0.3
       maxTickChangePercent: 0.05
+      minSpikeMultiplier: 2
+      maxSpikeMultiplier: 4
+      minHoldSeconds: 2
+      maxHoldSeconds: 5
+    spikeUpRevert:
+      minDurationSeconds: 3
+      maxDurationSeconds: 8
+      minWaves: 3
+      maxWaves: 3
+      minAmplitudePercentOfCorridor: 0.4
+      maxAmplitudePercentOfCorridor: 0.9
+      chanceToShiftCorridor: 0
+      minCorridorShiftPercent: 0.1
+      maxCorridorShiftPercent: 0.5
+      noiseAmountPercent: 0.04
+      noiseSmoothness: 0.3
+      maxTickChangePercent: 0.1
+      minSpikeMultiplier: 2
+      maxSpikeMultiplier: 4
+      minHoldSeconds: 2
+      maxHoldSeconds: 5
+    spikeDownRevert:
+      minDurationSeconds: 3
+      maxDurationSeconds: 8
+      minWaves: 3
+      maxWaves: 3
+      minAmplitudePercentOfCorridor: 0.4
+      maxAmplitudePercentOfCorridor: 0.9
+      chanceToShiftCorridor: 0
+      minCorridorShiftPercent: 0.1
+      maxCorridorShiftPercent: 0.5
+      noiseAmountPercent: 0.04
+      noiseSmoothness: 0.3
+      maxTickChangePercent: 0.1
+      minSpikeMultiplier: 1.7
+      maxSpikeMultiplier: 2.9
+      minHoldSeconds: 2
+      maxHoldSeconds: 5
     minPrice: 1
     maxPrice: 1e+9
     maxNormalTickChangePercent: 0.06
@@ -51848,7 +52006,8 @@ MonoBehaviour:
       step: 10
     - minPrice: 20000
       step: 50
-  - id: 2
+  - balancePresetVersion: 0
+    id: 2
     tickIntervalSeconds: 0.95
     plannedStatesCount: 3
     initialPrice: 2500000
@@ -51862,6 +52021,18 @@ MonoBehaviour:
     priceReturnToCorridorStrength: 0.55
     borderBounceStrength: 0.45
     allowSoftBreakOutsideCorridor: 1
+    useBusinessIncomeEconomicCorridor: 1
+    economyBaseCoinCap: 1000
+    earlyFullCapProfitFloorRubles: 5000000
+    targetFullCapProfitHoursEarly: 3
+    targetFullCapProfitHoursLate: 0.8
+    businessIncomeForLateBalance: 50000000
+    economicCorridorRatio: 3.5
+    economicIncomeSmoothing: 0.08
+    economicCorridorRecalcSeconds: 10
+    economicShiftInfluence: 0.45
+    maxEconomicCenterGrowthPerRecalc: 0.2
+    maxEconomicCenterDropPerRecalc: 0.12
     minStateDurationSeconds: 8
     maxStateDurationSeconds: 42
     minPatternCooldownSeconds: 5
@@ -51962,6 +52133,10 @@ MonoBehaviour:
       noiseAmountPercent: 0.08
       noiseSmoothness: 0.3
       maxTickChangePercent: 0.05
+      minSpikeMultiplier: 2
+      maxSpikeMultiplier: 4
+      minHoldSeconds: 2
+      maxHoldSeconds: 5
     staircaseShiftUp:
       minDurationSeconds: 3
       maxDurationSeconds: 12
@@ -51975,6 +52150,10 @@ MonoBehaviour:
       noiseAmountPercent: 0.08
       noiseSmoothness: 0.3
       maxTickChangePercent: 0.05
+      minSpikeMultiplier: 2
+      maxSpikeMultiplier: 4
+      minHoldSeconds: 2
+      maxHoldSeconds: 5
     staircaseShiftDown:
       minDurationSeconds: 3
       maxDurationSeconds: 12
@@ -51988,6 +52167,10 @@ MonoBehaviour:
       noiseAmountPercent: 0.08
       noiseSmoothness: 0.3
       maxTickChangePercent: 0.05
+      minSpikeMultiplier: 2
+      maxSpikeMultiplier: 4
+      minHoldSeconds: 2
+      maxHoldSeconds: 5
     falseBreakoutUp:
       minDurationSeconds: 2
       maxDurationSeconds: 6
@@ -52001,6 +52184,10 @@ MonoBehaviour:
       noiseAmountPercent: 0.08
       noiseSmoothness: 0.3
       maxTickChangePercent: 0.05
+      minSpikeMultiplier: 2
+      maxSpikeMultiplier: 4
+      minHoldSeconds: 2
+      maxHoldSeconds: 5
     falseBreakoutDown:
       minDurationSeconds: 2
       maxDurationSeconds: 6
@@ -52014,6 +52201,10 @@ MonoBehaviour:
       noiseAmountPercent: 0.08
       noiseSmoothness: 0.3
       maxTickChangePercent: 0.05
+      minSpikeMultiplier: 2
+      maxSpikeMultiplier: 4
+      minHoldSeconds: 2
+      maxHoldSeconds: 5
     pumpAndCorrection:
       minDurationSeconds: 4
       maxDurationSeconds: 14
@@ -52027,6 +52218,10 @@ MonoBehaviour:
       noiseAmountPercent: 0.08
       noiseSmoothness: 0.3
       maxTickChangePercent: 0.05
+      minSpikeMultiplier: 2
+      maxSpikeMultiplier: 4
+      minHoldSeconds: 2
+      maxHoldSeconds: 5
     dumpAndRecovery:
       minDurationSeconds: 4
       maxDurationSeconds: 14
@@ -52040,6 +52235,10 @@ MonoBehaviour:
       noiseAmountPercent: 0.08
       noiseSmoothness: 0.3
       maxTickChangePercent: 0.05
+      minSpikeMultiplier: 2
+      maxSpikeMultiplier: 4
+      minHoldSeconds: 2
+      maxHoldSeconds: 5
     compressionBreakoutNew:
       minDurationSeconds: 5
       maxDurationSeconds: 18
@@ -52053,6 +52252,44 @@ MonoBehaviour:
       noiseAmountPercent: 0.08
       noiseSmoothness: 0.3
       maxTickChangePercent: 0.05
+      minSpikeMultiplier: 2
+      maxSpikeMultiplier: 4
+      minHoldSeconds: 2
+      maxHoldSeconds: 5
+    spikeUpRevert:
+      minDurationSeconds: 3
+      maxDurationSeconds: 8
+      minWaves: 3
+      maxWaves: 3
+      minAmplitudePercentOfCorridor: 0.4
+      maxAmplitudePercentOfCorridor: 0.9
+      chanceToShiftCorridor: 0
+      minCorridorShiftPercent: 0.1
+      maxCorridorShiftPercent: 0.5
+      noiseAmountPercent: 0.04
+      noiseSmoothness: 0.3
+      maxTickChangePercent: 0.1
+      minSpikeMultiplier: 2
+      maxSpikeMultiplier: 4
+      minHoldSeconds: 2
+      maxHoldSeconds: 5
+    spikeDownRevert:
+      minDurationSeconds: 3
+      maxDurationSeconds: 8
+      minWaves: 3
+      maxWaves: 3
+      minAmplitudePercentOfCorridor: 0.4
+      maxAmplitudePercentOfCorridor: 0.9
+      chanceToShiftCorridor: 0
+      minCorridorShiftPercent: 0.1
+      maxCorridorShiftPercent: 0.5
+      noiseAmountPercent: 0.04
+      noiseSmoothness: 0.3
+      maxTickChangePercent: 0.1
+      minSpikeMultiplier: 1.7
+      maxSpikeMultiplier: 2.9
+      minHoldSeconds: 2
+      maxHoldSeconds: 5
     minPrice: 1
     maxPrice: 1e+9
     maxNormalTickChangePercent: 0.06
@@ -60868,7 +61105,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 0}
   m_AnchorMax: {x: 0, y: 0}
-  m_AnchoredPosition: {x: 8, y: 0}
+  m_AnchoredPosition: {x: 8, y: 268.55646}
   m_SizeDelta: {x: 80, y: 33}
   m_Pivot: {x: 0, y: 0.5}
 --- !u!114 &1317086790

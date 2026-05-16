@@ -41,5 +41,7 @@ namespace TraidingIDLE.Currencies.Simulation
         PumpAndCorrection = 205,
         DumpAndRecovery = 206,
         CompressionBreakoutNew = 207,
+        SpikeUpRevert = 208,
+        SpikeDownRevert = 209,
     }
 }

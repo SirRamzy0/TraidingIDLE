@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Text;
 using UnityEngine;
 using TraidingIDLE.Business;
@@ -32,6 +31,14 @@ namespace TraidingIDLE.Currencies.Simulation
             public float corridorCenter;
             public float corridorWidthPercent;
 
+            // Economic corridor
+            public float smoothedBusinessIncomePerHour;
+            public float economicTargetMin;
+            public float economicTargetMax;
+            public float economicTargetCenter;
+            public float economicTargetWidth;
+            public float economicRecalcTimer;
+
             // State machine
             public MarketStateType currentState;
             public float stateTimeLeft;
@@ -48,6 +55,28 @@ namespace TraidingIDLE.Currencies.Simulation
             public float patternLegTargetPrice;
             public bool patternShiftedCorridor;
             public float patternBasePrice;
+            public float patternReturnTarget;
+            public bool patternCorridorShiftApplied;
+            public float patternBreakoutDirection;
+
+            // Business skill override pattern
+            public bool patternIsBusinessOverride;
+            public float patternPumpDuration;
+            public float patternDumpDuration;
+
+            // Spike revert
+            public float spikeOriginalCorridorMin;
+            public float spikeOriginalCorridorMax;
+            public float spikeOriginalCorridorCenter;
+            public float spikeReturnTarget;
+            public float spikeExtremeTarget;
+            public float spikeRiseDuration;
+            public float spikeHoldDuration;
+            public float spikeReturnDuration;
+
+            // Zone target for ActiveCorridor / ScalpingWindow
+            public float stateZoneTarget;
+            public float stateZoneDirection;
 
             // Noise
             public float noiseValue;
@@ -121,9 +150,9 @@ namespace TraidingIDLE.Currencies.Simulation
         [SerializeField] private CurrencyId startActiveCurrency = CurrencyId.SHT;
         [SerializeField] private StartPrice[] startPrices =
         {
-            new StartPrice() { id = CurrencyId.SHT, price = 5000f },
-            new StartPrice() { id = CurrencyId.ETH, price = 100000f },
-            new StartPrice() { id = CurrencyId.BTC, price = 2500000f },
+            new StartPrice { id = CurrencyId.SHT, price = 5000f },
+            new StartPrice { id = CurrencyId.ETH, price = 100000f },
+            new StartPrice { id = CurrencyId.BTC, price = 2500000f },
         };
 
         [Header("Coins (3 configs)")]
@@ -154,8 +183,6 @@ namespace TraidingIDLE.Currencies.Simulation
         private bool _balanceSimulationInProgress;
         private double _lastRealtimeUtcSeconds;
         private bool _resumeCatchUpPending;
-
-        // --- Lifecycle ---
 
         private void Awake()
         {
@@ -207,7 +234,6 @@ namespace TraidingIDLE.Currencies.Simulation
             }
 
             WarmupHistoryIfNeeded();
-
             ResetRealtimeClock();
 
             if (logMarketStatesOnStart)
@@ -226,14 +252,16 @@ namespace TraidingIDLE.Currencies.Simulation
 
         public void RefreshEconomyScaleNow()
         {
-            // No-op in new architecture: economy scaling is handled via corridor shifts during patterns.
-            // Kept for API compatibility with BusinessController.
+            foreach (var kv in _runtime)
+            {
+                var r = kv.Value;
+                if (r == null)
+                    continue;
+
+                r.economicRecalcTimer = 0f;
+            }
         }
 
-        /// <summary>
-        /// Stub for backward compatibility with BusinessController business skills.
-        /// Business skills temporarily force a pump-and-dump pattern on the target currency.
-        /// </summary>
         public void EnqueueBusinessSkillOverrideNextState(
             CurrencyId currency,
             float growDurationSeconds,
@@ -244,46 +272,55 @@ namespace TraidingIDLE.Currencies.Simulation
             if (!_runtime.TryGetValue(currency, out var r))
                 return;
 
-            // End any current pattern
-            EndPattern(r);
+            if (r.inPattern)
+                EndPattern(r);
+
             r.patternCooldown = 0f;
 
-            // Clamp business skill parameters
             growDurationSeconds = Mathf.Max(1f, growDurationSeconds);
             dumpDurationSeconds = Mathf.Max(0.5f, dumpDurationSeconds);
-            growthPercent = Mathf.Clamp(growthPercent, 0.05f, 3f);
-            returnTolerancePercent = Mathf.Clamp(returnTolerancePercent, 0f, 0.3f);
+            growthPercent = Mathf.Clamp(growthPercent, 0.01f, 3f);
+            returnTolerancePercent = Mathf.Clamp(returnTolerancePercent, 0f, 0.95f);
 
-            // Store business skill override data on runtime
             r.inPattern = true;
             r.patternType = MarketStateType.PumpAndCorrection;
             r.patternWaveIndex = 0;
             r.patternWaveCount = 2;
             r.patternShiftedCorridor = false;
+            r.patternCorridorShiftApplied = false;
+            r.patternBreakoutDirection = 1f;
 
-            // Phase 1: pump (grow)
-            r.patternPhaseDuration = growDurationSeconds;
+            r.patternIsBusinessOverride = true;
+            r.patternPumpDuration = growDurationSeconds;
+            r.patternDumpDuration = dumpDurationSeconds;
+
+            r.patternPhaseDuration = r.patternPumpDuration;
             r.patternTimeLeft = r.patternPhaseDuration;
             r.patternBasePrice = r.rawPrice;
             r.patternLegStartPrice = r.rawPrice;
             r.patternLegTargetPrice = r.rawPrice * (1f + growthPercent);
+            r.patternLegTargetPrice = Mathf.Clamp(
+                r.patternLegTargetPrice,
+                r.config.minPrice * 1.01f,
+                r.config.maxPrice * 0.99f);
 
-            // Clamp target
-            r.patternLegTargetPrice = Mathf.Clamp(r.patternLegTargetPrice, r.config.minPrice * 1.01f, r.config.maxPrice * 0.99f);
-
-            // Phase 2: correction (dump) amplitude based on returnTolerancePercent
-            var correctionDepth = growthPercent * returnTolerancePercent;
+            var correctionDepth = Mathf.Clamp01(growthPercent * returnTolerancePercent);
             var returnTarget = r.patternLegTargetPrice * (1f - correctionDepth);
-            returnTarget = Mathf.Max(r.config.minPrice * 1.01f, returnTarget);
+            returnTarget = Mathf.Clamp(
+                returnTarget,
+                r.config.minPrice * 1.01f,
+                r.config.maxPrice * 0.99f);
 
-            // Total state duration covers both phases plus a small buffer
-            r.stateTimeLeft = growDurationSeconds + dumpDurationSeconds + 2f;
-
-            // Immediately tick the first leg to start movement
-            r.patternWaveIndex = 0;
+            r.patternReturnTarget = returnTarget;
+            r.stateTimeLeft = growDurationSeconds + dumpDurationSeconds + 1f;
 
             if (showDebugLogs)
-                Debug.Log($"[MarketSim] Business skill for {currency}: pump {growthPercent:P0} over {growDurationSeconds}s, then dump {returnTolerancePercent:P0} over {dumpDurationSeconds}s", this);
+            {
+                Debug.Log(
+                    $"[MarketSim] Business skill for {currency}: pump {growthPercent:P0} over {growDurationSeconds:0.0}s, " +
+                    $"correction target {returnTarget:0.##} over {dumpDurationSeconds:0.0}s",
+                    this);
+            }
         }
 
         public void FlushPendingTicks()
@@ -291,8 +328,6 @@ namespace TraidingIDLE.Currencies.Simulation
             foreach (var kv in _runtime)
                 AdvanceRuntime(kv.Value, 0f);
         }
-
-        // --- Runtime creation & tick loop ---
 
         private CoinRuntime CreateRuntime(CoinSimulationConfig cfg, float startPrice)
         {
@@ -308,6 +343,8 @@ namespace TraidingIDLE.Currencies.Simulation
                 targetNoiseValue = UnityEngine.Random.Range(-1f, 1f),
             };
 
+            ResetPatternOverrideData(r);
+            InitializeEconomicCorridor(r);
             RebuildCorridor(r);
             PickNextState(r, initial: true);
 
@@ -322,7 +359,7 @@ namespace TraidingIDLE.Currencies.Simulation
             r.tickTimer += Mathf.Max(0f, dt);
             r.time += Mathf.Max(0f, dt);
 
-            var interval = r.config.tickIntervalSeconds;
+            var interval = Mathf.Max(0.05f, r.config.tickIntervalSeconds);
             while (r.tickTimer >= interval)
             {
                 r.tickTimer -= interval;
@@ -334,26 +371,17 @@ namespace TraidingIDLE.Currencies.Simulation
         {
             r.previousRawPrice = r.rawPrice;
 
-            // 1. Corridor Layer
+            UpdateEconomicCorridor(r, dt);
             UpdateCorridor(r, dt);
 
-            // 2. State / Pattern Layer
             if (r.inPattern)
-            {
                 UpdatePattern(r, dt);
-            }
             else
-            {
                 UpdateRegularState(r, dt);
-            }
 
-            // 3. Noise Layer
             ApplyNoise(r, dt);
-
-            // 4. Corridor Forces
             ApplyCorridorForces(r, dt);
 
-            // Safety
             r.rawPrice = ClampPriceSafe(r);
 
             var rounded = RoundPrice(r.config, r.rawPrice);
@@ -365,9 +393,112 @@ namespace TraidingIDLE.Currencies.Simulation
                 {
                     if (writeToCurrencyMarket && market != null)
                         market.SetPrice(r.config.id, r.visiblePrice);
+
                     if (priceHistoryStore != null)
                         priceHistoryStore.Push(r.config.id, r.visiblePrice);
                 }
+            }
+        }
+
+        // --- Economic Corridor ---
+
+        private void InitializeEconomicCorridor(CoinRuntime r)
+        {
+            var income = GetBusinessIncomeForEconomicCorridor();
+            r.smoothedBusinessIncomePerHour = Mathf.Max(0f, ToSafeFloat(income));
+
+            var center = r.corridorCenter > 0f ? r.corridorCenter : r.rawPrice;
+            center = Mathf.Clamp(center, r.config.minPrice, r.config.maxPrice);
+
+            r.economicTargetCenter = center;
+            r.economicTargetWidth = center * Mathf.Max(0.01f, r.config.startCorridorWidthPercent);
+            r.economicTargetMin = Mathf.Max(r.config.minPrice, center - r.economicTargetWidth * 0.5f);
+            r.economicTargetMax = Mathf.Min(r.config.maxPrice, center + r.economicTargetWidth * 0.5f);
+            r.economicRecalcTimer = 0f;
+        }
+
+        private void UpdateEconomicCorridor(CoinRuntime r, float dt)
+        {
+            if (!r.config.useBusinessIncomeEconomicCorridor)
+                return;
+
+            var income = Mathf.Max(0f, ToSafeFloat(GetBusinessIncomeForEconomicCorridor()));
+            var smoothing = Mathf.Clamp01(r.config.economicIncomeSmoothing);
+
+            if (r.smoothedBusinessIncomePerHour <= 0f)
+                r.smoothedBusinessIncomePerHour = income;
+            else
+                r.smoothedBusinessIncomePerHour = Mathf.Lerp(r.smoothedBusinessIncomePerHour, income, smoothing);
+
+            r.economicRecalcTimer -= dt;
+            if (r.economicRecalcTimer > 0f)
+                return;
+
+            r.economicRecalcTimer = Mathf.Max(0.5f, r.config.economicCorridorRecalcSeconds);
+
+            var progress01 = Mathf.InverseLerp(
+                0f,
+                Mathf.Max(1f, r.config.businessIncomeForLateBalance),
+                r.smoothedBusinessIncomePerHour);
+
+            var profitHours = Mathf.Lerp(
+                r.config.targetFullCapProfitHoursEarly,
+                r.config.targetFullCapProfitHoursLate,
+                progress01);
+
+            var targetFullCapProfit = Mathf.Max(
+                r.config.earlyFullCapProfitFloorRubles,
+                r.smoothedBusinessIncomePerHour * Mathf.Max(0f, profitHours));
+
+            var cap = Mathf.Max(1f, r.config.economyBaseCoinCap);
+            var spreadPerCoin = Mathf.Max(1f, targetFullCapProfit / cap);
+
+            var ratio = Mathf.Max(1.05f, r.config.economicCorridorRatio);
+            var lower = spreadPerCoin / (ratio - 1f);
+            var upper = lower * ratio;
+
+            lower = Mathf.Clamp(lower, r.config.minPrice, r.config.maxPrice);
+            upper = Mathf.Clamp(upper, lower + 1f, r.config.maxPrice);
+
+            var targetCenter = (lower + upper) * 0.5f;
+            var targetWidth = Mathf.Max(1f, upper - lower);
+
+            var oldCenter = r.economicTargetCenter > 0f
+                ? r.economicTargetCenter
+                : Mathf.Max(r.corridorCenter, r.rawPrice);
+
+            var maxUp = oldCenter * (1f + Mathf.Clamp01(r.config.maxEconomicCenterGrowthPerRecalc));
+            var maxDown = oldCenter * (1f - Mathf.Clamp01(r.config.maxEconomicCenterDropPerRecalc));
+
+            targetCenter = Mathf.Clamp(targetCenter, maxDown, maxUp);
+
+            r.economicTargetCenter = Mathf.Clamp(targetCenter, r.config.minPrice, r.config.maxPrice);
+            r.economicTargetWidth = targetWidth;
+            r.economicTargetMin = Mathf.Max(r.config.minPrice, r.economicTargetCenter - targetWidth * 0.5f);
+            r.economicTargetMax = Mathf.Min(r.config.maxPrice, r.economicTargetCenter + targetWidth * 0.5f);
+        }
+
+        private double GetBusinessIncomeForEconomicCorridor()
+        {
+            if (businessProgressLink == null)
+                businessProgressLink = FindAnyObjectByType<BusinessController>(FindObjectsInactive.Include);
+
+            if (businessProgressLink == null)
+                return 0d;
+
+            try
+            {
+                var effectiveIncome = Math.Max(0d, businessProgressLink.GetTotalEffectiveIncomePerHour());
+                var temporaryBusinessMultiplier = Math.Max(1d, businessProgressLink.GetAccumulatedBusinessPassiveMultiplier());
+
+                if (temporaryBusinessMultiplier > 1.0001d)
+                    effectiveIncome /= temporaryBusinessMultiplier;
+
+                return Math.Max(0d, effectiveIncome);
+            }
+            catch
+            {
+                return 0d;
             }
         }
 
@@ -377,40 +508,81 @@ namespace TraidingIDLE.Currencies.Simulation
         {
             var half = r.corridorCenter * r.corridorWidthPercent * 0.5f;
             r.corridorMin = Mathf.Max(r.config.minPrice, r.corridorCenter - half);
-            r.corridorMax = r.corridorCenter + half;
+            r.corridorMax = Mathf.Min(r.config.maxPrice, r.corridorCenter + half);
+
+            if (r.corridorMax <= r.corridorMin)
+                r.corridorMax = r.corridorMin + Mathf.Max(1f, r.corridorMin * 0.01f);
         }
 
         private static void UpdateCorridor(CoinRuntime r, float dt)
         {
-            // Slowly drift corridor center toward current price to keep price inside
-            var driftStrength = 0.015f * dt / Mathf.Max(r.config.tickIntervalSeconds, 0.1f);
-            var targetCenter = Mathf.Lerp(r.corridorCenter, r.rawPrice, driftStrength);
-            r.corridorCenter = targetCenter;
+            var interval = Mathf.Max(r.config.tickIntervalSeconds, 0.1f);
 
-            // Clamp width
+            var driftStrength = 0.015f * dt / interval;
+            r.corridorCenter = Mathf.Lerp(r.corridorCenter, r.rawPrice, driftStrength);
+
+            if (r.config.useBusinessIncomeEconomicCorridor && r.economicTargetCenter > 0f)
+            {
+                var economicDrift = r.config.economicShiftInfluence * 0.0025f * dt / interval;
+                r.corridorCenter = Mathf.Lerp(r.corridorCenter, r.economicTargetCenter, economicDrift);
+
+                var targetWidthPercent = r.economicTargetWidth / Mathf.Max(0.0001f, r.economicTargetCenter);
+                targetWidthPercent = Mathf.Clamp(
+                    targetWidthPercent,
+                    r.config.minCorridorWidthPercent,
+                    r.config.maxCorridorWidthPercent);
+
+                r.corridorWidthPercent = Mathf.Lerp(
+                    r.corridorWidthPercent,
+                    targetWidthPercent,
+                    Mathf.Clamp01(r.config.economicShiftInfluence * 0.01f * dt / interval));
+            }
+
             var currentWidth = (r.corridorMax - r.corridorMin) / Mathf.Max(r.corridorCenter, 0.0001f);
-            var clampedWidth = Mathf.Clamp(currentWidth,
+            var clampedWidth = Mathf.Clamp(
+                currentWidth,
                 r.config.minCorridorWidthPercent,
                 r.config.maxCorridorWidthPercent);
 
-            if (!Mathf.Approximately(currentWidth, clampedWidth))
-            {
-                var half = r.corridorCenter * clampedWidth * 0.5f;
-                r.corridorMin = Mathf.Max(r.config.minPrice, r.corridorCenter - half);
-                r.corridorMax = r.corridorCenter + half;
+            if (!r.config.useBusinessIncomeEconomicCorridor)
                 r.corridorWidthPercent = clampedWidth;
-            }
             else
-            {
-                RebuildCorridor(r);
-            }
+                r.corridorWidthPercent = Mathf.Clamp(
+                    r.corridorWidthPercent,
+                    r.config.minCorridorWidthPercent,
+                    r.config.maxCorridorWidthPercent);
+
+            r.corridorCenter = Mathf.Clamp(r.corridorCenter, r.config.minPrice, r.config.maxPrice);
+            RebuildCorridor(r);
         }
 
         private static void ShiftCorridor(CoinRuntime r, float shiftPercent)
         {
+            shiftPercent = ApplyEconomicBiasToShift(r, shiftPercent);
+
             var target = r.corridorCenter * (1f + shiftPercent);
             r.corridorCenter = Mathf.Lerp(r.corridorCenter, target, 0.5f);
+            r.corridorCenter = Mathf.Clamp(r.corridorCenter, r.config.minPrice, r.config.maxPrice);
             RebuildCorridor(r);
+        }
+
+        private static float ApplyEconomicBiasToShift(CoinRuntime r, float requestedShiftPercent)
+        {
+            if (!r.config.useBusinessIncomeEconomicCorridor || r.economicTargetCenter <= 0f || r.corridorCenter <= 0f)
+                return requestedShiftPercent;
+
+            var economicShiftPercent = r.economicTargetCenter / r.corridorCenter - 1f;
+            var blended = Mathf.Lerp(
+                requestedShiftPercent,
+                economicShiftPercent,
+                Mathf.Clamp01(r.config.economicShiftInfluence));
+
+            if (requestedShiftPercent < 0f && blended > -0.005f)
+                blended = requestedShiftPercent * 0.5f;
+            else if (requestedShiftPercent > 0f && blended < 0.005f)
+                blended = requestedShiftPercent * 0.5f;
+
+            return blended;
         }
 
         // --- State Machine ---
@@ -420,15 +592,27 @@ namespace TraidingIDLE.Currencies.Simulation
             var weights = r.config.stateWeights;
             if (weights == null || weights.Length == 0)
             {
-                r.currentState = MarketStateType.CalmCorridor;
-                r.stateTimeLeft = 10f;
+                SetFallbackState(r);
                 return;
             }
 
             var total = 0f;
             for (var i = 0; i < weights.Length; i++)
-                if (weights[i] != null)
-                    total += Mathf.Max(0f, weights[i].weight);
+            {
+                if (weights[i] == null)
+                    continue;
+
+                if (!IsRegularState(weights[i].type))
+                    continue;
+
+                total += Mathf.Max(0f, weights[i].weight);
+            }
+
+            if (total <= 0f)
+            {
+                SetFallbackState(r);
+                return;
+            }
 
             var roll = UnityEngine.Random.Range(0f, total);
             var acc = 0f;
@@ -438,9 +622,15 @@ namespace TraidingIDLE.Currencies.Simulation
             {
                 if (weights[i] == null)
                     continue;
-                if (IsLegacyState(weights[i].type))
+
+                if (!IsRegularState(weights[i].type))
                     continue;
-                acc += Mathf.Max(0f, weights[i].weight);
+
+                var weight = Mathf.Max(0f, weights[i].weight);
+                if (weight <= 0f)
+                    continue;
+
+                acc += weight;
                 if (roll <= acc)
                 {
                     chosen = weights[i].type;
@@ -452,7 +642,8 @@ namespace TraidingIDLE.Currencies.Simulation
             var dur = UnityEngine.Random.Range(r.config.minStateDurationSeconds, r.config.maxStateDurationSeconds);
             r.stateTimeLeft = Mathf.Max(1f, dur);
 
-            // Pattern cooldown ticks down
+            InitZoneTargetIfNeeded(r, chosen);
+
             if (r.patternCooldown > 0f)
                 r.patternCooldown = Mathf.Max(0f, r.patternCooldown - r.stateTimeLeft);
 
@@ -460,7 +651,26 @@ namespace TraidingIDLE.Currencies.Simulation
                 r.inPattern = false;
 
             if (showDebugLogs && !_warmupInProgress)
-                Debug.Log($"[MarketSim] {r.config.id}: entered state {chosen} for {r.stateTimeLeft:0.0}s");
+                Debug.Log($"[MarketSim] {r.config.id}: entered state {chosen} for {r.stateTimeLeft:0.0}s", this);
+        }
+
+        private static void SetFallbackState(CoinRuntime r)
+        {
+            r.currentState = MarketStateType.CalmCorridor;
+            r.stateTimeLeft = Mathf.Max(1f, r.config.minStateDurationSeconds);
+            InitZoneTargetIfNeeded(r, r.currentState);
+        }
+
+        private static void InitZoneTargetIfNeeded(CoinRuntime r, MarketStateType state)
+        {
+            if (state != MarketStateType.ActiveCorridor && state != MarketStateType.ScalpingWindow)
+                return;
+
+            var range = Mathf.Max(1f, r.corridorMax - r.corridorMin);
+            r.stateZoneDirection = UnityEngine.Random.value < 0.5f ? 1f : -1f;
+            r.stateZoneTarget = r.stateZoneDirection > 0f
+                ? r.corridorMax - range * 0.15f
+                : r.corridorMin + range * 0.15f;
         }
 
         private bool TryStartPattern(CoinRuntime r)
@@ -477,8 +687,15 @@ namespace TraidingIDLE.Currencies.Simulation
 
             var total = 0f;
             for (var i = 0; i < weights.Length; i++)
-                if (weights[i] != null)
-                    total += Mathf.Max(0f, weights[i].weight);
+            {
+                if (weights[i] == null)
+                    continue;
+
+                if (!IsPatternState(weights[i].type))
+                    continue;
+
+                total += Mathf.Max(0f, weights[i].weight);
+            }
 
             if (total <= 0f)
                 return false;
@@ -491,7 +708,15 @@ namespace TraidingIDLE.Currencies.Simulation
             {
                 if (weights[i] == null)
                     continue;
-                acc += Mathf.Max(0f, weights[i].weight);
+
+                if (!IsPatternState(weights[i].type))
+                    continue;
+
+                var weight = Mathf.Max(0f, weights[i].weight);
+                if (weight <= 0f)
+                    continue;
+
+                acc += weight;
                 if (roll <= acc)
                 {
                     chosen = weights[i].type;
@@ -505,15 +730,25 @@ namespace TraidingIDLE.Currencies.Simulation
 
         private static void StartPattern(CoinRuntime r, MarketStateType type)
         {
+            ResetPatternOverrideData(r);
+
             r.inPattern = true;
             r.patternType = type;
             r.patternWaveIndex = 0;
             r.patternShiftedCorridor = false;
+            r.patternCorridorShiftApplied = false;
+            r.patternBreakoutDirection = 0f;
             r.patternBasePrice = r.rawPrice;
 
+            if (IsSpikePattern(type))
+            {
+                PrepareSpikePattern(r, type);
+                return;
+            }
+
             var settings = GetPatternSettings(r.config, type);
-            r.patternWaveCount = UnityEngine.Random.Range(settings.minWaves, settings.maxWaves + 1);
-            r.patternPhaseDuration = UnityEngine.Random.Range(settings.minDurationSeconds, settings.maxDurationSeconds);
+            r.patternWaveCount = Mathf.Max(1, UnityEngine.Random.Range(settings.minWaves, settings.maxWaves + 1));
+            r.patternPhaseDuration = Mathf.Max(0.25f, UnityEngine.Random.Range(settings.minDurationSeconds, settings.maxDurationSeconds));
             r.patternTimeLeft = r.patternPhaseDuration;
 
             BuildPatternLeg(r);
@@ -521,10 +756,20 @@ namespace TraidingIDLE.Currencies.Simulation
             if (settings.chanceToShiftCorridor > 0f && UnityEngine.Random.value < settings.chanceToShiftCorridor)
             {
                 var shift = UnityEngine.Random.Range(settings.minCorridorShiftPercent, settings.maxCorridorShiftPercent);
-                if (type == MarketStateType.StaircaseShiftDown || type == MarketStateType.FalseBreakoutDown || type == MarketStateType.DumpAndRecovery)
+
+                if (type == MarketStateType.DumpAndRecovery)
                     shift = -shift;
-                ShiftCorridor(r, shift);
-                r.patternShiftedCorridor = true;
+
+                var canShiftImmediately =
+                    type == MarketStateType.PumpAndCorrection ||
+                    type == MarketStateType.DumpAndRecovery;
+
+                if (canShiftImmediately)
+                {
+                    ShiftCorridor(r, shift);
+                    r.patternShiftedCorridor = true;
+                    r.patternCorridorShiftApplied = true;
+                }
             }
 
             r.stateTimeLeft = r.patternPhaseDuration * r.patternWaveCount + 1f;
@@ -532,6 +777,26 @@ namespace TraidingIDLE.Currencies.Simulation
 
         private void EndPattern(CoinRuntime r)
         {
+            if (!r.patternCorridorShiftApplied &&
+                (r.patternType == MarketStateType.StaircaseShiftUp ||
+                 r.patternType == MarketStateType.StaircaseShiftDown))
+            {
+                var settings = GetPatternSettings(r.config, r.patternType);
+                if (settings.chanceToShiftCorridor > 0f && UnityEngine.Random.value < settings.chanceToShiftCorridor)
+                {
+                    var shift = UnityEngine.Random.Range(settings.minCorridorShiftPercent, settings.maxCorridorShiftPercent);
+                    if (r.patternType == MarketStateType.StaircaseShiftDown)
+                        shift = -shift;
+
+                    ShiftCorridor(r, shift);
+                    r.patternShiftedCorridor = true;
+                }
+
+                r.patternCorridorShiftApplied = true;
+            }
+
+            ResetPatternOverrideData(r);
+
             r.inPattern = false;
             r.patternCooldown = UnityEngine.Random.Range(r.config.minPatternCooldownSeconds, r.config.maxPatternCooldownSeconds);
             PickNextState(r);
@@ -546,25 +811,99 @@ namespace TraidingIDLE.Currencies.Simulation
             {
                 if (!TryStartPattern(r))
                     PickNextState(r);
+
                 return;
             }
 
             var settings = GetMovementSettings(r.config, r.currentState);
             var interval = Mathf.Max(0.1f, r.config.tickIntervalSeconds);
 
-            // Base directional move
             var bias = settings.directionalBias;
             var move = r.rawPrice * bias * settings.maxTickChangePercent * dt / interval;
 
-            // Random reversals
+            if (bias < -0.05f)
+                move *= 1.35f;
+
             if (UnityEngine.Random.value < settings.reverseMoveChance * dt / interval)
-            {
-                move *= -0.6f;
-            }
+                move *= bias < -0.05f ? -0.35f : -0.6f;
 
             r.rawPrice += move;
 
-            // Center / edge attraction
+            ApplyRegularMicroNoise(r, settings, bias, dt, interval);
+
+            if (r.currentState == MarketStateType.ActiveCorridor ||
+                r.currentState == MarketStateType.ScalpingWindow)
+            {
+                UpdateZoneMovement(r, settings, dt, interval);
+            }
+
+            ApplyStateAttraction(r, settings, dt, interval);
+        }
+
+        private static void ApplyRegularMicroNoise(
+            CoinRuntime r,
+            StateMovementSettings settings,
+            float bias,
+            float dt,
+            float interval)
+        {
+            var noiseScale = settings.noiseAmountPercent * r.rawPrice;
+            var smallJitter = noiseScale * UnityEngine.Random.Range(-0.22f, 0.22f) * dt / interval;
+            r.rawPrice += smallJitter;
+
+            if (bias < -0.05f && UnityEngine.Random.value < 0.28f * dt / interval)
+            {
+                var redKick = r.rawPrice *
+                              settings.maxTickChangePercent *
+                              UnityEngine.Random.Range(0.20f, 0.65f);
+
+                r.rawPrice -= redKick;
+            }
+
+            if (bias > 0.05f && UnityEngine.Random.value < 0.18f * dt / interval)
+            {
+                var pullback = r.rawPrice *
+                               settings.maxTickChangePercent *
+                               UnityEngine.Random.Range(0.10f, 0.38f);
+
+                r.rawPrice -= pullback;
+            }
+        }
+
+        private static void UpdateZoneMovement(
+            CoinRuntime r,
+            StateMovementSettings settings,
+            float dt,
+            float interval)
+        {
+            var range = Mathf.Max(1f, r.corridorMax - r.corridorMin);
+            var zoneSpeed = settings.maxTickChangePercent;
+
+            if (r.currentState == MarketStateType.ScalpingWindow)
+                zoneSpeed *= 1.75f;
+
+            var zoneMove = (r.stateZoneTarget - r.rawPrice) * zoneSpeed * dt / interval;
+            r.rawPrice += zoneMove;
+
+            var reached =
+                (r.stateZoneDirection > 0f && r.rawPrice >= r.stateZoneTarget) ||
+                (r.stateZoneDirection < 0f && r.rawPrice <= r.stateZoneTarget);
+
+            if (!reached)
+                return;
+
+            r.stateZoneDirection *= -1f;
+            r.stateZoneTarget = r.stateZoneDirection > 0f
+                ? r.corridorMax - range * 0.15f
+                : r.corridorMin + range * 0.15f;
+        }
+
+        private static void ApplyStateAttraction(
+            CoinRuntime r,
+            StateMovementSettings settings,
+            float dt,
+            float interval)
+        {
             var pos = Mathf.InverseLerp(r.corridorMin, r.corridorMax, r.rawPrice);
             var center = (r.corridorMin + r.corridorMax) * 0.5f;
 
@@ -574,15 +913,19 @@ namespace TraidingIDLE.Currencies.Simulation
                 r.rawPrice += toCenter * settings.centerAttraction * dt / interval;
             }
 
-            if (settings.edgeAttraction > 0f)
-            {
-                var edgeDist = Mathf.Min(pos, 1f - pos) * 2f; // 1 at center
-                if (edgeDist < 0.25f)
-                {
-                    var push = (center - r.rawPrice) * settings.edgeAttraction * (1f - edgeDist / 0.25f) * dt / interval;
-                    r.rawPrice += push;
-                }
-            }
+            if (settings.edgeAttraction <= 0f)
+                return;
+
+            var edgeDist = Mathf.Min(pos, 1f - pos) * 2f;
+            if (edgeDist >= 0.25f)
+                return;
+
+            var push = (center - r.rawPrice) *
+                       settings.edgeAttraction *
+                       (1f - edgeDist / 0.25f) *
+                       dt / interval;
+
+            r.rawPrice += push;
         }
 
         // --- Patterns ---
@@ -595,11 +938,14 @@ namespace TraidingIDLE.Currencies.Simulation
             if (r.patternTimeLeft <= 0f)
             {
                 r.patternWaveIndex++;
+
                 if (r.patternWaveIndex >= r.patternWaveCount)
                 {
                     EndPattern(r);
                     return;
                 }
+
+                PreparePatternPhaseDuration(r);
                 BuildPatternLeg(r);
                 r.patternTimeLeft = r.patternPhaseDuration;
             }
@@ -609,28 +955,230 @@ namespace TraidingIDLE.Currencies.Simulation
             var targetPrice = Mathf.Lerp(r.patternLegStartPrice, r.patternLegTargetPrice, curve);
 
             var settings = GetPatternSettings(r.config, r.patternType);
-            var maxDelta = r.rawPrice * settings.maxTickChangePercent * dt / Mathf.Max(r.config.tickIntervalSeconds, 0.1f);
+            targetPrice = ApplyPatternChoppiness(r, settings, targetPrice, dt);
 
-            // Add some controlled noise during pattern
-            var noise = r.noiseValue * settings.noiseAmountPercent * r.rawPrice * 0.1f * dt;
-            targetPrice += noise;
+            var interval = Mathf.Max(r.config.tickIntervalSeconds, 0.1f);
+            var legDirection = Mathf.Sign(r.patternLegTargetPrice - r.patternLegStartPrice);
+
+            var maxDelta = r.rawPrice *
+                           settings.maxTickChangePercent *
+                           dt /
+                           interval;
+
+            if (legDirection < -0.01f)
+                maxDelta *= IsSpikePattern(r.patternType) ? 1.25f : 1.65f;
+            else if (legDirection > 0.01f)
+                maxDelta *= IsSpikePattern(r.patternType) ? 1.2f : 1.05f;
 
             r.rawPrice = Mathf.MoveTowards(r.rawPrice, targetPrice, maxDelta);
+
+            TryApplyCompressionBreakoutShift(r, settings);
+        }
+
+        private static float ApplyPatternChoppiness(
+            CoinRuntime r,
+            PatternSettings settings,
+            float targetPrice,
+            float dt)
+        {
+            var interval = Mathf.Max(r.config.tickIntervalSeconds, 0.1f);
+            var legDirection = Mathf.Sign(r.patternLegTargetPrice - r.patternLegStartPrice);
+
+            if (Mathf.Approximately(legDirection, 0f))
+                return targetPrice;
+
+            var noiseBase = r.rawPrice * settings.noiseAmountPercent;
+            var isSpike = IsSpikePattern(r.patternType);
+            var isBusinessOverride = r.patternIsBusinessOverride;
+
+            var jitterStrength = isSpike ? 0.20f : isBusinessOverride ? 0.12f : 0.42f;
+            targetPrice += noiseBase * UnityEngine.Random.Range(-jitterStrength, jitterStrength);
+
+            var pullbackChance = isSpike ? 0.12f : isBusinessOverride ? 0.10f : 0.36f;
+            if (UnityEngine.Random.value < pullbackChance * dt / interval)
+            {
+                var counterMove = r.rawPrice *
+                                  settings.maxTickChangePercent *
+                                  UnityEngine.Random.Range(0.25f, 0.85f);
+
+                targetPrice -= legDirection * counterMove;
+            }
+
+            if (legDirection < -0.01f && !isBusinessOverride)
+            {
+                var dropKickChance = isSpike ? 0.18f : 0.34f;
+                if (UnityEngine.Random.value < dropKickChance * dt / interval)
+                {
+                    var dropKick = r.rawPrice *
+                                   settings.maxTickChangePercent *
+                                   UnityEngine.Random.Range(0.20f, 0.75f);
+
+                    targetPrice -= dropKick;
+                }
+            }
+
+            if (legDirection > 0.01f && !isBusinessOverride)
+            {
+                var greenStumbleChance = isSpike ? 0.10f : 0.28f;
+                if (UnityEngine.Random.value < greenStumbleChance * dt / interval)
+                {
+                    var stumble = r.rawPrice *
+                                  settings.maxTickChangePercent *
+                                  UnityEngine.Random.Range(0.12f, 0.42f);
+
+                    targetPrice -= stumble;
+                }
+            }
+
+            return targetPrice;
+        }
+
+        private static void PreparePatternPhaseDuration(CoinRuntime r)
+        {
+            if (IsSpikePattern(r.patternType))
+            {
+                if (r.patternWaveIndex == 0)
+                    r.patternPhaseDuration = Mathf.Max(0.25f, r.spikeRiseDuration);
+                else if (r.patternWaveIndex == 1)
+                    r.patternPhaseDuration = Mathf.Max(0.1f, r.spikeHoldDuration);
+                else
+                    r.patternPhaseDuration = Mathf.Max(0.25f, r.spikeReturnDuration);
+
+                return;
+            }
+
+            if (!r.patternIsBusinessOverride)
+                return;
+
+            if (r.patternWaveIndex == 0)
+                r.patternPhaseDuration = Mathf.Max(0.25f, r.patternPumpDuration);
+            else if (r.patternWaveIndex == 1)
+                r.patternPhaseDuration = Mathf.Max(0.25f, r.patternDumpDuration);
+        }
+
+        private static void TryApplyCompressionBreakoutShift(CoinRuntime r, PatternSettings settings)
+        {
+            if (r.patternType != MarketStateType.CompressionBreakoutNew)
+                return;
+
+            if (r.patternCorridorShiftApplied)
+                return;
+
+            if (r.patternWaveIndex < r.patternWaveCount - 1)
+                return;
+
+            if (settings.chanceToShiftCorridor <= 0f)
+            {
+                r.patternCorridorShiftApplied = true;
+                return;
+            }
+
+            if (UnityEngine.Random.value >= settings.chanceToShiftCorridor)
+            {
+                r.patternCorridorShiftApplied = true;
+                return;
+            }
+
+            var direction = Mathf.Sign(r.patternBreakoutDirection);
+            if (Mathf.Approximately(direction, 0f))
+                direction = Mathf.Sign(r.patternLegTargetPrice - r.patternLegStartPrice);
+            if (Mathf.Approximately(direction, 0f))
+                direction = UnityEngine.Random.value < 0.5f ? 1f : -1f;
+
+            var shift = UnityEngine.Random.Range(settings.minCorridorShiftPercent, settings.maxCorridorShiftPercent);
+            shift *= direction;
+
+            ShiftCorridor(r, shift);
+            r.patternShiftedCorridor = true;
+            r.patternCorridorShiftApplied = true;
+        }
+
+        private static void PrepareSpikePattern(CoinRuntime r, MarketStateType type)
+        {
+            var settings = GetPatternSettings(r.config, type);
+
+            r.spikeOriginalCorridorMin = r.corridorMin;
+            r.spikeOriginalCorridorMax = r.corridorMax;
+            r.spikeOriginalCorridorCenter = r.corridorCenter;
+
+            var originalWidth = Mathf.Max(1f, r.spikeOriginalCorridorMax - r.spikeOriginalCorridorMin);
+            r.spikeReturnTarget = Mathf.Clamp(
+                r.spikeOriginalCorridorCenter + UnityEngine.Random.Range(-0.15f, 0.15f) * originalWidth,
+                r.spikeOriginalCorridorMin,
+                r.spikeOriginalCorridorMax);
+
+            r.patternWaveCount = 3;
+            r.patternWaveIndex = 0;
+
+            r.spikeRiseDuration = Mathf.Max(0.25f, UnityEngine.Random.Range(settings.minDurationSeconds, settings.maxDurationSeconds));
+            r.spikeHoldDuration = Mathf.Max(0.1f, UnityEngine.Random.Range(settings.minHoldSeconds, settings.maxHoldSeconds));
+            r.spikeReturnDuration = Mathf.Max(0.25f, UnityEngine.Random.Range(settings.minDurationSeconds, settings.maxDurationSeconds));
+
+            r.patternPhaseDuration = r.spikeRiseDuration;
+            r.patternTimeLeft = r.patternPhaseDuration;
+
+            var minMultiplier = Mathf.Max(1f, settings.minSpikeMultiplier);
+            var maxMultiplier = Mathf.Max(minMultiplier, settings.maxSpikeMultiplier);
+            var multiplier = UnityEngine.Random.Range(minMultiplier, maxMultiplier);
+
+            if (type == MarketStateType.SpikeUpRevert)
+                r.spikeExtremeTarget = r.rawPrice * multiplier;
+            else
+                r.spikeExtremeTarget = r.rawPrice / multiplier;
+
+            r.spikeExtremeTarget = Mathf.Clamp(
+                r.spikeExtremeTarget,
+                r.config.minPrice * 1.01f,
+                r.config.maxPrice * 0.99f);
+
+            BuildPatternLeg(r);
+
+            r.stateTimeLeft = r.spikeRiseDuration + r.spikeHoldDuration + r.spikeReturnDuration + 1f;
         }
 
         private static void BuildPatternLeg(CoinRuntime r)
         {
             r.patternLegStartPrice = r.rawPrice;
 
+            if (IsSpikePattern(r.patternType))
+            {
+                if (r.patternWaveIndex == 0)
+                    r.patternLegTargetPrice = r.spikeExtremeTarget;
+                else if (r.patternWaveIndex == 1)
+                    r.patternLegTargetPrice = r.spikeExtremeTarget;
+                else
+                    r.patternLegTargetPrice = r.spikeReturnTarget;
+
+                r.patternLegTargetPrice = Mathf.Clamp(
+                    r.patternLegTargetPrice,
+                    r.config.minPrice * 1.01f,
+                    r.config.maxPrice * 0.99f);
+
+                return;
+            }
+
+            if (r.patternIsBusinessOverride &&
+                r.patternType == MarketStateType.PumpAndCorrection &&
+                r.patternWaveIndex == 1 &&
+                r.patternReturnTarget > 0f)
+            {
+                r.patternLegTargetPrice = r.patternReturnTarget;
+                return;
+            }
+
             var settings = GetPatternSettings(r.config, r.patternType);
-            var range = r.corridorMax - r.corridorMin;
-            var amplitude = range * UnityEngine.Random.Range(settings.minAmplitudePercentOfCorridor, settings.maxAmplitudePercentOfCorridor);
+            var range = Mathf.Max(1f, r.corridorMax - r.corridorMin);
+            var amplitude = range * UnityEngine.Random.Range(
+                settings.minAmplitudePercentOfCorridor,
+                settings.maxAmplitudePercentOfCorridor);
 
             var direction = GetPatternWaveDirection(r);
             r.patternLegTargetPrice = r.patternLegStartPrice + amplitude * direction;
 
-            // Clamp to playable bounds
-            r.patternLegTargetPrice = Mathf.Clamp(r.patternLegTargetPrice, r.config.minPrice * 1.01f, r.config.maxPrice * 0.99f);
+            r.patternLegTargetPrice = Mathf.Clamp(
+                r.patternLegTargetPrice,
+                r.config.minPrice * 1.01f,
+                r.config.maxPrice * 0.99f);
         }
 
         private static float GetPatternWaveDirection(CoinRuntime r)
@@ -639,25 +1187,38 @@ namespace TraidingIDLE.Currencies.Simulation
             var wi = r.patternWaveIndex;
 
             if (pt == MarketStateType.BigSaw)
-                return (wi % 2 == 0) ? 1f : -1f;
+                return wi % 2 == 0 ? 1f : -1f;
+
             if (pt == MarketStateType.StaircaseShiftUp)
-                return (wi % 2 == 0) ? 1f : -0.4f;
+                return wi % 2 == 0 ? 1f : -0.4f;
+
             if (pt == MarketStateType.StaircaseShiftDown)
-                return (wi % 2 == 0) ? -1f : 0.4f;
+                return wi % 2 == 0 ? -1f : 0.4f;
+
             if (pt == MarketStateType.FalseBreakoutUp)
                 return wi == 0 ? 1f : -1f;
+
             if (pt == MarketStateType.FalseBreakoutDown)
                 return wi == 0 ? -1f : 1f;
+
             if (pt == MarketStateType.PumpAndCorrection)
                 return wi == 0 ? 1f : -0.5f;
+
             if (pt == MarketStateType.DumpAndRecovery)
                 return wi == 0 ? -1f : 0.5f;
-            if (pt == MarketStateType.CompressionBreakoutNew)
-                return (wi < r.patternWaveCount - 1)
-                    ? ((wi % 2 == 0) ? 1f : -1f) * 0.3f
-                    : ((UnityEngine.Random.value < 0.5f) ? 1f : -1f);
 
-            return (UnityEngine.Random.value < 0.5f) ? 1f : -1f;
+            if (pt == MarketStateType.CompressionBreakoutNew)
+            {
+                if (wi < r.patternWaveCount - 1)
+                    return (wi % 2 == 0 ? 1f : -1f) * 0.3f;
+
+                if (Mathf.Approximately(r.patternBreakoutDirection, 0f))
+                    r.patternBreakoutDirection = UnityEngine.Random.value < 0.5f ? 1f : -1f;
+
+                return r.patternBreakoutDirection;
+            }
+
+            return UnityEngine.Random.value < 0.5f ? 1f : -1f;
         }
 
         // --- Noise Layer ---
@@ -669,23 +1230,42 @@ namespace TraidingIDLE.Currencies.Simulation
             if (r.inPattern)
             {
                 var s = GetPatternSettings(r.config, r.patternType);
-                ApplyNoiseCore(r, dt, interval, s.noiseSmoothness, s.noiseAmountPercent);
+                ApplyNoiseCore(r, dt, interval, s.noiseSmoothness, s.noiseAmountPercent, true);
             }
             else
             {
                 var s = GetMovementSettings(r.config, r.currentState);
-                ApplyNoiseCore(r, dt, interval, s.noiseSmoothness, s.noiseAmountPercent);
+                ApplyNoiseCore(r, dt, interval, s.noiseSmoothness, s.noiseAmountPercent, false);
             }
         }
 
-        private static void ApplyNoiseCore(CoinRuntime r, float dt, float interval, float smoothness, float noiseAmountPercent)
+        private static void ApplyNoiseCore(
+            CoinRuntime r,
+            float dt,
+            float interval,
+            float smoothness,
+            float noiseAmountPercent,
+            bool isPattern)
         {
-            if (UnityEngine.Random.value < 0.08f * dt / interval)
+            var retargetChance = isPattern ? 0.22f : 0.18f;
+            if (UnityEngine.Random.value < retargetChance * dt / interval)
                 r.targetNoiseValue = UnityEngine.Random.Range(-1f, 1f);
 
-            r.noiseValue = Mathf.Lerp(r.noiseValue, r.targetNoiseValue, smoothness * dt / interval);
+            r.noiseValue = Mathf.Lerp(
+                r.noiseValue,
+                r.targetNoiseValue,
+                smoothness * dt / interval);
 
             var noiseMove = r.rawPrice * r.noiseValue * noiseAmountPercent * dt / interval;
+
+            var jaggedChance = isPattern ? 0.20f : 0.16f;
+            if (UnityEngine.Random.value < jaggedChance * dt / interval)
+            {
+                noiseMove += r.rawPrice *
+                             noiseAmountPercent *
+                             UnityEngine.Random.Range(-0.35f, 0.35f);
+            }
+
             r.rawPrice += noiseMove;
         }
 
@@ -693,6 +1273,9 @@ namespace TraidingIDLE.Currencies.Simulation
 
         private void ApplyCorridorForces(CoinRuntime r, float dt)
         {
+            if (r.inPattern && IsSpikePattern(r.patternType))
+                return;
+
             var interval = Mathf.Max(0.1f, r.config.tickIntervalSeconds);
 
             if (!r.config.allowSoftBreakOutsideCorridor)
@@ -701,21 +1284,23 @@ namespace TraidingIDLE.Currencies.Simulation
                 return;
             }
 
-            // Soft return if outside
             if (r.rawPrice < r.corridorMin)
             {
                 var depth = (r.corridorMin - r.rawPrice) / Mathf.Max(0.0001f, r.corridorMin);
-                var strength = r.config.priceReturnToCorridorStrength * Mathf.Lerp(0.3f, 1f, Mathf.Clamp01(depth));
+                var strength = r.config.priceReturnToCorridorStrength *
+                               Mathf.Lerp(0.3f, 1f, Mathf.Clamp01(depth));
+
                 r.rawPrice = Mathf.Lerp(r.rawPrice, r.corridorMin, strength * dt / interval);
             }
             else if (r.rawPrice > r.corridorMax)
             {
                 var depth = (r.rawPrice - r.corridorMax) / Mathf.Max(0.0001f, r.corridorMax);
-                var strength = r.config.priceReturnToCorridorStrength * Mathf.Lerp(0.3f, 1f, Mathf.Clamp01(depth));
+                var strength = r.config.priceReturnToCorridorStrength *
+                               Mathf.Lerp(0.3f, 1f, Mathf.Clamp01(depth));
+
                 r.rawPrice = Mathf.Lerp(r.rawPrice, r.corridorMax, strength * dt / interval);
             }
 
-            // Border bounce
             var range = r.corridorMax - r.corridorMin;
             if (range <= 0f)
                 return;
@@ -723,12 +1308,20 @@ namespace TraidingIDLE.Currencies.Simulation
             var pos = Mathf.InverseLerp(r.corridorMin, r.corridorMax, r.rawPrice);
             if (pos < 0.08f)
             {
-                var push = r.config.borderBounceStrength * (1f - pos / 0.08f) * range * dt / interval;
+                var push = r.config.borderBounceStrength *
+                           (1f - pos / 0.08f) *
+                           range *
+                           dt / interval;
+
                 r.rawPrice += push;
             }
             else if (pos > 0.92f)
             {
-                var push = r.config.borderBounceStrength * ((pos - 0.92f) / 0.08f) * range * dt / interval;
+                var push = r.config.borderBounceStrength *
+                           ((pos - 0.92f) / 0.08f) *
+                           range *
+                           dt / interval;
+
                 r.rawPrice -= push;
             }
         }
@@ -744,15 +1337,12 @@ namespace TraidingIDLE.Currencies.Simulation
 
             price = Mathf.Clamp(price, r.config.minPrice, r.config.maxPrice);
 
-            // Limit max change per tick
             var maxChange = r.previousRawPrice * r.config.maxNormalTickChangePercent;
             if (r.inPattern)
                 maxChange = r.previousRawPrice * r.config.maxEventTickChangePercent;
 
             if (maxChange > 0f && r.previousRawPrice > 0f)
-            {
                 price = Mathf.Clamp(price, r.previousRawPrice - maxChange, r.previousRawPrice + maxChange);
-            }
 
             return Mathf.Max(r.config.minPrice, price);
         }
@@ -804,19 +1394,63 @@ namespace TraidingIDLE.Currencies.Simulation
                 case MarketStateType.PumpAndCorrection: return cfg.pumpAndCorrection;
                 case MarketStateType.DumpAndRecovery: return cfg.dumpAndRecovery;
                 case MarketStateType.CompressionBreakoutNew: return cfg.compressionBreakoutNew;
+                case MarketStateType.SpikeUpRevert: return cfg.spikeUpRevert;
+                case MarketStateType.SpikeDownRevert: return cfg.spikeDownRevert;
                 default: return cfg.bigSaw;
             }
         }
 
-        private static bool IsLegacyState(MarketStateType type)
+        private static bool IsRegularState(MarketStateType type)
         {
-            return (int)type < 100;
+            var value = (int)type;
+            return value >= 100 && value < 200;
+        }
+
+        private static bool IsPatternState(MarketStateType type)
+        {
+            var value = (int)type;
+            return value >= 200 && value < 300;
+        }
+
+        private static bool IsSpikePattern(MarketStateType type)
+        {
+            return type == MarketStateType.SpikeUpRevert ||
+                   type == MarketStateType.SpikeDownRevert;
+        }
+
+        private static void ResetPatternOverrideData(CoinRuntime r)
+        {
+            r.patternIsBusinessOverride = false;
+            r.patternPumpDuration = 0f;
+            r.patternDumpDuration = 0f;
+            r.patternReturnTarget = 0f;
+            r.patternBreakoutDirection = 0f;
+
+            r.spikeOriginalCorridorMin = 0f;
+            r.spikeOriginalCorridorMax = 0f;
+            r.spikeOriginalCorridorCenter = 0f;
+            r.spikeReturnTarget = 0f;
+            r.spikeExtremeTarget = 0f;
+            r.spikeRiseDuration = 0f;
+            r.spikeHoldDuration = 0f;
+            r.spikeReturnDuration = 0f;
         }
 
         private static float SmoothStep01(float t)
         {
             t = Mathf.Clamp01(t);
             return t * t * (3f - 2f * t);
+        }
+
+        private static float ToSafeFloat(double value)
+        {
+            if (double.IsNaN(value) || double.IsInfinity(value) || value <= 0d)
+                return 0f;
+
+            if (value >= float.MaxValue)
+                return float.MaxValue;
+
+            return (float)value;
         }
 
         // --- Start Price ---
@@ -911,6 +1545,7 @@ namespace TraidingIDLE.Currencies.Simulation
             {
                 if (!_resumeCatchUpPending)
                     ResetRealtimeClock();
+
                 return 0f;
             }
 
@@ -929,7 +1564,7 @@ namespace TraidingIDLE.Currencies.Simulation
             if (elapsed <= 0d)
                 return Time.deltaTime;
 
-            return Mathf.Min((float)elapsed, 900f); // max 15 min catch-up
+            return Mathf.Min((float)elapsed, 900f);
         }
 
         private void MarkResumeCatchUpPending()
@@ -964,7 +1599,9 @@ namespace TraidingIDLE.Currencies.Simulation
                 var r = kv.Value;
                 var stateName = r.inPattern ? $"{r.patternType}(P)" : r.currentState.ToString();
                 message += $"{r.config.id}: state={stateName}, timeLeft={r.stateTimeLeft:0.0}s, " +
-                           $"price={r.visiblePrice:0.##}, corridor=[{r.corridorMin:0.##}..{r.corridorMax:0.##}]\n";
+                           $"price={r.visiblePrice:0.##}, corridor=[{r.corridorMin:0.##}..{r.corridorMax:0.##}], " +
+                           $"eco=[{r.economicTargetMin:0.##}..{r.economicTargetMax:0.##}], " +
+                           $"businessIncomeForMarket={r.smoothedBusinessIncomePerHour:0.##}\n";
             }
 
             Debug.Log(message, this);
@@ -999,6 +1636,7 @@ namespace TraidingIDLE.Currencies.Simulation
                 var r = kv.Value;
                 if (debugOverrideActiveCurrencyOnly && market != null && market.ActiveCurrency != r.config.id)
                     continue;
+
                 if (!debugOverrideActiveCurrencyOnly && r.config.id != debugOverrideCurrency)
                     continue;
 
@@ -1160,7 +1798,7 @@ namespace TraidingIDLE.Currencies.Simulation
             sb.AppendLine();
             sb.AppendLine($"{id}:");
             sb.AppendLine($"  start avg: {FormatMoney(start)}");
-            sb.AppendLine($"  final avg: {FormatMoney(final)} (x{final / start:0.00})");
+            sb.AppendLine($"  final avg: {FormatMoney(final)} (x{final / Math.Max(1d, start):0.00})");
             sb.AppendLine($"  min avg: {FormatMoney(min)}, max avg: {FormatMoney(max)}");
             sb.AppendLine($"  best swing avg/best: {stats.bestSwingSum / runs * 100:0.#}% / {stats.bestSwingBest * 100:0.#}%");
             sb.AppendLine($"  drawdown avg/worst: {stats.maxDrawdownSum / runs * 100:0.#}% / {stats.maxDrawdownWorst * 100:0.#}%");
@@ -1172,6 +1810,7 @@ namespace TraidingIDLE.Currencies.Simulation
         {
             if (double.IsNaN(value) || double.IsInfinity(value))
                 return "0";
+
             return Math.Round(value).ToString("#,0").Replace(",", ".");
         }
 
@@ -1184,9 +1823,9 @@ namespace TraidingIDLE.Currencies.Simulation
             Vector2 growthPercent,
             float returnTolerancePercent)
         {
-            float growDuration = RandomRangeSafe(growDurationSeconds, 1f);
-            float dumpDuration = RandomRangeSafe(dumpDurationSeconds, 0.25f);
-            float growth = RandomRangeSafe(growthPercent, 0.01f);
+            var growDuration = RandomRangeSafe(growDurationSeconds, 1f);
+            var dumpDuration = RandomRangeSafe(dumpDurationSeconds, 0.25f);
+            var growth = RandomRangeSafe(growthPercent, 0.01f);
 
             EnqueueBusinessSkillOverrideNextState(
                 currency,
@@ -1198,10 +1837,10 @@ namespace TraidingIDLE.Currencies.Simulation
 
         private static float RandomRangeSafe(Vector2 range, float min)
         {
-            float x = Mathf.Max(min, range.x);
-            float y = Mathf.Max(min, range.y);
-            float from = Mathf.Min(x, y);
-            float to = Mathf.Max(x, y);
+            var x = Mathf.Max(min, range.x);
+            var y = Mathf.Max(min, range.y);
+            var from = Mathf.Min(x, y);
+            var to = Mathf.Max(x, y);
 
             return Mathf.Approximately(from, to)
                 ? from
