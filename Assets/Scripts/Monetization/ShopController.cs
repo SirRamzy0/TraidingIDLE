@@ -79,7 +79,16 @@ namespace TraidingIDLE.Monetization
 
         private PlayerProfile _profile;
         private GameObject _shopDialog;
+        private Button _shopOpenButton;
         private Coroutine _dailyRewardRefreshRoutine;
+
+        public event Action ShopOpened;
+        public event Action ShopClosed;
+        public event Action DailyRewardsChanged;
+        public event Action DailyRewardClaimed;
+
+        public bool IsShopOpen => _shopDialog != null && _shopDialog.activeInHierarchy;
+        public Button ShopOpenButton => _shopOpenButton;
 
         [Serializable]
         private sealed class DailyRewardSaveData
@@ -224,6 +233,7 @@ namespace TraidingIDLE.Monetization
         {
             UnbindButtons();
             UnbindProfile();
+            _shopOpenButton = null;
 
             _profile = FindFirstObjectByType<PlayerProfile>();
 
@@ -260,6 +270,9 @@ namespace TraidingIDLE.Monetization
 
                 if (!path.Contains("Top_conteiner/Profile_conteiner/Profile_container", StringComparison.OrdinalIgnoreCase))
                     continue;
+
+                if (_shopOpenButton == null)
+                    _shopOpenButton = button;
 
                 AddButtonListener(button, OpenShop);
             }
@@ -503,6 +516,7 @@ namespace TraidingIDLE.Monetization
                 _shopDialog.SetActive(true);
 
             AnalyticsTracker.ReportShopOpen();
+            ShopOpened?.Invoke();
 
             RefreshGems();
             RefreshDailyRewards();
@@ -514,6 +528,8 @@ namespace TraidingIDLE.Monetization
         {
             if (_shopDialog != null)
                 _shopDialog.SetActive(false);
+
+            ShopClosed?.Invoke();
         }
 
         private void BindGemTexts()
@@ -600,6 +616,42 @@ namespace TraidingIDLE.Monetization
 
             RefreshGems();
             RefreshDailyRewards();
+            DailyRewardClaimed?.Invoke();
+        }
+
+        public bool IsDailyRewardClaimAvailable()
+        {
+            var today = GetCurrentLocalDay();
+            var data = LoadDailyRewardData();
+            var changed = NormalizeDailyRewardData(data, today);
+
+            if (changed)
+                SaveDailyRewardData(data);
+
+            return data.lastClaimDay != today
+                && data.nextRewardIndex >= 0
+                && data.nextRewardIndex < DailyGemRewards.Length;
+        }
+
+        public Button GetClaimableDailyRewardButton()
+        {
+            if (!IsDailyRewardClaimAvailable())
+                return null;
+
+            var today = GetCurrentLocalDay();
+            var data = LoadDailyRewardData();
+            NormalizeDailyRewardData(data, today);
+
+            var activeIndex = Mathf.Clamp(data.nextRewardIndex, 0, DailyGemRewards.Length - 1);
+
+            for (var i = 0; i < _dailyRewardViews.Count; i++)
+            {
+                var view = _dailyRewardViews[i];
+                if (view != null && view.Index == activeIndex)
+                    return view.Button;
+            }
+
+            return null;
         }
 
         private void RefreshDailyRewards()
@@ -635,6 +687,8 @@ namespace TraidingIDLE.Monetization
 
                 ApplyDailyRewardState(view, isAvailable, isWaitingNextDay, isClaimed, nextRewardCountdownText);
             }
+
+            DailyRewardsChanged?.Invoke();
         }
 
         private IEnumerator DailyRewardRefreshRoutine()

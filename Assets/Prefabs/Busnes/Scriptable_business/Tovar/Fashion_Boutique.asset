@@ -25,7 +25,7 @@ MonoBehaviour:
     startUpgradeRublesCost: 11000000
     upgradeCostGrowthPerLevel: 1.195
     incomeGrowthPerLevel: 1.105
-    startingPaybackHours: 2.3
+    startingPaybackHours: 2
     startingIncomeMultiplier: 1.55
     lateCostAccelerationStartLevel: 28
     lateCostAccelerationPerLevel: 1.016

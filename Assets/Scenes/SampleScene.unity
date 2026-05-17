@@ -13154,10 +13154,11 @@ MonoBehaviour:
   market: {fileID: 1136403799}
   businessPassiveLink: {fileID: 0}
   scaleMiningWithBusinessIncome: 1
-  shtTargetBusinessIncomeShare: 0.045
-  ethTargetBusinessIncomeShare: 0.06
-  btcTargetBusinessIncomeShare: 0.08
-  maxBusinessMiningCatchUpMultiplier: 4.5
+  shtTargetBusinessIncomeShare: 0.035
+  ethTargetBusinessIncomeShare: 0.045
+  btcTargetBusinessIncomeShare: 0.055
+  minBusinessMiningScale: 0.35
+  maxBusinessMiningCatchUpMultiplier: 3.5
   totalIncomePerHourText: {fileID: 776456117}
   accumulatedText: {fileID: 423282186}
   claimButton: {fileID: 1807802834}
@@ -13174,103 +13175,103 @@ MonoBehaviour:
   - costToReachLevelRubles: 0
     rigSprite: {fileID: 21300000, guid: 6b4c2cc9759e12d4b96ff79803d6a103, type: 3}
     shtPerHour: 5
-    ethPerHour: 0.28
-    btcPerHour: 0.025
+    ethPerHour: 0.18
+    btcPerHour: 0.015
   - costToReachLevelRubles: 45000
     rigSprite: {fileID: 21300000, guid: a44e48f8dff1560469e51dc6bbf6e62f, type: 3}
     shtPerHour: 10
-    ethPerHour: 0.55
-    btcPerHour: 0.045
+    ethPerHour: 0.35
+    btcPerHour: 0.027
   - costToReachLevelRubles: 120000
     rigSprite: {fileID: 21300000, guid: 61476e74be8fb1c429f6a5f880b1641a, type: 3}
     shtPerHour: 17
-    ethPerHour: 0.95
-    btcPerHour: 0.075
+    ethPerHour: 0.6
+    btcPerHour: 0.045
   - costToReachLevelRubles: 300000
     rigSprite: {fileID: 21300000, guid: 134a1e36310e4ca41bca0aff5abd84f4, type: 3}
     shtPerHour: 27
-    ethPerHour: 1.5
-    btcPerHour: 0.115
+    ethPerHour: 0.95
+    btcPerHour: 0.07
   - costToReachLevelRubles: 750000
     rigSprite: {fileID: 0}
     shtPerHour: 40
-    ethPerHour: 2.2
-    btcPerHour: 0.165
+    ethPerHour: 1.35
+    btcPerHour: 0.1
   - costToReachLevelRubles: 1800000
     rigSprite: {fileID: 21300000, guid: 4764e3cada26436449de33804bea073a, type: 3}
     shtPerHour: 56
-    ethPerHour: 3
-    btcPerHour: 0.23
+    ethPerHour: 1.85
+    btcPerHour: 0.14
   - costToReachLevelRubles: 4000000
     rigSprite: {fileID: 0}
     shtPerHour: 75
-    ethPerHour: 4
-    btcPerHour: 0.31
+    ethPerHour: 2.45
+    btcPerHour: 0.19
   - costToReachLevelRubles: 8000000
     rigSprite: {fileID: 21300000, guid: ec4cf5518bf7a134c878f32c92ca1105, type: 3}
     shtPerHour: 98
-    ethPerHour: 5.2
-    btcPerHour: 0.41
+    ethPerHour: 3.2
+    btcPerHour: 0.25
   - costToReachLevelRubles: 15000000
     rigSprite: {fileID: 0}
     shtPerHour: 125
-    ethPerHour: 6.6
-    btcPerHour: 0.53
+    ethPerHour: 4.1
+    btcPerHour: 0.32
   - costToReachLevelRubles: 27000000
     rigSprite: {fileID: 21300000, guid: 9177807f4306cf740beec501cef05c67, type: 3}
     shtPerHour: 156
-    ethPerHour: 8.2
-    btcPerHour: 0.68
+    ethPerHour: 5.1
+    btcPerHour: 0.41
   - costToReachLevelRubles: 48000000
     rigSprite: {fileID: 0}
     shtPerHour: 190
-    ethPerHour: 10
-    btcPerHour: 0.85
+    ethPerHour: 6.2
+    btcPerHour: 0.52
   - costToReachLevelRubles: 85000000
     rigSprite: {fileID: 21300000, guid: 15ee8c3638d56194bb9a00e7d6ed7296, type: 3}
     shtPerHour: 228
-    ethPerHour: 12
-    btcPerHour: 1.05
+    ethPerHour: 7.4
+    btcPerHour: 0.64
   - costToReachLevelRubles: 150000000
     rigSprite: {fileID: 0}
     shtPerHour: 270
-    ethPerHour: 14.5
-    btcPerHour: 1.28
+    ethPerHour: 8.9
+    btcPerHour: 0.78
   - costToReachLevelRubles: 260000000
     rigSprite: {fileID: 0}
     shtPerHour: 316
-    ethPerHour: 17
-    btcPerHour: 1.55
+    ethPerHour: 10.5
+    btcPerHour: 0.94
   - costToReachLevelRubles: 450000000
     rigSprite: {fileID: 21300000, guid: a28f298b4fa04bb4a8aebe43038c533b, type: 3}
     shtPerHour: 366
-    ethPerHour: 20
-    btcPerHour: 1.85
+    ethPerHour: 12.3
+    btcPerHour: 1.12
   - costToReachLevelRubles: 760000000
     rigSprite: {fileID: 0}
     shtPerHour: 420
-    ethPerHour: 23.5
-    btcPerHour: 2.2
+    ethPerHour: 14.4
+    btcPerHour: 1.33
   - costToReachLevelRubles: 1250000000
     rigSprite: {fileID: 0}
     shtPerHour: 478
-    ethPerHour: 27
-    btcPerHour: 2.6
+    ethPerHour: 16.7
+    btcPerHour: 1.56
   - costToReachLevelRubles: 2000000000
     rigSprite: {fileID: 0}
     shtPerHour: 540
-    ethPerHour: 31
-    btcPerHour: 3.05
+    ethPerHour: 19.2
+    btcPerHour: 1.83
   - costToReachLevelRubles: 3100000000
     rigSprite: {fileID: 0}
     shtPerHour: 606
-    ethPerHour: 35.5
-    btcPerHour: 3.55
+    ethPerHour: 22
+    btcPerHour: 2.13
   - costToReachLevelRubles: 4600000000
     rigSprite: {fileID: 21300000, guid: 3bf301e2ab48a294f9699330d5953de6, type: 3}
     shtPerHour: 676
-    ethPerHour: 40
-    btcPerHour: 4.1
+    ethPerHour: 25
+    btcPerHour: 2.45
   rigPurchaseCostsRubles: 409c000000000000c0d40100000000003057050000000000a0bb0d0000000000c09121000000000080584f0000000000001bb70000000000
   extraRigCostMultiplier: 2.1
   currencySettings:
@@ -13294,7 +13295,7 @@ MonoBehaviour:
   coinIncomeCostCurrency: 0
   coinIncomeBaseCost: 1000000
   coinIncomeCostMultiplier: 2.2
-  currencyUnlockCostsRubles: 00127a0000000000804a5d0500000000
+  currencyUnlockCostsRubles: 001bb7000000000080b2e60e00000000
   totalIncomePerHourFormat: '{0} {1}'
   accumulatedFormat: '{0} {1}'
   boughtRigsStatFormat: '{0}/{1}'
@@ -20998,6 +20999,175 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 447913115}
   m_CullTransparentMesh: 1
+--- !u!1 &450169044
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 450169046}
+  - component: {fileID: 450169045}
+  m_Layer: 0
+  m_Name: Daily Reward FTUE Controller
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!114 &450169045
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 450169044}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7ecf0f618de5c8543a38186a6af1b9a8, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::TraidingIDLE.UI.DailyRewardFtueController
+  showOnlyUntilFirstDailyClaim: 1
+  firstSessionDelaySeconds: 600
+  refreshIntervalSeconds: 0.25
+  shopController: {fileID: 0}
+  shopButtonOverride: {fileID: 0}
+  shopButtonAnchorOverride: {fileID: 0}
+  handCanvasOverride: {fileID: 0}
+  handSprite: {fileID: 21300000, guid: f2cb901827c4e9e48b6c227acec59c4b, type: 3}
+  handSize: {x: 96, y: 96}
+  shopButtonOffset: {x: 48, y: -44}
+  dailyRewardOffset: {x: 44, y: -34}
+  pressStartOffset: {x: 18, y: -18}
+  fadeInSeconds: 0.12
+  pressSeconds: 0.42
+  fadeOutSeconds: 0.16
+  pauseSeconds: 0.34
+  pressedScale: 0.86
+  pressCurve:
+    serializedVersion: 2
+    m_Curve:
+    - serializedVersion: 3
+      time: 0
+      value: 0
+      inSlope: 0
+      outSlope: 0
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0
+      outWeight: 0
+    - serializedVersion: 3
+      time: 1
+      value: 1
+      inSlope: 0
+      outSlope: 0
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0
+      outWeight: 0
+    m_PreInfinity: 2
+    m_PostInfinity: 2
+    m_RotationOrder: 4
+  resetFtueSaveOnStart: 0
+--- !u!4 &450169046
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 450169044}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!1 &450169047
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 450169049}
+  - component: {fileID: 450169048}
+  m_Layer: 0
+  m_Name: First Buy FTUE Controller
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!114 &450169048
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 450169047}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 0149de5dbf814392a94a11968892d4f2, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::TraidingIDLE.UI.FirstBuyFtueController
+  refreshIntervalSeconds: 0.25
+  tradingPanel: {fileID: 0}
+  buyButtonOverride: {fileID: 0}
+  buyButtonAnchorOverride: {fileID: 0}
+  handCanvasOverride: {fileID: 0}
+  handSprite: {fileID: 21300000, guid: f2cb901827c4e9e48b6c227acec59c4b, type: 3}
+  handSize: {x: 96, y: 96}
+  buyButtonOffset: {x: 54, y: -42}
+  pressStartOffset: {x: 18, y: -18}
+  fadeInSeconds: 0.12
+  pressSeconds: 0.42
+  fadeOutSeconds: 0.16
+  pauseSeconds: 0.34
+  pressedScale: 0.86
+  pressCurve:
+    serializedVersion: 2
+    m_Curve:
+    - serializedVersion: 3
+      time: 0
+      value: 0
+      inSlope: 0
+      outSlope: 0
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0
+      outWeight: 0
+    - serializedVersion: 3
+      time: 1
+      value: 1
+      inSlope: 0
+      outSlope: 0
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0
+      outWeight: 0
+    m_PreInfinity: 2
+    m_PostInfinity: 2
+    m_RotationOrder: 4
+  resetFtueSaveOnStart: 0
+--- !u!4 &450169049
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 450169047}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &450431741
 GameObject:
   m_ObjectHideFlags: 0
@@ -22705,13 +22875,13 @@ MonoBehaviour:
     minAmount: 1
     maxAmount: 500
     amountDecimals: 0
-    fallbackPrice: 2500
+    fallbackPrice: 900000
   - id: 2
     displayName: BTC
     minAmount: 1
     maxAmount: 100
     amountDecimals: 3
-    fallbackPrice: 65000
+    fallbackPrice: 10000000
 --- !u!1 &482279406
 GameObject:
   m_ObjectHideFlags: 0
@@ -27516,10 +27686,14 @@ MonoBehaviour:
   offerStakeCommittedFormat: "\u0412\u043B\u043E\u0436\u0435\u043D\u043E: {0}"
   analysisStakeFormat: "\u0412\u043B\u043E\u0436\u0435\u043D\u043E: {0}"
   successStakeFormat: "\u0412\u043B\u043E\u0436\u0435\u043D\u043E: {0}"
+  successPayoutFormat: "\u041A \u0432\u044B\u043F\u043B\u0430\u0442\u0435: {0}"
+  missedSuccessStakeText: "\u0422\u044B \u043D\u0435 \u0432\u043E\u0448\u0435\u043B
+    \u0432 \u0441\u0434\u0435\u043B\u043A\u0443"
   profitFormat: +{0}
+  missedProfitFormat: +{0}
   offerBetEnterLabel: "\u0412\u043E\u0439\u0442\u0438"
   offerBetWaitingLabel: "\u041E\u0436\u0438\u0434\u0430\u043D\u0438\u0435"
-  successClaimLabel: "\u041F\u043E\u043B\u0443\u0447\u0438\u0442\u044C"
+  successClaimLabel: "\u0417\u0430\u0431\u0440\u0430\u0442\u044C"
   successClaimedLabel: "\u041F\u043E\u043B\u0443\u0447\u0435\u043D\u043E"
 --- !u!4 &581406303
 Transform:
@@ -33002,143 +33176,6 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 697602815}
   m_CullTransparentMesh: 1
---- !u!1 &698374421
-GameObject:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  serializedVersion: 6
-  m_Component:
-  - component: {fileID: 698374422}
-  - component: {fileID: 698374424}
-  - component: {fileID: 698374423}
-  m_Layer: 5
-  m_Name: Text (TMP) (1)
-  m_TagString: Untagged
-  m_Icon: {fileID: 0}
-  m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
-  m_IsActive: 1
---- !u!224 &698374422
-RectTransform:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 698374421}
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 1, y: 1, z: 1}
-  m_ConstrainProportionsScale: 0
-  m_Children: []
-  m_Father: {fileID: 1272192898}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
-  m_AnchorMin: {x: 0, y: 1}
-  m_AnchorMax: {x: 0, y: 1}
-  m_AnchoredPosition: {x: 64.13208, y: -46.505}
-  m_SizeDelta: {x: 98.36, y: 21.18}
-  m_Pivot: {x: 0.5, y: 0.5}
---- !u!114 &698374423
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 698374421}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: f4688fdb7df04437aeb418b961361dc5, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Unity.TextMeshPro::TMPro.TextMeshProUGUI
-  m_Material: {fileID: 0}
-  m_Color: {r: 1, g: 1, b: 1, a: 1}
-  m_RaycastTarget: 1
-  m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
-  m_Maskable: 1
-  m_OnCullStateChanged:
-    m_PersistentCalls:
-      m_Calls: []
-  m_text: "\u041E\u0441\u0442\u0430\u043B\u043E\u0441\u044C 20:15"
-  m_isRightToLeft: 0
-  m_fontAsset: {fileID: 11400000, guid: 524686954a3943f4eba5a1f966e4e83f, type: 2}
-  m_sharedMaterial: {fileID: -365111809829100870, guid: 524686954a3943f4eba5a1f966e4e83f, type: 2}
-  m_fontSharedMaterials: []
-  m_fontMaterial: {fileID: 0}
-  m_fontMaterials: []
-  m_fontColor32:
-    serializedVersion: 2
-    rgba: 4294967295
-  m_fontColor: {r: 1, g: 1, b: 1, a: 1}
-  m_enableVertexGradient: 0
-  m_colorMode: 3
-  m_fontColorGradient:
-    topLeft: {r: 1, g: 1, b: 1, a: 1}
-    topRight: {r: 1, g: 1, b: 1, a: 1}
-    bottomLeft: {r: 1, g: 1, b: 1, a: 1}
-    bottomRight: {r: 1, g: 1, b: 1, a: 1}
-  m_fontColorGradientPreset: {fileID: 0}
-  m_spriteAsset: {fileID: 0}
-  m_tintAllSprites: 0
-  m_StyleSheet: {fileID: 0}
-  m_TextStyleHashCode: -1183493901
-  m_overrideHtmlColors: 0
-  m_faceColor:
-    serializedVersion: 2
-    rgba: 4294967295
-  m_fontSize: 14
-  m_fontSizeBase: 36
-  m_fontWeight: 400
-  m_enableAutoSizing: 1
-  m_fontSizeMin: 12
-  m_fontSizeMax: 14
-  m_fontStyle: 0
-  m_HorizontalAlignment: 2
-  m_VerticalAlignment: 256
-  m_textAlignment: 65535
-  m_characterSpacing: 0
-  m_characterHorizontalScale: 1
-  m_wordSpacing: 0
-  m_lineSpacing: 0
-  m_lineSpacingMax: 0
-  m_paragraphSpacing: 0
-  m_charWidthMaxAdj: 0
-  m_TextWrappingMode: 1
-  m_wordWrappingRatios: 0.4
-  m_overflowMode: 0
-  m_linkedTextComponent: {fileID: 0}
-  parentLinkedComponent: {fileID: 0}
-  m_enableKerning: 0
-  m_ActiveFontFeatures: 6e72656b
-  m_enableExtraPadding: 0
-  checkPaddingRequired: 0
-  m_isRichText: 1
-  m_EmojiFallbackSupport: 1
-  m_parseCtrlCharacters: 1
-  m_isOrthographic: 1
-  m_isCullingEnabled: 0
-  m_horizontalMapping: 0
-  m_verticalMapping: 0
-  m_uvLineOffset: 0
-  m_geometrySortingOrder: 0
-  m_IsTextObjectScaleStatic: 0
-  m_VertexBufferAutoSizeReduction: 0
-  m_useMaxVisibleDescender: 1
-  m_pageToDisplay: 1
-  m_margin: {x: 0, y: 5, z: 0, w: 0}
-  m_isUsingLegacyAnimationComponent: 0
-  m_isVolumetricText: 0
-  m_hasFontAssetChanged: 0
-  m_baseMaterial: {fileID: 0}
-  m_maskOffset: {x: 0, y: 0, z: 0, w: 0}
---- !u!222 &698374424
-CanvasRenderer:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 698374421}
-  m_CullTransparentMesh: 1
 --- !u!1 &703519902
 GameObject:
   m_ObjectHideFlags: 0
@@ -38310,6 +38347,7 @@ GameObject:
   - component: {fileID: 812636003}
   - component: {fileID: 812636002}
   - component: {fileID: 812636001}
+  - component: {fileID: 812636004}
   m_Layer: 5
   m_Name: Image
   m_TagString: Untagged
@@ -38394,6 +38432,30 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 812635999}
   m_CullTransparentMesh: 1
+--- !u!114 &812636004
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 812635999}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 3181fed7272b408193543c6b615a32c8, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::TraidingIDLE.UI.YandexPlayerAvatarUI
+  maskImage: {fileID: 812636002}
+  avatarImage: {fileID: 0}
+  addMaskToThisObject: 1
+  showMaskGraphic: 1
+  avatarInset: 6
+  useSmoothCircleClip: 1
+  circleEdgeSoftness: 0.02
+  smoothCircleShader: {fileID: 4800000, guid: a5e77f6f5a4f4ad0925d9c7798470b6c, type: 3}
+  smoothCircleShaderName: TraidingIDLE/UI/SmoothCircleAvatar
+  preferLargeYandexAvatar: 1
+  hideAvatarWhenUnavailable: 1
+  logLoadErrors: 0
 --- !u!1 &813872807
 GameObject:
   m_ObjectHideFlags: 0
@@ -51649,9 +51711,9 @@ MonoBehaviour:
   - id: 0
     price: 5000
   - id: 1
-    price: 100000
+    price: 900000
   - id: 2
-    price: 2500000
+    price: 10000000
   coins:
   - balancePresetVersion: 0
     id: 0
@@ -51946,12 +52008,12 @@ MonoBehaviour:
       step: 1
   - balancePresetVersion: 0
     id: 1
-    tickIntervalSeconds: 0.85
+    tickIntervalSeconds: 1.1
     plannedStatesCount: 3
-    initialPrice: 100000
-    startCorridorWidthPercent: 0.25
-    minCorridorWidthPercent: 0.12
-    maxCorridorWidthPercent: 0.55
+    initialPrice: 900000
+    startCorridorWidthPercent: 0.44
+    minCorridorWidthPercent: 0.24
+    maxCorridorWidthPercent: 0.66
     corridorShiftUpMinPercent: 0.08
     corridorShiftUpMaxPercent: 0.35
     corridorShiftDownMinPercent: 0.08
@@ -51960,22 +52022,22 @@ MonoBehaviour:
     borderBounceStrength: 0.45
     allowSoftBreakOutsideCorridor: 1
     useBusinessIncomeEconomicCorridor: 1
-    economyBaseCoinCap: 1000
-    earlyFullCapProfitFloorRubles: 5000000
-    targetFullCapProfitHoursEarly: 3
-    targetFullCapProfitHoursLate: 0.8
-    businessIncomeForLateBalance: 50000000
-    economicCorridorRatio: 3.5
-    economicIncomeSmoothing: 0.08
-    economicCorridorRecalcSeconds: 10
-    economicShiftInfluence: 0.45
-    maxEconomicCenterGrowthPerRecalc: 0.2
-    maxEconomicCenterDropPerRecalc: 0.12
-    minStateDurationSeconds: 8
-    maxStateDurationSeconds: 42
-    minPatternCooldownSeconds: 5
-    maxPatternCooldownSeconds: 25
-    chanceToStartPatternAfterState: 0.25
+    economyBaseCoinCap: 150
+    earlyFullCapProfitFloorRubles: 95000000
+    targetFullCapProfitHoursEarly: 1.8
+    targetFullCapProfitHoursLate: 0.6
+    businessIncomeForLateBalance: 400000000
+    economicCorridorRatio: 2.05
+    economicIncomeSmoothing: 0.035
+    economicCorridorRecalcSeconds: 20
+    economicShiftInfluence: 0.24
+    maxEconomicCenterGrowthPerRecalc: 0.08
+    maxEconomicCenterDropPerRecalc: 0.06
+    minStateDurationSeconds: 30
+    maxStateDurationSeconds: 85
+    minPatternCooldownSeconds: 35
+    maxPatternCooldownSeconds: 85
+    chanceToStartPatternAfterState: 0.13
     stateWeights: []
     patternWeights: []
     calmCorridor:
@@ -52230,8 +52292,8 @@ MonoBehaviour:
       maxHoldSeconds: 5
     minPrice: 1
     maxPrice: 1e+9
-    maxNormalTickChangePercent: 0.06
-    maxEventTickChangePercent: 0.1
+    maxNormalTickChangePercent: 0.035
+    maxEventTickChangePercent: 0.11
     roundingRules:
     - minPrice: 0
       step: 1
@@ -52243,12 +52305,12 @@ MonoBehaviour:
       step: 50
   - balancePresetVersion: 0
     id: 2
-    tickIntervalSeconds: 0.95
+    tickIntervalSeconds: 1.35
     plannedStatesCount: 3
-    initialPrice: 2500000
-    startCorridorWidthPercent: 0.25
-    minCorridorWidthPercent: 0.12
-    maxCorridorWidthPercent: 0.55
+    initialPrice: 10000000
+    startCorridorWidthPercent: 0.82
+    minCorridorWidthPercent: 0.42
+    maxCorridorWidthPercent: 1.18
     corridorShiftUpMinPercent: 0.08
     corridorShiftUpMaxPercent: 0.35
     corridorShiftDownMinPercent: 0.08
@@ -52257,22 +52319,22 @@ MonoBehaviour:
     borderBounceStrength: 0.45
     allowSoftBreakOutsideCorridor: 1
     useBusinessIncomeEconomicCorridor: 1
-    economyBaseCoinCap: 1000
-    earlyFullCapProfitFloorRubles: 5000000
-    targetFullCapProfitHoursEarly: 3
-    targetFullCapProfitHoursLate: 0.8
-    businessIncomeForLateBalance: 50000000
-    economicCorridorRatio: 3.5
-    economicIncomeSmoothing: 0.08
-    economicCorridorRecalcSeconds: 10
-    economicShiftInfluence: 0.45
-    maxEconomicCenterGrowthPerRecalc: 0.2
-    maxEconomicCenterDropPerRecalc: 0.12
-    minStateDurationSeconds: 8
-    maxStateDurationSeconds: 42
-    minPatternCooldownSeconds: 5
-    maxPatternCooldownSeconds: 25
-    chanceToStartPatternAfterState: 0.25
+    economyBaseCoinCap: 50
+    earlyFullCapProfitFloorRubles: 520000000
+    targetFullCapProfitHoursEarly: 2.4
+    targetFullCapProfitHoursLate: 0.9
+    businessIncomeForLateBalance: 1.5e+9
+    economicCorridorRatio: 3.1
+    economicIncomeSmoothing: 0.025
+    economicCorridorRecalcSeconds: 30
+    economicShiftInfluence: 0.18
+    maxEconomicCenterGrowthPerRecalc: 0.1
+    maxEconomicCenterDropPerRecalc: 0.1
+    minStateDurationSeconds: 38
+    maxStateDurationSeconds: 120
+    minPatternCooldownSeconds: 55
+    maxPatternCooldownSeconds: 140
+    chanceToStartPatternAfterState: 0.12
     stateWeights: []
     patternWeights: []
     calmCorridor:
@@ -52527,8 +52589,8 @@ MonoBehaviour:
       maxHoldSeconds: 5
     minPrice: 1
     maxPrice: 1e+9
-    maxNormalTickChangePercent: 0.06
-    maxEventTickChangePercent: 0.1
+    maxNormalTickChangePercent: 0.055
+    maxEventTickChangePercent: 0.24
     roundingRules:
     - minPrice: 0
       step: 10
@@ -52570,9 +52632,9 @@ MonoBehaviour:
   - id: 0
     price: 5000
   - id: 1
-    price: 100000
+    price: 900000
   - id: 2
-    price: 2500000
+    price: 10000000
 --- !u!4 &1136403800
 Transform:
   m_ObjectHideFlags: 0
@@ -58773,7 +58835,6 @@ RectTransform:
   m_ConstrainProportionsScale: 0
   m_Children:
   - {fileID: 1751231071}
-  - {fileID: 698374422}
   m_Father: {fileID: 192473573}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 1}
@@ -61387,7 +61448,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 0}
   m_AnchorMax: {x: 0, y: 0}
-  m_AnchoredPosition: {x: 8, y: 268.55646}
+  m_AnchoredPosition: {x: 8, y: 0}
   m_SizeDelta: {x: 80, y: 33}
   m_Pivot: {x: 0, y: 0.5}
 --- !u!114 &1317086790
@@ -70385,10 +70446,10 @@ MonoBehaviour:
   dailyClaimedText: "\u041F\u043E\u043B\u0443\u0447\u0435\u043D\u043E"
   dailyLockedText: "\u0421\u043A\u043E\u0440\u043E"
   dailyNextRewardCountdownFormat: '{0}'
-  dailyAvailableButtonColor: {r: 0.23, g: 0.78, b: 0.34, a: 1}
-  dailyClaimedButtonColor: {r: 0.43, g: 0.48, b: 0.52, a: 1}
-  dailyNextRewardButtonColor: {r: 0.95, g: 0.66, b: 0.2, a: 1}
-  dailyLockedButtonColor: {r: 0.3, g: 0.32, b: 0.35, a: 1}
+  dailyAvailableButtonColor: {r: 0.3039783, g: 0.9339623, b: 0.42997512, a: 1}
+  dailyClaimedButtonColor: {r: 0.45490196, g: 0.78431374, b: 0.6, a: 0.627451}
+  dailyNextRewardButtonColor: {r: 0, g: 0.7921569, b: 0.8862745, a: 0.627451}
+  dailyLockedButtonColor: {r: 0, g: 0.26059672, b: 0.62352943, a: 0.627451}
 --- !u!4 &1484010459
 Transform:
   m_ObjectHideFlags: 0
@@ -71183,7 +71244,7 @@ MonoBehaviour:
   entriesText: {fileID: 0}
   advanced: 1
   rootSpawnPlayersData: {fileID: 1888276154}
-  playerDataPrefab: {fileID: 2754239992538493786, guid: 47520d8b0d6da6d4b958ce829a0b5508, type: 3}
+  playerDataPrefab: {fileID: 1323234362663822980, guid: dda6facc999d30b46991cfbcce395141, type: 3}
   playerPhoto: 2
   isHiddenPlayerPhoto: {fileID: 0}
   timeTypeConvert: 0
@@ -83531,7 +83592,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 1}
   m_AnchorMax: {x: 0, y: 1}
-  m_AnchoredPosition: {x: 64.13208, y: -24.91}
+  m_AnchoredPosition: {x: 64.13208, y: -35.5}
   m_SizeDelta: {x: 52.52, y: 22.01}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &1751231072
@@ -104487,3 +104548,5 @@ SceneRoots:
   - {fileID: 1555327067}
   - {fileID: 581406303}
   - {fileID: 1484010459}
+  - {fileID: 450169046}
+  - {fileID: 450169049}

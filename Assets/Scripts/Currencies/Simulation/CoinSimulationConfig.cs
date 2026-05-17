@@ -88,7 +88,7 @@ namespace TraidingIDLE.Currencies.Simulation
     [Serializable]
     public sealed class CoinSimulationConfig
     {
-        private const int CurrentBalancePresetVersion = 4;
+        private const int CurrentBalancePresetVersion = 5;
 
         [HideInInspector] public int balancePresetVersion;
 
@@ -554,32 +554,32 @@ namespace TraidingIDLE.Currencies.Simulation
 
         private void ApplyEthDefaults()
         {
-            tickIntervalSeconds = 0.95f;
+            tickIntervalSeconds = 1.10f;
 
             economyBaseCoinCap = 150f;
-            earlyFullCapProfitFloorRubles = 18000000f;
-            targetFullCapProfitHoursEarly = 2.0f;
-            targetFullCapProfitHoursLate = 0.75f;
-            businessIncomeForLateBalance = 180000000f;
-            economicCorridorRatio = 2.25f;
-            economicIncomeSmoothing = 0.045f;
-            economicCorridorRecalcSeconds = 16f;
-            economicShiftInfluence = 0.28f;
-            maxEconomicCenterGrowthPerRecalc = 0.10f;
-            maxEconomicCenterDropPerRecalc = 0.08f;
+            earlyFullCapProfitFloorRubles = 95000000f;
+            targetFullCapProfitHoursEarly = 1.8f;
+            targetFullCapProfitHoursLate = 0.60f;
+            businessIncomeForLateBalance = 400000000f;
+            economicCorridorRatio = 2.05f;
+            economicIncomeSmoothing = 0.035f;
+            economicCorridorRecalcSeconds = 20f;
+            economicShiftInfluence = 0.24f;
+            maxEconomicCenterGrowthPerRecalc = 0.08f;
+            maxEconomicCenterDropPerRecalc = 0.06f;
 
-            startCorridorWidthPercent = 0.55f;
-            minCorridorWidthPercent = 0.28f;
-            maxCorridorWidthPercent = 0.78f;
+            startCorridorWidthPercent = 0.44f;
+            minCorridorWidthPercent = 0.24f;
+            maxCorridorWidthPercent = 0.66f;
 
-            minStateDurationSeconds = 22f;
-            maxStateDurationSeconds = 60f;
-            minPatternCooldownSeconds = 22f;
-            maxPatternCooldownSeconds = 55f;
-            chanceToStartPatternAfterState = 0.18f;
+            minStateDurationSeconds = 30f;
+            maxStateDurationSeconds = 85f;
+            minPatternCooldownSeconds = 35f;
+            maxPatternCooldownSeconds = 85f;
+            chanceToStartPatternAfterState = 0.13f;
 
-            maxNormalTickChangePercent = 0.045f;
-            maxEventTickChangePercent = 0.13f;
+            maxNormalTickChangePercent = 0.035f;
+            maxEventTickChangePercent = 0.11f;
 
             ConfigureMovement(calmCorridor, 0f, 0.09f, 0.32f, 0.32f, 0.022f, 0.24f, 0.34f);
             ConfigureMovement(activeCorridor, 0f, 0.12f, 0.30f, 0.30f, 0.034f, 0.12f, 0.28f);
@@ -602,46 +602,46 @@ namespace TraidingIDLE.Currencies.Simulation
             ConfigurePattern(compressionBreakoutNew, 12f, 28f, 4, 7, 0.18f, 0.58f, 0.30f, 0.025f, 0.12f, 0.085f, 0.07f, 0.24f);
 
             ConfigurePattern(spikeUpRevert, 5f, 10f, 3, 3, 0f, 0f, 0f, 0f, 0f, 0.120f, 0.07f, 0.24f);
-            spikeUpRevert.minSpikeMultiplier = 1.45f;
-            spikeUpRevert.maxSpikeMultiplier = 2.2f;
+            spikeUpRevert.minSpikeMultiplier = 1.35f;
+            spikeUpRevert.maxSpikeMultiplier = 1.9f;
             spikeUpRevert.minHoldSeconds = 2.5f;
             spikeUpRevert.maxHoldSeconds = 5.5f;
 
             ConfigurePattern(spikeDownRevert, 5f, 10f, 3, 3, 0f, 0f, 0f, 0f, 0f, 0.130f, 0.08f, 0.22f);
-            spikeDownRevert.minSpikeMultiplier = 1.25f;
-            spikeDownRevert.maxSpikeMultiplier = 1.75f;
+            spikeDownRevert.minSpikeMultiplier = 1.18f;
+            spikeDownRevert.maxSpikeMultiplier = 1.55f;
             spikeDownRevert.minHoldSeconds = 2.5f;
             spikeDownRevert.maxHoldSeconds = 5f;
         }
 
         private void ApplyBtcDefaults()
         {
-            tickIntervalSeconds = 1.15f;
+            tickIntervalSeconds = 1.35f;
 
             economyBaseCoinCap = 50f;
-            earlyFullCapProfitFloorRubles = 35000000f;
-            targetFullCapProfitHoursEarly = 2.8f;
-            targetFullCapProfitHoursLate = 1.05f;
-            businessIncomeForLateBalance = 650000000f;
-            economicCorridorRatio = 2.8f;
-            economicIncomeSmoothing = 0.035f;
-            economicCorridorRecalcSeconds = 22f;
-            economicShiftInfluence = 0.24f;
-            maxEconomicCenterGrowthPerRecalc = 0.12f;
-            maxEconomicCenterDropPerRecalc = 0.12f;
+            earlyFullCapProfitFloorRubles = 520000000f;
+            targetFullCapProfitHoursEarly = 2.4f;
+            targetFullCapProfitHoursLate = 0.90f;
+            businessIncomeForLateBalance = 1500000000f;
+            economicCorridorRatio = 3.1f;
+            economicIncomeSmoothing = 0.025f;
+            economicCorridorRecalcSeconds = 30f;
+            economicShiftInfluence = 0.18f;
+            maxEconomicCenterGrowthPerRecalc = 0.10f;
+            maxEconomicCenterDropPerRecalc = 0.10f;
 
-            startCorridorWidthPercent = 0.72f;
-            minCorridorWidthPercent = 0.38f;
-            maxCorridorWidthPercent = 1.05f;
+            startCorridorWidthPercent = 0.82f;
+            minCorridorWidthPercent = 0.42f;
+            maxCorridorWidthPercent = 1.18f;
 
-            minStateDurationSeconds = 26f;
-            maxStateDurationSeconds = 80f;
-            minPatternCooldownSeconds = 35f;
-            maxPatternCooldownSeconds = 90f;
-            chanceToStartPatternAfterState = 0.16f;
+            minStateDurationSeconds = 38f;
+            maxStateDurationSeconds = 120f;
+            minPatternCooldownSeconds = 55f;
+            maxPatternCooldownSeconds = 140f;
+            chanceToStartPatternAfterState = 0.12f;
 
-            maxNormalTickChangePercent = 0.052f;
-            maxEventTickChangePercent = 0.20f;
+            maxNormalTickChangePercent = 0.055f;
+            maxEventTickChangePercent = 0.24f;
 
             ConfigureMovement(calmCorridor, 0f, 0.10f, 0.30f, 0.34f, 0.026f, 0.22f, 0.34f);
             ConfigureMovement(activeCorridor, 0f, 0.15f, 0.26f, 0.34f, 0.040f, 0.12f, 0.28f);
@@ -664,14 +664,14 @@ namespace TraidingIDLE.Currencies.Simulation
             ConfigurePattern(compressionBreakoutNew, 12f, 30f, 4, 7, 0.22f, 0.78f, 0.28f, 0.035f, 0.16f, 0.115f, 0.10f, 0.18f);
 
             ConfigurePattern(spikeUpRevert, 4f, 9f, 3, 3, 0f, 0f, 0f, 0f, 0f, 0.200f, 0.10f, 0.16f);
-            spikeUpRevert.minSpikeMultiplier = 2.1f;
-            spikeUpRevert.maxSpikeMultiplier = 3.6f;
+            spikeUpRevert.minSpikeMultiplier = 2.4f;
+            spikeUpRevert.maxSpikeMultiplier = 4.2f;
             spikeUpRevert.minHoldSeconds = 1.5f;
             spikeUpRevert.maxHoldSeconds = 3.5f;
 
             ConfigurePattern(spikeDownRevert, 4f, 9f, 3, 3, 0f, 0f, 0f, 0f, 0f, 0.210f, 0.12f, 0.14f);
-            spikeDownRevert.minSpikeMultiplier = 1.5f;
-            spikeDownRevert.maxSpikeMultiplier = 2.6f;
+            spikeDownRevert.minSpikeMultiplier = 1.7f;
+            spikeDownRevert.maxSpikeMultiplier = 3.0f;
             spikeDownRevert.minHoldSeconds = 1.3f;
             spikeDownRevert.maxHoldSeconds = 3f;
         }

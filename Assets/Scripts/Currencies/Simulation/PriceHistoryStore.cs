@@ -21,10 +21,12 @@ namespace TraidingIDLE.Currencies.Simulation
         [Serializable]
         private sealed class SaveData
         {
+            public int historyPresetVersion;
             public CoinHistory[] histories = Array.Empty<CoinHistory>();
         }
 
         private const string SaveKey = "save.history.v1";
+        private const int CurrentHistoryPresetVersion = 2;
 
         [Tooltip("How many recent prices to keep per coin.")]
         [SerializeField, Min(2)] private int historySize = 50;
@@ -193,6 +195,7 @@ namespace TraidingIDLE.Currencies.Simulation
 
             var data = new SaveData
             {
+                historyPresetVersion = CurrentHistoryPresetVersion,
                 histories = entries.ToArray(),
             };
 
@@ -208,6 +211,8 @@ namespace TraidingIDLE.Currencies.Simulation
             if (data.histories == null)
                 return;
 
+            var migratedLegacyHistory = data.historyPresetVersion < CurrentHistoryPresetVersion;
+
             for (var i = 0; i < data.histories.Length; i++)
             {
                 var saved = data.histories[i];
@@ -218,7 +223,9 @@ namespace TraidingIDLE.Currencies.Simulation
 
                 for (var j = 0; j < saved.prices.Length; j++)
                 {
-                    var p = saved.prices[j];
+                    var p = migratedLegacyHistory
+                        ? MigrateLegacyHistoryPrice(saved.id, saved.prices[j])
+                        : saved.prices[j];
                     if (!TryNormalizePrice(p, out p))
                         continue;
                     list.Add(p);
@@ -226,6 +233,9 @@ namespace TraidingIDLE.Currencies.Simulation
 
                 TrimToCapacity(list);
             }
+
+            if (migratedLegacyHistory)
+                MarkDirty();
         }
 
         private static bool TryNormalizePrice(float rawPrice, out float price)
@@ -236,6 +246,16 @@ namespace TraidingIDLE.Currencies.Simulation
 
             price = CurrencyMarket.SanitizePrice(rawPrice);
             return true;
+        }
+
+        private static float MigrateLegacyHistoryPrice(CurrencyId id, float price)
+        {
+            return id switch
+            {
+                CurrencyId.ETH when price < 450000f => price * 9f,
+                CurrencyId.BTC when price < 5000000f => price * 4f,
+                _ => price,
+            };
         }
     }
 }

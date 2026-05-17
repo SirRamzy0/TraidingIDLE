@@ -107,6 +107,9 @@ namespace TraidingIDLE.UI
         private readonly Dictionary<Graphic, Coroutine> _feedbackCoroutines = new();
         private readonly Dictionary<Graphic, Color> _feedbackOriginalColors = new();
 
+        public event Action BuyButtonClicked;
+        public Button BuyButton => buyButton;
+
         private void Awake()
         {
             if (profile == null)
@@ -285,6 +288,8 @@ namespace TraidingIDLE.UI
 
         private void OnBuyClicked()
         {
+            BuyButtonClicked?.Invoke();
+
             var unitPrice = GetUnitPrice();
             var count = ComputeCountFromSlider(buySlider, _maxBuyCount);
 

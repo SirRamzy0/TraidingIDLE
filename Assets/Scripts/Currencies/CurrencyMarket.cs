@@ -17,10 +17,12 @@ namespace TraidingIDLE.Currencies
         private sealed class SaveData
         {
             // Active currency is intentionally NOT persisted: each launch must start with SHT.
+            public int pricePresetVersion;
             public CurrencyPrice[] prices = Array.Empty<CurrencyPrice>();
         }
 
         private const string SaveKey = "save.market.v1";
+        private const int CurrentPricePresetVersion = 2;
         public const float MinimumTradablePrice = 1f;
 
         [Header("Initial state")]
@@ -33,8 +35,8 @@ namespace TraidingIDLE.Currencies
         [SerializeField] private CurrencyPrice[] prices =
         {
             new() { id = CurrencyId.SHT, price = 5000f },
-            new() { id = CurrencyId.ETH, price = 100000f },
-            new() { id = CurrencyId.BTC, price = 2500000f },
+            new() { id = CurrencyId.ETH, price = 900000f },
+            new() { id = CurrencyId.BTC, price = 10000000f },
         };
 
         public CurrencyId ActiveCurrency => activeCurrency;
@@ -104,6 +106,7 @@ namespace TraidingIDLE.Currencies
             EnsureConfiguredPrices();
             var data = new SaveData
             {
+                pricePresetVersion = CurrentPricePresetVersion,
                 prices = (CurrencyPrice[])prices.Clone(),
             };
             SaveStorage.SaveJson(SaveKey, data);
@@ -120,20 +123,29 @@ namespace TraidingIDLE.Currencies
             if (data.prices == null)
                 return;
 
+            var migratedLegacyPrices = data.pricePresetVersion < CurrentPricePresetVersion;
+
             for (var i = 0; i < data.prices.Length; i++)
             {
                 var saved = data.prices[i];
                 if (!IsFinite(saved.price) || saved.price < MinimumTradablePrice)
                     continue;
 
+                var price = migratedLegacyPrices
+                    ? MigrateLegacySavedPrice(saved.id, saved.price)
+                    : saved.price;
+
                 for (var j = 0; j < prices.Length; j++)
                 {
                     if (prices[j].id != saved.id)
                         continue;
-                    prices[j].price = SanitizePrice(saved.price);
+                    prices[j].price = SanitizePrice(price);
                     break;
                 }
             }
+
+            if (migratedLegacyPrices)
+                MarkDirty();
         }
 
         private void OnValidate()
@@ -268,9 +280,19 @@ namespace TraidingIDLE.Currencies
             return id switch
             {
                 CurrencyId.SHT => 5000f,
-                CurrencyId.ETH => 100000f,
-                CurrencyId.BTC => 2500000f,
+                CurrencyId.ETH => 900000f,
+                CurrencyId.BTC => 10000000f,
                 _ => MinimumTradablePrice,
+            };
+        }
+
+        private static float MigrateLegacySavedPrice(CurrencyId id, float price)
+        {
+            return id switch
+            {
+                CurrencyId.ETH when price < 450000f => price * 9f,
+                CurrencyId.BTC when price < 5000000f => price * 4f,
+                _ => price,
             };
         }
 

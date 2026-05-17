@@ -104,12 +104,15 @@ namespace TraidingIDLE.UI
         [SerializeField] private string offerStakeCommittedFormat = "Вложено: {0}";
         [SerializeField] private string analysisStakeFormat = "Вложено: {0}";
         [SerializeField] private string successStakeFormat = "Вложено: {0}";
+        [SerializeField] private string successPayoutFormat = "К выплате: {0}";
+        [SerializeField] private string missedSuccessStakeText = "Ты не вошел в сделку";
         [SerializeField] private string profitFormat = "Прибыль: +{0}";
+        [SerializeField] private string missedProfitFormat = "Упущенная прибыль: +{0}";
 
         [Header("Button labels")]
         [SerializeField] private string offerBetEnterLabel = "Войти";
         [SerializeField] private string offerBetWaitingLabel = "Ожидание";
-        [SerializeField] private string successClaimLabel = "Получить";
+        [SerializeField] private string successClaimLabel = "Забрать";
         [SerializeField] private string successClaimedLabel = "Получено";
 
         private const string SaveKey = "save.risky.v1";
@@ -444,7 +447,10 @@ namespace TraidingIDLE.UI
                 analysisWaitButton.interactable = false;
 
             if (successClaimButton != null)
+            {
+                successClaimButton.gameObject.SetActive(_state != State.Success || _betPlaced);
                 successClaimButton.interactable = IsSuccessClaimable() && !_claimTaken && _betPlaced;
+            }
         }
 
         private void RefreshTimersOnly()
@@ -486,10 +492,20 @@ namespace TraidingIDLE.UI
                 analysisTimerText.text = FormatTimerLabel(_stateTimeLeft);
 
             if (successStakeText != null)
-                successStakeText.text = string.Format(SafeFormat(successStakeFormat, "{0}"), FormatRubles(_displayStakeRubles));
+            {
+                successStakeText.text = _state == State.Success && !_betPlaced
+                    ? missedSuccessStakeText
+                    : string.Format(
+                        SafeFormat(_state == State.Success ? successPayoutFormat : successStakeFormat, "{0}"),
+                        FormatRubles(_displayStakeRubles + (_state == State.Success ? _profitRubles : 0)));
+            }
 
             if (successProfitText != null)
-                successProfitText.text = string.Format(SafeFormat(profitFormat, "{0}"), FormatRubles(_profitRubles));
+            {
+                successProfitText.text = string.Format(
+                    SafeFormat(_state == State.Success && !_betPlaced ? missedProfitFormat : profitFormat, "{0}"),
+                    FormatRubles(_profitRubles));
+            }
 
             if (failStakeText != null)
                 failStakeText.text = string.Format(SafeFormat(successStakeFormat, "{0}"), FormatRubles(_displayStakeRubles));
@@ -727,6 +743,7 @@ namespace TraidingIDLE.UI
                 profitRubles = _profitRubles,
             };
             SaveStorage.SaveJson(SaveKey, data);
+            SaveStorage.Flush();
         }
 
         private bool LoadFromStorage()

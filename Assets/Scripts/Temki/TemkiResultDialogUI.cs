@@ -23,11 +23,13 @@ namespace TraidingIDLE.Temki
         private Action _claimClicked;
         private Action _doubleClicked;
         private Action _closeClicked;
+        private bool _showRequested;
 
         private void Awake()
         {
             BindButtons();
-            Hide();
+            if (!_showRequested)
+                Hide();
         }
 
         private void OnDestroy()
@@ -42,6 +44,7 @@ namespace TraidingIDLE.Temki
 
         public void ShowSuccess(string reward, Action claimClicked, Action doubleClicked)
         {
+            _showRequested = true;
             BindButtons();
             _claimClicked = claimClicked;
             _doubleClicked = doubleClicked;
@@ -58,6 +61,7 @@ namespace TraidingIDLE.Temki
 
         public void ShowFail(Action closeClicked)
         {
+            _showRequested = true;
             BindButtons();
             _claimClicked = null;
             _doubleClicked = null;
@@ -70,6 +74,7 @@ namespace TraidingIDLE.Temki
 
         public void Hide()
         {
+            _showRequested = false;
             SetActive(successRoot, false);
             SetActive(failRoot, false);
             gameObject.SetActive(false);

@@ -151,8 +151,8 @@ namespace TraidingIDLE.Currencies.Simulation
         [SerializeField] private StartPrice[] startPrices =
         {
             new StartPrice { id = CurrencyId.SHT, price = 5000f },
-            new StartPrice { id = CurrencyId.ETH, price = 100000f },
-            new StartPrice { id = CurrencyId.BTC, price = 2500000f },
+            new StartPrice { id = CurrencyId.ETH, price = 900000f },
+            new StartPrice { id = CurrencyId.BTC, price = 10000000f },
         };
 
         [Header("Coins (3 configs)")]
