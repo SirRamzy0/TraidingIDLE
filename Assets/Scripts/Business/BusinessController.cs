@@ -3,6 +3,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Globalization;
 using TMPro;
+using TraidingIDLE.Analytics;
 using TraidingIDLE.Collections;
 using TraidingIDLE.Currencies.Simulation;
 using TraidingIDLE.Player;
@@ -591,6 +592,13 @@ namespace TraidingIDLE.Business
                 return;
 
             _levels[index] = currentLevel + 1;
+            if (currentLevel <= 0)
+                AnalyticsTracker.ReportBusinessBuy(
+                    entry.saveId,
+                    entry.category,
+                    cost,
+                    GetBusinessIncomePerHourWithBonuses(index, _levels[index]));
+
             MarkDirty();
             NotifyMarketEconomyChanged();
             RefreshAllUi();

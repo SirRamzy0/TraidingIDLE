@@ -866,9 +866,12 @@ namespace TraidingIDLE.UI
                 return;
 
             slider.wholeNumbers = true;
+            slider.minValue = 1;
 
             var allowedMax = GetAllowedSliderMax(maxCount);
-            var clamped = Mathf.Clamp(slider.value, slider.minValue, allowedMax);
+            slider.maxValue = allowedMax;
+
+            var clamped = Mathf.Clamp(slider.value, 1f, allowedMax);
 
             if (!Mathf.Approximately(clamped, slider.value))
                 slider.SetValueWithoutNotify(clamped);
@@ -877,7 +880,7 @@ namespace TraidingIDLE.UI
         private static int GetAllowedSliderMax(int maxCount)
         {
             if (maxCount <= 0)
-                return 0;
+                return 1;
 
             return maxCount < SliderSegments ? maxCount : SliderSegments;
         }
@@ -915,15 +918,16 @@ namespace TraidingIDLE.UI
         private static int ComputeCountFromSlider(Slider slider, int maxCount)
         {
             if (slider == null || maxCount <= 0)
-                return 0;
+                return 1;
 
             if (maxCount < SliderSegments)
-                return Mathf.Clamp(Mathf.RoundToInt(slider.value), 0, maxCount);
+                return Mathf.Clamp(Mathf.RoundToInt(slider.value), 1, maxCount);
 
-            var raw = Mathf.Clamp(slider.value, 0f, SliderSegments);
-            var count = Mathf.RoundToInt(maxCount * (raw / SliderSegments));
+            var raw = Mathf.Clamp(slider.value, 1f, SliderSegments);
+            var normalized = (raw - 1f) / (SliderSegments - 1f);
+            var count = 1 + Mathf.RoundToInt((maxCount - 1) * normalized);
 
-            return Mathf.Clamp(count, 0, maxCount);
+            return Mathf.Clamp(count, 1, maxCount);
         }
 
         private static void ConfigureSlider(Slider slider)
@@ -931,16 +935,16 @@ namespace TraidingIDLE.UI
             if (slider == null)
                 return;
 
-            slider.minValue = 0;
+            slider.minValue = 1;
             slider.maxValue = SliderSegments;
             slider.wholeNumbers = true;
-            slider.SetValueWithoutNotify(0);
+            slider.SetValueWithoutNotify(1);
         }
 
         private static void ResetSlider(Slider slider)
         {
             if (slider != null)
-                slider.SetValueWithoutNotify(0);
+                slider.SetValueWithoutNotify(1);
         }
 
         private void SaveActiveSliderState()
@@ -957,27 +961,27 @@ namespace TraidingIDLE.UI
             if (buySlider != null)
             {
                 buySlider.SetValueWithoutNotify(
-                    _buySliderValues.TryGetValue(id, out var buyValue) ? buyValue : 0f);
+                    _buySliderValues.TryGetValue(id, out var buyValue) ? buyValue : 1f);
             }
 
             if (sellSlider != null)
             {
                 sellSlider.SetValueWithoutNotify(
-                    _sellSliderValues.TryGetValue(id, out var sellValue) ? sellValue : 0f);
+                    _sellSliderValues.TryGetValue(id, out var sellValue) ? sellValue : 1f);
             }
         }
 
         private void ResetActiveBuySlider()
         {
             ResetSlider(buySlider);
-            _buySliderValues[_activeCurrency] = 0f;
+            _buySliderValues[_activeCurrency] = 1f;
             RefreshTransaction();
         }
 
         private void ResetActiveSellSlider()
         {
             ResetSlider(sellSlider);
-            _sellSliderValues[_activeCurrency] = 0f;
+            _sellSliderValues[_activeCurrency] = 1f;
             RefreshTransaction();
         }
 

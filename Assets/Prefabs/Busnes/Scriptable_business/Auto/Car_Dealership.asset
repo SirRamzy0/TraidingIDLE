@@ -21,14 +21,14 @@ MonoBehaviour:
   progression:
     requiredBusinessSaveId: auto_service
     requiredBusinessLevel: 7
-    startRublesCost: 45000000
-    startUpgradeRublesCost: 67500000
-    upgradeCostGrowthPerLevel: 1.285
-    incomeGrowthPerLevel: 1.14
-    startingPaybackHours: 4.0
-    startingIncomeMultiplier: 3.44
-    lateCostAccelerationStartLevel: 18
-    lateCostAccelerationPerLevel: 1.035
+    startRublesCost: 24000000
+    startUpgradeRublesCost: 17000000
+    upgradeCostGrowthPerLevel: 1.195
+    incomeGrowthPerLevel: 1.105
+    startingPaybackHours: 2.3
+    startingIncomeMultiplier: 1.55
+    lateCostAccelerationStartLevel: 28
+    lateCostAccelerationPerLevel: 1.016
   levels:
   - incomeRublesPerHour: 10000
     upgradeRublesCost: 1000
@@ -37,10 +37,11 @@ MonoBehaviour:
     energyCost: 2
     icon: {fileID: 21300000, guid: 922b7c528aa957a4a9213a45bdaeafa9, type: 3}
     title: "\u0421\u043E\u0431\u0440\u0430\u0442\u044C \u043F\u0440\u0438\u0431\u044B\u043B\u044C"
-    description: "\u041C\u0433\u043D\u043E\u0432\u0435\u043D\u043D\u043E \u043F\u0440\u0438\u043D\u043E\u0441\u0438\u0442 {0}."
+    description: "\u041C\u0433\u043D\u043E\u0432\u0435\u043D\u043D\u043E \u043F\u0440\u0438\u043D\u043E\u0441\u0438\u0442
+      {0}."
     effect: 0
     instantRubles: 7000000
-    instantRublesGrowthPer10Levels: 0.30
+    instantRublesGrowthPer10Levels: 0.3
     temporaryIncomeMultiplier: 1.25
     temporaryDurationSeconds: 300
     marketCurrency: 1

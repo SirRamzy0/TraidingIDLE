@@ -3,6 +3,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Globalization;
 using TMPro;
+using TraidingIDLE.Analytics;
 using TraidingIDLE.Currencies;
 using TraidingIDLE.Integrations;
 using TraidingIDLE.Player;
@@ -428,6 +429,7 @@ namespace TraidingIDLE.Mining
 
             _rigStateLevels[rigIndex] = 1;
             _rigProgress[rigIndex] = 0f;
+            AnalyticsTracker.ReportRigBuy(rigIndex, ActiveCurrency, cost);
             MarkDirty();
             RebuildRigCards();
             RefreshAll();

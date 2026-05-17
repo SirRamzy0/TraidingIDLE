@@ -1,4 +1,5 @@
 using System;
+using TraidingIDLE.Analytics;
 using TraidingIDLE.Currencies;
 using TraidingIDLE.Saves;
 using UnityEngine;
@@ -119,6 +120,7 @@ namespace TraidingIDLE.Player
             RublesChanged?.Invoke(_rubles);
             HoldingsChanged?.Invoke(id);
             SaveToStorage();
+            AnalyticsTracker.ReportCoinBuy(id, count, unitPrice, _rubles);
             return true;
         }
 
@@ -139,12 +141,13 @@ namespace TraidingIDLE.Player
                 return false;
 
             var proceeds = unitPrice * count;
+            var costRemoved = 0L;
 
             // Reduce investedRubles proportionally using weighted average cost.
             if (holding.amount > 0 && holding.investedRubles > 0)
             {
                 var avgCost = (double)holding.investedRubles / holding.amount;
-                var costRemoved = (long)Math.Round(avgCost * count);
+                costRemoved = (long)Math.Round(avgCost * count);
                 holding.investedRubles = Math.Max(0, holding.investedRubles - costRemoved);
             }
 
@@ -160,6 +163,7 @@ namespace TraidingIDLE.Player
             RublesChanged?.Invoke(_rubles);
             HoldingsChanged?.Invoke(id);
             SaveToStorage();
+            AnalyticsTracker.ReportCoinSell(id, count, unitPrice, _rubles, proceeds - costRemoved);
             return true;
         }
 

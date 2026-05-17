@@ -376,6 +376,14 @@ PrefabInstance:
       propertyPath: m_Color.a
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 8698046654409556971, guid: c66c7bac89f010b47979344bbb77584b, type: 3}
+      propertyPath: abbreviateScore
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 8698046654409556971, guid: c66c7bac89f010b47979344bbb77584b, type: 3}
+      propertyPath: scoreMultiplier
+      value: 1000000000
+      objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []

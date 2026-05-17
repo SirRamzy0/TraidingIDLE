@@ -31,6 +31,15 @@ namespace YG
 #endif
         public int quantityAround = 6;
 
+#if UNITY_EDITOR
+        [Header("Missing Current Player Fallback")]
+#endif
+        public bool requestTopWhenCurrentPlayerMissing = false;
+#if UNITY_EDITOR
+        [Range(1, 20)]
+#endif
+        public int missingCurrentPlayerTop = 10;
+
         public enum UpdateLBMethod { Start, OnEnable, DoNotUpdate };
 #if UNITY_EDITOR
         [Tooltip(Langs.t_updateLBMethod)]
@@ -74,9 +83,11 @@ namespace YG
         public UnityEvent onUpdateData;
 
         private LBPlayerDataYG[] players = new LBPlayerDataYG[0];
+        private bool fallbackRequestInProgress;
 
         private void OnEnable()
         {
+            fallbackRequestInProgress = false;
             YG2.onGetLeaderboard += OnUpdateLB;
 
             if (updateLBMethod == UpdateLBMethod.OnEnable)
@@ -84,6 +95,7 @@ namespace YG
         }
         private void OnDisable()
         {
+            fallbackRequestInProgress = false;
             YG2.onGetLeaderboard -= OnUpdateLB;
         }
 
@@ -97,6 +109,15 @@ namespace YG
         {
             if (lbData.technoName != nameLB)
                 return;
+
+            if (ShouldRequestMissingPlayerFallback(lbData))
+            {
+                fallbackRequestInProgress = true;
+                UpdateLB(Mathf.Max(1, missingCurrentPlayerTop), 0);
+                return;
+            }
+
+            fallbackRequestInProgress = false;
 
             string noData = string.Empty;
 #if Localization_yg
@@ -257,6 +278,11 @@ namespace YG
 
         public void UpdateLB()
         {
+            UpdateLB(quantityTop, quantityAround);
+        }
+
+        private void UpdateLB(int top, int around)
+        {
             string photoSize = "nonePhoto";
 
             switch (playerPhoto)
@@ -272,7 +298,28 @@ namespace YG
                     break;
             }
 
-            YG2.GetLeaderboard(nameLB, quantityTop, quantityAround, photoSize);
+            YG2.GetLeaderboard(nameLB, top, around, photoSize);
+        }
+
+        private bool ShouldRequestMissingPlayerFallback(LBData lbData)
+        {
+            if (!requestTopWhenCurrentPlayerMissing || fallbackRequestInProgress || !advanced)
+                return false;
+
+            if (lbData == null || lbData.entries == InfoYG.NO_DATA || lbData.players == null || lbData.players.Length == 0)
+                return false;
+
+            var playerId = YG2.player.id;
+            if (string.IsNullOrEmpty(playerId))
+                return false;
+
+            for (int i = 0; i < lbData.players.Length; i++)
+            {
+                if (lbData.players[i] != null && lbData.players[i].uniqueID == playerId)
+                    return false;
+            }
+
+            return lbData.players.Length < Mathf.Max(1, missingCurrentPlayerTop);
         }
 
         public void SetLeaderboard(int score) => YG2.SetLeaderboard(nameLB, score);

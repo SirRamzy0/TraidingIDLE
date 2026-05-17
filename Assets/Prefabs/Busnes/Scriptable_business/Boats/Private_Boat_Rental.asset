@@ -22,14 +22,14 @@ MonoBehaviour:
   progression:
     requiredBusinessSaveId: jet_ski_rental
     requiredBusinessLevel: 8
-    startRublesCost: 8000000
-    startUpgradeRublesCost: 12000000
-    upgradeCostGrowthPerLevel: 1.27
-    incomeGrowthPerLevel: 1.15
-    startingPaybackHours: 3.5
-    startingIncomeMultiplier: 3.72
-    lateCostAccelerationStartLevel: 20
-    lateCostAccelerationPerLevel: 1.032
+    startRublesCost: 5000000
+    startUpgradeRublesCost: 3500000
+    upgradeCostGrowthPerLevel: 1.18
+    incomeGrowthPerLevel: 1.12
+    startingPaybackHours: 1.6
+    startingIncomeMultiplier: 1.45
+    lateCostAccelerationStartLevel: 30
+    lateCostAccelerationPerLevel: 1.014
   levels:
   - incomeRublesPerHour: 10000
     upgradeRublesCost: 1000
@@ -38,10 +38,11 @@ MonoBehaviour:
     energyCost: 2
     icon: {fileID: 21300000, guid: bcd5ab162c0347f4ca2948bc1ddafaa2, type: 3}
     title: "\u0423\u0432\u0435\u043B\u0438\u0447\u0438\u0442\u044C \u0434\u043E\u0445\u043E\u0434"
-    description: "\u0414\u043E\u0445\u043E\u0434 \u0431\u0438\u0437\u043D\u0435\u0441\u043E\u0432 \u044D\u0442\u043E\u0433\u043E \u0442\u0438\u043F\u0430 +{0}"
+    description: "\u0414\u043E\u0445\u043E\u0434 \u0431\u0438\u0437\u043D\u0435\u0441\u043E\u0432
+      \u044D\u0442\u043E\u0433\u043E \u0442\u0438\u043F\u0430 +{0}"
     effect: 4
     instantRubles: 0
-    instantRublesGrowthPer10Levels: 0.30
+    instantRublesGrowthPer10Levels: 0.3
     temporaryIncomeMultiplier: 1.25
     temporaryDurationSeconds: 300
     marketCurrency: 1

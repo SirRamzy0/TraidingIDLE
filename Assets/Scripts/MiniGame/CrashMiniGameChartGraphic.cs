@@ -53,6 +53,7 @@ namespace TraidingIDLE.MiniGame
         private float _viewMinMultiplier = 1f;
         private float _viewMaxMultiplier = 2.2f;
         private bool _showCurrentValue;
+        private bool _showThresholds = true;
         private float _currentValueTime01;
         private float _currentValueMultiplier;
 
@@ -123,6 +124,16 @@ namespace TraidingIDLE.MiniGame
             SetVerticesDirty();
         }
 
+        public void SetThresholdsVisible(bool visible)
+        {
+            if (_showThresholds == visible)
+                return;
+
+            _showThresholds = visible;
+            UpdateThresholdLabels();
+            SetVerticesDirty();
+        }
+
         protected override void OnPopulateMesh(VertexHelper vh)
         {
             vh.Clear();
@@ -149,7 +160,7 @@ namespace TraidingIDLE.MiniGame
 
         private void DrawThresholds(VertexHelper vh, Rect rect)
         {
-            if (thresholds == null)
+            if (!_showThresholds || thresholds == null)
                 return;
 
             for (var i = 0; i < thresholds.Length; i++)
@@ -215,7 +226,8 @@ namespace TraidingIDLE.MiniGame
                 if (threshold?.labelText == null)
                     continue;
 
-                var visible = TryGetThresholdY(rect, threshold.multiplier, out var y);
+                var y = 0f;
+                var visible = _showThresholds && TryGetThresholdY(rect, threshold.multiplier, out y);
                 threshold.labelText.gameObject.SetActive(visible);
                 if (!visible)
                     continue;

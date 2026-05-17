@@ -61,6 +61,15 @@ namespace TraidingIDLE.MiniGame
         [SerializeField] private Button placeBetButton;
         [SerializeField] private TMP_Text placeBetButtonText;
 
+        [Header("Betting Countdown")]
+        [SerializeField] private TMP_Text bettingCountdownText;
+        [SerializeField] private bool autoCreateBettingCountdownText = true;
+        [SerializeField] private string bettingCountdownTitle = "Игра начнется через:";
+        [SerializeField] private string bettingCountdownFormat = "{0}\n<size=58><b><color=#25FF67>{1}</color></b></size>";
+        [SerializeField] private Color bettingCountdownColor = new(0.86f, 0.9f, 0.96f, 1f);
+        [SerializeField, Min(8f)] private float bettingCountdownTitleFontSize = 22f;
+        [SerializeField, Min(20f)] private float bettingCountdownHeight = 150f;
+
         [Header("Options")]
         [SerializeField] private MultiplierOption[] multipliers =
         {
@@ -845,6 +854,10 @@ namespace TraidingIDLE.MiniGame
 
         private void RefreshDynamicUi()
         {
+            EnsureBettingCountdownText();
+            RefreshBettingCountdown();
+            chart?.SetThresholdsVisible(_stage != Stage.Betting);
+
             if (statusText != null)
                 statusText.text = GetStatusText();
 
@@ -859,6 +872,27 @@ namespace TraidingIDLE.MiniGame
 
             if (placeBetButton != null)
                 placeBetButton.interactable = _stage == Stage.Betting && !_betPlaced;
+        }
+
+        private void RefreshBettingCountdown()
+        {
+            if (bettingCountdownText == null)
+                return;
+
+            var visible = _stage == Stage.Betting;
+            if (bettingCountdownText.gameObject.activeSelf != visible)
+                bettingCountdownText.gameObject.SetActive(visible);
+
+            if (!visible)
+                return;
+
+            bettingCountdownText.text = GameTextFormatter.Format(
+                bettingCountdownFormat,
+                "{0}\n<size=58><b><color=#25FF67>{1}</color></b></size>",
+                string.IsNullOrWhiteSpace(bettingCountdownTitle) ? "Игра начнется через:" : bettingCountdownTitle,
+                GameTextFormatter.CountdownMinutes(_stageTimeLeft));
+            bettingCountdownText.color = bettingCountdownColor;
+            bettingCountdownText.fontSize = bettingCountdownTitleFontSize;
         }
 
         private void RefreshOptionButtons()
@@ -876,10 +910,12 @@ namespace TraidingIDLE.MiniGame
             switch (_stage)
             {
                 case Stage.Betting:
-                    return GameTextFormatter.Format(
-                        bettingStatusFormat,
-                        "Прием ставок: {0}",
-                        GameTextFormatter.CountdownMinutes(_stageTimeLeft));
+                    return bettingCountdownText != null
+                        ? ""
+                        : GameTextFormatter.Format(
+                            bettingStatusFormat,
+                            "Прием ставок: {0}",
+                            GameTextFormatter.CountdownMinutes(_stageTimeLeft));
 
                 case Stage.Playing:
                     return playingStatusText;
@@ -995,6 +1031,33 @@ namespace TraidingIDLE.MiniGame
 
             if (placeBetButtonText == null && placeBetButton != null)
                 placeBetButtonText = placeBetButton.GetComponentInChildren<TMP_Text>(true);
+
+            EnsureBettingCountdownText();
+        }
+
+        private void EnsureBettingCountdownText()
+        {
+            if (bettingCountdownText != null || !autoCreateBettingCountdownText || chart == null)
+                return;
+
+            var go = new GameObject("BettingCountdownText", typeof(RectTransform));
+            go.transform.SetParent(chart.transform, false);
+
+            bettingCountdownText = go.AddComponent<TextMeshProUGUI>();
+            bettingCountdownText.raycastTarget = false;
+            bettingCountdownText.alignment = TextAlignmentOptions.Center;
+            bettingCountdownText.fontSize = bettingCountdownTitleFontSize;
+            bettingCountdownText.fontStyle = FontStyles.Bold;
+            bettingCountdownText.color = bettingCountdownColor;
+            bettingCountdownText.richText = true;
+            bettingCountdownText.textWrappingMode = TextWrappingModes.Normal;
+            bettingCountdownText.overflowMode = TextOverflowModes.Overflow;
+
+            var rt = bettingCountdownText.rectTransform;
+            rt.anchorMin = new Vector2(0f, 0.36f);
+            rt.anchorMax = new Vector2(1f, 0.78f);
+            rt.offsetMin = new Vector2(18f, -bettingCountdownHeight * 0.5f);
+            rt.offsetMax = new Vector2(-18f, bettingCountdownHeight * 0.5f);
         }
 
         private void NormalizeDefaultMultiplierOptions()

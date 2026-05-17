@@ -88,7 +88,7 @@ namespace TraidingIDLE.Currencies.Simulation
     [Serializable]
     public sealed class CoinSimulationConfig
     {
-        private const int CurrentBalancePresetVersion = 3;
+        private const int CurrentBalancePresetVersion = 4;
 
         [HideInInspector] public int balancePresetVersion;
 
@@ -554,126 +554,126 @@ namespace TraidingIDLE.Currencies.Simulation
 
         private void ApplyEthDefaults()
         {
-            tickIntervalSeconds = 0.75f;
+            tickIntervalSeconds = 0.95f;
 
             economyBaseCoinCap = 150f;
             earlyFullCapProfitFloorRubles = 18000000f;
-            targetFullCapProfitHoursEarly = 2.2f;
-            targetFullCapProfitHoursLate = 0.9f;
-            businessIncomeForLateBalance = 150000000f;
-            economicCorridorRatio = 2.35f;
-            economicIncomeSmoothing = 0.06f;
-            economicCorridorRecalcSeconds = 12f;
-            economicShiftInfluence = 0.35f;
-            maxEconomicCenterGrowthPerRecalc = 0.14f;
-            maxEconomicCenterDropPerRecalc = 0.10f;
+            targetFullCapProfitHoursEarly = 2.0f;
+            targetFullCapProfitHoursLate = 0.75f;
+            businessIncomeForLateBalance = 180000000f;
+            economicCorridorRatio = 2.25f;
+            economicIncomeSmoothing = 0.045f;
+            economicCorridorRecalcSeconds = 16f;
+            economicShiftInfluence = 0.28f;
+            maxEconomicCenterGrowthPerRecalc = 0.10f;
+            maxEconomicCenterDropPerRecalc = 0.08f;
 
-            startCorridorWidthPercent = 0.65f;
-            minCorridorWidthPercent = 0.35f;
-            maxCorridorWidthPercent = 0.95f;
+            startCorridorWidthPercent = 0.55f;
+            minCorridorWidthPercent = 0.28f;
+            maxCorridorWidthPercent = 0.78f;
 
-            minStateDurationSeconds = 12f;
-            maxStateDurationSeconds = 38f;
-            minPatternCooldownSeconds = 12f;
-            maxPatternCooldownSeconds = 32f;
-            chanceToStartPatternAfterState = 0.24f;
+            minStateDurationSeconds = 22f;
+            maxStateDurationSeconds = 60f;
+            minPatternCooldownSeconds = 22f;
+            maxPatternCooldownSeconds = 55f;
+            chanceToStartPatternAfterState = 0.18f;
 
-            maxNormalTickChangePercent = 0.060f;
-            maxEventTickChangePercent = 0.17f;
+            maxNormalTickChangePercent = 0.045f;
+            maxEventTickChangePercent = 0.13f;
 
-            ConfigureMovement(calmCorridor, 0f, 0.13f, 0.25f, 0.36f, 0.030f, 0.18f, 0.30f);
-            ConfigureMovement(activeCorridor, 0f, 0.16f, 0.24f, 0.34f, 0.045f, 0.08f, 0.24f);
-            ConfigureMovement(scalpingWindow, 0f, 0.18f, 0.22f, 0.36f, 0.055f, 0.06f, 0.22f);
-            ConfigureMovement(pressureUp, 0.58f, 0.14f, 0.25f, 0.26f, 0.045f, 0.04f, 0.20f);
-            ConfigureMovement(pressureDown, -0.62f, 0.18f, 0.22f, 0.22f, 0.060f, 0.04f, 0.18f);
-            ConfigureMovement(slowTrendUp, 0.48f, 0.12f, 0.30f, 0.24f, 0.038f, 0.08f, 0.22f);
-            ConfigureMovement(slowTrendDown, -0.52f, 0.16f, 0.26f, 0.22f, 0.050f, 0.08f, 0.20f);
-            ConfigureMovement(volatileChop, 0f, 0.25f, 0.18f, 0.58f, 0.065f, 0.16f, 0.32f);
-            ConfigureMovement(accumulation, 0.12f, 0.12f, 0.30f, 0.32f, 0.032f, 0.20f, 0.28f);
-            ConfigureMovement(distribution, -0.16f, 0.16f, 0.26f, 0.28f, 0.045f, 0.16f, 0.26f);
+            ConfigureMovement(calmCorridor, 0f, 0.09f, 0.32f, 0.32f, 0.022f, 0.24f, 0.34f);
+            ConfigureMovement(activeCorridor, 0f, 0.12f, 0.30f, 0.30f, 0.034f, 0.12f, 0.28f);
+            ConfigureMovement(scalpingWindow, 0f, 0.13f, 0.28f, 0.34f, 0.042f, 0.10f, 0.26f);
+            ConfigureMovement(pressureUp, 0.50f, 0.10f, 0.32f, 0.22f, 0.036f, 0.06f, 0.22f);
+            ConfigureMovement(pressureDown, -0.54f, 0.14f, 0.28f, 0.20f, 0.048f, 0.06f, 0.20f);
+            ConfigureMovement(slowTrendUp, 0.46f, 0.09f, 0.36f, 0.20f, 0.030f, 0.10f, 0.24f);
+            ConfigureMovement(slowTrendDown, -0.48f, 0.12f, 0.32f, 0.20f, 0.040f, 0.10f, 0.22f);
+            ConfigureMovement(volatileChop, 0f, 0.18f, 0.24f, 0.52f, 0.050f, 0.20f, 0.34f);
+            ConfigureMovement(accumulation, 0.10f, 0.08f, 0.36f, 0.28f, 0.026f, 0.24f, 0.30f);
+            ConfigureMovement(distribution, -0.14f, 0.12f, 0.32f, 0.24f, 0.036f, 0.20f, 0.28f);
 
-            ConfigurePattern(bigSaw, 4f, 12f, 3, 6, 0.35f, 0.80f, 0f, 0f, 0f, 0.10f, 0.12f, 0.20f);
-            ConfigurePattern(staircaseShiftUp, 6f, 16f, 3, 6, 0.35f, 0.85f, 0.50f, 0.04f, 0.16f, 0.095f, 0.11f, 0.20f);
-            ConfigurePattern(staircaseShiftDown, 5f, 14f, 3, 6, 0.40f, 0.90f, 0.45f, 0.035f, 0.14f, 0.12f, 0.14f, 0.18f);
-            ConfigurePattern(falseBreakoutUp, 3f, 7f, 2, 2, 0.40f, 0.75f, 0f, 0f, 0f, 0.10f, 0.10f, 0.18f);
-            ConfigurePattern(falseBreakoutDown, 3f, 7f, 2, 2, 0.45f, 0.80f, 0f, 0f, 0f, 0.12f, 0.12f, 0.16f);
-            ConfigurePattern(pumpAndCorrection, 5f, 14f, 2, 4, 0.45f, 0.85f, 0.10f, 0.03f, 0.10f, 0.12f, 0.12f, 0.18f);
-            ConfigurePattern(dumpAndRecovery, 4f, 12f, 2, 4, 0.50f, 0.90f, 0.10f, 0.03f, 0.10f, 0.14f, 0.14f, 0.16f);
-            ConfigurePattern(compressionBreakoutNew, 6f, 18f, 4, 7, 0.25f, 0.75f, 0.38f, 0.035f, 0.16f, 0.11f, 0.10f, 0.18f);
+            ConfigurePattern(bigSaw, 8f, 20f, 3, 5, 0.28f, 0.65f, 0f, 0f, 0f, 0.075f, 0.08f, 0.24f);
+            ConfigurePattern(staircaseShiftUp, 10f, 24f, 3, 5, 0.30f, 0.70f, 0.35f, 0.03f, 0.12f, 0.075f, 0.08f, 0.24f);
+            ConfigurePattern(staircaseShiftDown, 9f, 22f, 3, 5, 0.34f, 0.75f, 0.30f, 0.025f, 0.11f, 0.090f, 0.10f, 0.22f);
+            ConfigurePattern(falseBreakoutUp, 5f, 10f, 2, 2, 0.32f, 0.62f, 0f, 0f, 0f, 0.080f, 0.07f, 0.22f);
+            ConfigurePattern(falseBreakoutDown, 5f, 10f, 2, 2, 0.36f, 0.68f, 0f, 0f, 0f, 0.095f, 0.09f, 0.20f);
+            ConfigurePattern(pumpAndCorrection, 8f, 18f, 2, 3, 0.36f, 0.72f, 0.08f, 0.025f, 0.08f, 0.090f, 0.09f, 0.22f);
+            ConfigurePattern(dumpAndRecovery, 7f, 16f, 2, 3, 0.42f, 0.78f, 0.08f, 0.025f, 0.08f, 0.105f, 0.11f, 0.20f);
+            ConfigurePattern(compressionBreakoutNew, 12f, 28f, 4, 7, 0.18f, 0.58f, 0.30f, 0.025f, 0.12f, 0.085f, 0.07f, 0.24f);
 
-            ConfigurePattern(spikeUpRevert, 3f, 7f, 3, 3, 0f, 0f, 0f, 0f, 0f, 0.16f, 0.09f, 0.22f);
-            spikeUpRevert.minSpikeMultiplier = 1.5f;
-            spikeUpRevert.maxSpikeMultiplier = 2.5f;
-            spikeUpRevert.minHoldSeconds = 2f;
-            spikeUpRevert.maxHoldSeconds = 4.5f;
+            ConfigurePattern(spikeUpRevert, 5f, 10f, 3, 3, 0f, 0f, 0f, 0f, 0f, 0.120f, 0.07f, 0.24f);
+            spikeUpRevert.minSpikeMultiplier = 1.45f;
+            spikeUpRevert.maxSpikeMultiplier = 2.2f;
+            spikeUpRevert.minHoldSeconds = 2.5f;
+            spikeUpRevert.maxHoldSeconds = 5.5f;
 
-            ConfigurePattern(spikeDownRevert, 3f, 7f, 3, 3, 0f, 0f, 0f, 0f, 0f, 0.17f, 0.10f, 0.18f);
-            spikeDownRevert.minSpikeMultiplier = 1.35f;
-            spikeDownRevert.maxSpikeMultiplier = 2f;
-            spikeDownRevert.minHoldSeconds = 2f;
-            spikeDownRevert.maxHoldSeconds = 4f;
+            ConfigurePattern(spikeDownRevert, 5f, 10f, 3, 3, 0f, 0f, 0f, 0f, 0f, 0.130f, 0.08f, 0.22f);
+            spikeDownRevert.minSpikeMultiplier = 1.25f;
+            spikeDownRevert.maxSpikeMultiplier = 1.75f;
+            spikeDownRevert.minHoldSeconds = 2.5f;
+            spikeDownRevert.maxHoldSeconds = 5f;
         }
 
         private void ApplyBtcDefaults()
         {
-            tickIntervalSeconds = 0.8f;
+            tickIntervalSeconds = 1.15f;
 
             economyBaseCoinCap = 50f;
             earlyFullCapProfitFloorRubles = 35000000f;
-            targetFullCapProfitHoursEarly = 2.5f;
-            targetFullCapProfitHoursLate = 1.0f;
-            businessIncomeForLateBalance = 500000000f;
-            economicCorridorRatio = 3.0f;
-            economicIncomeSmoothing = 0.05f;
-            economicCorridorRecalcSeconds = 14f;
-            economicShiftInfluence = 0.30f;
-            maxEconomicCenterGrowthPerRecalc = 0.16f;
-            maxEconomicCenterDropPerRecalc = 0.14f;
+            targetFullCapProfitHoursEarly = 2.8f;
+            targetFullCapProfitHoursLate = 1.05f;
+            businessIncomeForLateBalance = 650000000f;
+            economicCorridorRatio = 2.8f;
+            economicIncomeSmoothing = 0.035f;
+            economicCorridorRecalcSeconds = 22f;
+            economicShiftInfluence = 0.24f;
+            maxEconomicCenterGrowthPerRecalc = 0.12f;
+            maxEconomicCenterDropPerRecalc = 0.12f;
 
-            startCorridorWidthPercent = 0.85f;
-            minCorridorWidthPercent = 0.45f;
-            maxCorridorWidthPercent = 1.20f;
+            startCorridorWidthPercent = 0.72f;
+            minCorridorWidthPercent = 0.38f;
+            maxCorridorWidthPercent = 1.05f;
 
-            minStateDurationSeconds = 14f;
-            maxStateDurationSeconds = 46f;
-            minPatternCooldownSeconds = 14f;
-            maxPatternCooldownSeconds = 40f;
-            chanceToStartPatternAfterState = 0.22f;
+            minStateDurationSeconds = 26f;
+            maxStateDurationSeconds = 80f;
+            minPatternCooldownSeconds = 35f;
+            maxPatternCooldownSeconds = 90f;
+            chanceToStartPatternAfterState = 0.16f;
 
-            maxNormalTickChangePercent = 0.075f;
-            maxEventTickChangePercent = 0.22f;
+            maxNormalTickChangePercent = 0.052f;
+            maxEventTickChangePercent = 0.20f;
 
-            ConfigureMovement(calmCorridor, 0f, 0.17f, 0.22f, 0.42f, 0.040f, 0.16f, 0.30f);
-            ConfigureMovement(activeCorridor, 0f, 0.22f, 0.20f, 0.40f, 0.055f, 0.08f, 0.26f);
-            ConfigureMovement(scalpingWindow, 0f, 0.25f, 0.18f, 0.48f, 0.070f, 0.06f, 0.24f);
-            ConfigureMovement(pressureUp, 0.58f, 0.18f, 0.22f, 0.28f, 0.055f, 0.05f, 0.22f);
-            ConfigureMovement(pressureDown, -0.68f, 0.24f, 0.18f, 0.22f, 0.078f, 0.04f, 0.18f);
-            ConfigureMovement(slowTrendUp, 0.42f, 0.16f, 0.25f, 0.28f, 0.045f, 0.08f, 0.22f);
-            ConfigureMovement(slowTrendDown, -0.48f, 0.20f, 0.22f, 0.24f, 0.060f, 0.08f, 0.20f);
-            ConfigureMovement(volatileChop, 0f, 0.35f, 0.14f, 0.65f, 0.090f, 0.12f, 0.32f);
-            ConfigureMovement(accumulation, 0.10f, 0.16f, 0.25f, 0.34f, 0.040f, 0.18f, 0.28f);
-            ConfigureMovement(distribution, -0.14f, 0.22f, 0.20f, 0.30f, 0.055f, 0.16f, 0.26f);
+            ConfigureMovement(calmCorridor, 0f, 0.10f, 0.30f, 0.34f, 0.026f, 0.22f, 0.34f);
+            ConfigureMovement(activeCorridor, 0f, 0.15f, 0.26f, 0.34f, 0.040f, 0.12f, 0.28f);
+            ConfigureMovement(scalpingWindow, 0f, 0.16f, 0.24f, 0.40f, 0.050f, 0.10f, 0.26f);
+            ConfigureMovement(pressureUp, 0.52f, 0.13f, 0.28f, 0.24f, 0.042f, 0.07f, 0.24f);
+            ConfigureMovement(pressureDown, -0.66f, 0.18f, 0.24f, 0.18f, 0.060f, 0.05f, 0.20f);
+            ConfigureMovement(slowTrendUp, 0.36f, 0.11f, 0.32f, 0.24f, 0.034f, 0.12f, 0.24f);
+            ConfigureMovement(slowTrendDown, -0.44f, 0.15f, 0.28f, 0.22f, 0.046f, 0.10f, 0.22f);
+            ConfigureMovement(volatileChop, 0f, 0.26f, 0.18f, 0.58f, 0.060f, 0.18f, 0.36f);
+            ConfigureMovement(accumulation, 0.08f, 0.10f, 0.34f, 0.30f, 0.028f, 0.22f, 0.30f);
+            ConfigureMovement(distribution, -0.16f, 0.16f, 0.28f, 0.26f, 0.042f, 0.18f, 0.28f);
 
-            ConfigurePattern(bigSaw, 4f, 12f, 3, 7, 0.45f, 1.0f, 0f, 0f, 0f, 0.14f, 0.17f, 0.16f);
-            ConfigurePattern(staircaseShiftUp, 6f, 16f, 3, 6, 0.40f, 0.95f, 0.45f, 0.04f, 0.18f, 0.12f, 0.14f, 0.16f);
-            ConfigurePattern(staircaseShiftDown, 5f, 14f, 3, 6, 0.48f, 1.0f, 0.45f, 0.04f, 0.18f, 0.16f, 0.18f, 0.14f);
-            ConfigurePattern(falseBreakoutUp, 3f, 7f, 2, 2, 0.55f, 0.95f, 0f, 0f, 0f, 0.15f, 0.14f, 0.14f);
-            ConfigurePattern(falseBreakoutDown, 3f, 7f, 2, 2, 0.60f, 1.0f, 0f, 0f, 0f, 0.17f, 0.16f, 0.12f);
-            ConfigurePattern(pumpAndCorrection, 4f, 12f, 2, 4, 0.55f, 1.1f, 0.12f, 0.04f, 0.14f, 0.18f, 0.16f, 0.14f);
-            ConfigurePattern(dumpAndRecovery, 4f, 11f, 2, 4, 0.60f, 1.15f, 0.12f, 0.04f, 0.14f, 0.20f, 0.18f, 0.12f);
-            ConfigurePattern(compressionBreakoutNew, 6f, 18f, 4, 7, 0.30f, 0.90f, 0.35f, 0.04f, 0.18f, 0.14f, 0.14f, 0.14f);
+            ConfigurePattern(bigSaw, 8f, 22f, 3, 6, 0.38f, 0.85f, 0f, 0f, 0f, 0.105f, 0.12f, 0.18f);
+            ConfigurePattern(staircaseShiftUp, 12f, 28f, 3, 5, 0.35f, 0.80f, 0.30f, 0.035f, 0.14f, 0.095f, 0.10f, 0.18f);
+            ConfigurePattern(staircaseShiftDown, 10f, 26f, 3, 5, 0.44f, 0.92f, 0.35f, 0.04f, 0.16f, 0.125f, 0.14f, 0.16f);
+            ConfigurePattern(falseBreakoutUp, 5f, 12f, 2, 2, 0.48f, 0.90f, 0f, 0f, 0f, 0.120f, 0.11f, 0.16f);
+            ConfigurePattern(falseBreakoutDown, 5f, 12f, 2, 2, 0.55f, 1.0f, 0f, 0f, 0f, 0.145f, 0.14f, 0.14f);
+            ConfigurePattern(pumpAndCorrection, 7f, 18f, 2, 3, 0.48f, 0.98f, 0.08f, 0.035f, 0.12f, 0.140f, 0.13f, 0.16f);
+            ConfigurePattern(dumpAndRecovery, 6f, 16f, 2, 3, 0.55f, 1.05f, 0.10f, 0.04f, 0.14f, 0.160f, 0.16f, 0.14f);
+            ConfigurePattern(compressionBreakoutNew, 12f, 30f, 4, 7, 0.22f, 0.78f, 0.28f, 0.035f, 0.16f, 0.115f, 0.10f, 0.18f);
 
-            ConfigurePattern(spikeUpRevert, 3f, 7f, 3, 3, 0f, 0f, 0f, 0f, 0f, 0.22f, 0.12f, 0.16f);
-            spikeUpRevert.minSpikeMultiplier = 2f;
-            spikeUpRevert.maxSpikeMultiplier = 4f;
-            spikeUpRevert.minHoldSeconds = 1.8f;
-            spikeUpRevert.maxHoldSeconds = 4f;
+            ConfigurePattern(spikeUpRevert, 4f, 9f, 3, 3, 0f, 0f, 0f, 0f, 0f, 0.200f, 0.10f, 0.16f);
+            spikeUpRevert.minSpikeMultiplier = 2.1f;
+            spikeUpRevert.maxSpikeMultiplier = 3.6f;
+            spikeUpRevert.minHoldSeconds = 1.5f;
+            spikeUpRevert.maxHoldSeconds = 3.5f;
 
-            ConfigurePattern(spikeDownRevert, 3f, 7f, 3, 3, 0f, 0f, 0f, 0f, 0f, 0.23f, 0.14f, 0.12f);
-            spikeDownRevert.minSpikeMultiplier = 1.45f;
-            spikeDownRevert.maxSpikeMultiplier = 2.85f;
-            spikeDownRevert.minHoldSeconds = 1.5f;
-            spikeDownRevert.maxHoldSeconds = 3.5f;
+            ConfigurePattern(spikeDownRevert, 4f, 9f, 3, 3, 0f, 0f, 0f, 0f, 0f, 0.210f, 0.12f, 0.14f);
+            spikeDownRevert.minSpikeMultiplier = 1.5f;
+            spikeDownRevert.maxSpikeMultiplier = 2.6f;
+            spikeDownRevert.minHoldSeconds = 1.3f;
+            spikeDownRevert.maxHoldSeconds = 3f;
         }
 
         private static void ConfigureMovement(
@@ -890,16 +890,16 @@ namespace TraidingIDLE.Currencies.Simulation
             {
                 return new[]
                 {
-                    new StateWeight { type = MarketStateType.CalmCorridor, weight = 0.9f },
-                    new StateWeight { type = MarketStateType.ActiveCorridor, weight = 0.95f },
-                    new StateWeight { type = MarketStateType.ScalpingWindow, weight = 0.45f },
-                    new StateWeight { type = MarketStateType.PressureUp, weight = 1.0f },
-                    new StateWeight { type = MarketStateType.PressureDown, weight = 0.85f },
-                    new StateWeight { type = MarketStateType.SlowTrendUp, weight = 1.45f },
-                    new StateWeight { type = MarketStateType.SlowTrendDown, weight = 1.15f },
-                    new StateWeight { type = MarketStateType.VolatileChop, weight = 0.65f },
-                    new StateWeight { type = MarketStateType.Accumulation, weight = 1.35f },
-                    new StateWeight { type = MarketStateType.Distribution, weight = 1.05f },
+                    new StateWeight { type = MarketStateType.CalmCorridor, weight = 1.15f },
+                    new StateWeight { type = MarketStateType.ActiveCorridor, weight = 0.75f },
+                    new StateWeight { type = MarketStateType.ScalpingWindow, weight = 0.20f },
+                    new StateWeight { type = MarketStateType.PressureUp, weight = 0.85f },
+                    new StateWeight { type = MarketStateType.PressureDown, weight = 0.65f },
+                    new StateWeight { type = MarketStateType.SlowTrendUp, weight = 1.85f },
+                    new StateWeight { type = MarketStateType.SlowTrendDown, weight = 1.25f },
+                    new StateWeight { type = MarketStateType.VolatileChop, weight = 0.35f },
+                    new StateWeight { type = MarketStateType.Accumulation, weight = 1.65f },
+                    new StateWeight { type = MarketStateType.Distribution, weight = 1.15f },
                 };
             }
 
@@ -907,16 +907,16 @@ namespace TraidingIDLE.Currencies.Simulation
             {
                 return new[]
                 {
-                    new StateWeight { type = MarketStateType.CalmCorridor, weight = 0.75f },
-                    new StateWeight { type = MarketStateType.ActiveCorridor, weight = 0.75f },
-                    new StateWeight { type = MarketStateType.ScalpingWindow, weight = 0.25f },
-                    new StateWeight { type = MarketStateType.PressureUp, weight = 0.9f },
-                    new StateWeight { type = MarketStateType.PressureDown, weight = 0.9f },
-                    new StateWeight { type = MarketStateType.SlowTrendUp, weight = 0.95f },
-                    new StateWeight { type = MarketStateType.SlowTrendDown, weight = 0.95f },
-                    new StateWeight { type = MarketStateType.VolatileChop, weight = 1.7f },
-                    new StateWeight { type = MarketStateType.Accumulation, weight = 0.95f },
-                    new StateWeight { type = MarketStateType.Distribution, weight = 0.95f },
+                    new StateWeight { type = MarketStateType.CalmCorridor, weight = 1.05f },
+                    new StateWeight { type = MarketStateType.ActiveCorridor, weight = 0.55f },
+                    new StateWeight { type = MarketStateType.ScalpingWindow, weight = 0.12f },
+                    new StateWeight { type = MarketStateType.PressureUp, weight = 0.75f },
+                    new StateWeight { type = MarketStateType.PressureDown, weight = 0.95f },
+                    new StateWeight { type = MarketStateType.SlowTrendUp, weight = 0.70f },
+                    new StateWeight { type = MarketStateType.SlowTrendDown, weight = 0.80f },
+                    new StateWeight { type = MarketStateType.VolatileChop, weight = 1.25f },
+                    new StateWeight { type = MarketStateType.Accumulation, weight = 0.65f },
+                    new StateWeight { type = MarketStateType.Distribution, weight = 0.80f },
                 };
             }
 
@@ -950,16 +950,16 @@ namespace TraidingIDLE.Currencies.Simulation
             {
                 return new[]
                 {
-                    new PatternWeight { type = MarketStateType.BigSaw, weight = 0.8f },
-                    new PatternWeight { type = MarketStateType.StaircaseShiftUp, weight = 0.85f },
-                    new PatternWeight { type = MarketStateType.StaircaseShiftDown, weight = 0.75f },
-                    new PatternWeight { type = MarketStateType.FalseBreakoutUp, weight = 0.55f },
-                    new PatternWeight { type = MarketStateType.FalseBreakoutDown, weight = 0.55f },
-                    new PatternWeight { type = MarketStateType.PumpAndCorrection, weight = 0.7f },
-                    new PatternWeight { type = MarketStateType.DumpAndRecovery, weight = 0.65f },
-                    new PatternWeight { type = MarketStateType.CompressionBreakoutNew, weight = 1.05f },
-                    new PatternWeight { type = MarketStateType.SpikeUpRevert, weight = 0.35f },
-                    new PatternWeight { type = MarketStateType.SpikeDownRevert, weight = 0.25f },
+                    new PatternWeight { type = MarketStateType.BigSaw, weight = 0.70f },
+                    new PatternWeight { type = MarketStateType.StaircaseShiftUp, weight = 0.55f },
+                    new PatternWeight { type = MarketStateType.StaircaseShiftDown, weight = 0.40f },
+                    new PatternWeight { type = MarketStateType.FalseBreakoutUp, weight = 0.35f },
+                    new PatternWeight { type = MarketStateType.FalseBreakoutDown, weight = 0.35f },
+                    new PatternWeight { type = MarketStateType.PumpAndCorrection, weight = 0.55f },
+                    new PatternWeight { type = MarketStateType.DumpAndRecovery, weight = 0.45f },
+                    new PatternWeight { type = MarketStateType.CompressionBreakoutNew, weight = 0.95f },
+                    new PatternWeight { type = MarketStateType.SpikeUpRevert, weight = 0.20f },
+                    new PatternWeight { type = MarketStateType.SpikeDownRevert, weight = 0.15f },
                 };
             }
 
@@ -967,16 +967,16 @@ namespace TraidingIDLE.Currencies.Simulation
             {
                 return new[]
                 {
-                    new PatternWeight { type = MarketStateType.BigSaw, weight = 0.9f },
-                    new PatternWeight { type = MarketStateType.StaircaseShiftUp, weight = 0.75f },
-                    new PatternWeight { type = MarketStateType.StaircaseShiftDown, weight = 0.75f },
-                    new PatternWeight { type = MarketStateType.FalseBreakoutUp, weight = 1.3f },
-                    new PatternWeight { type = MarketStateType.FalseBreakoutDown, weight = 1.3f },
-                    new PatternWeight { type = MarketStateType.PumpAndCorrection, weight = 1.3f },
-                    new PatternWeight { type = MarketStateType.DumpAndRecovery, weight = 1.25f },
-                    new PatternWeight { type = MarketStateType.CompressionBreakoutNew, weight = 0.8f },
-                    new PatternWeight { type = MarketStateType.SpikeUpRevert, weight = 0.45f },
-                    new PatternWeight { type = MarketStateType.SpikeDownRevert, weight = 0.40f },
+                    new PatternWeight { type = MarketStateType.BigSaw, weight = 0.65f },
+                    new PatternWeight { type = MarketStateType.StaircaseShiftUp, weight = 0.45f },
+                    new PatternWeight { type = MarketStateType.StaircaseShiftDown, weight = 0.55f },
+                    new PatternWeight { type = MarketStateType.FalseBreakoutUp, weight = 1.45f },
+                    new PatternWeight { type = MarketStateType.FalseBreakoutDown, weight = 1.45f },
+                    new PatternWeight { type = MarketStateType.PumpAndCorrection, weight = 1.25f },
+                    new PatternWeight { type = MarketStateType.DumpAndRecovery, weight = 1.35f },
+                    new PatternWeight { type = MarketStateType.CompressionBreakoutNew, weight = 0.70f },
+                    new PatternWeight { type = MarketStateType.SpikeUpRevert, weight = 0.25f },
+                    new PatternWeight { type = MarketStateType.SpikeDownRevert, weight = 0.30f },
                 };
             }
 

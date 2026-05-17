@@ -21,14 +21,14 @@ MonoBehaviour:
   progression:
     requiredBusinessSaveId: fashion_boutique
     requiredBusinessLevel: 6
-    startRublesCost: 300000000
-    startUpgradeRublesCost: 450000000
-    upgradeCostGrowthPerLevel: 1.30
-    incomeGrowthPerLevel: 1.13
-    startingPaybackHours: 4.6
-    startingIncomeMultiplier: 2.95
-    lateCostAccelerationStartLevel: 16
-    lateCostAccelerationPerLevel: 1.038
+    startRublesCost: 160000000
+    startUpgradeRublesCost: 110000000
+    upgradeCostGrowthPerLevel: 1.21
+    incomeGrowthPerLevel: 1.095
+    startingPaybackHours: 3.25
+    startingIncomeMultiplier: 1.65
+    lateCostAccelerationStartLevel: 26
+    lateCostAccelerationPerLevel: 1.018
   levels:
   - incomeRublesPerHour: 10000
     upgradeRublesCost: 1000
@@ -37,10 +37,11 @@ MonoBehaviour:
     energyCost: 3
     icon: {fileID: 21300000, guid: bcd5ab162c0347f4ca2948bc1ddafaa2, type: 3}
     title: "\u0423\u0441\u0438\u043B\u0438\u0442\u044C \u0434\u043E\u0445\u043E\u0434"
-    description: "\u0414\u043E\u0445\u043E\u0434 \u0431\u0438\u0437\u043D\u0435\u0441\u043E\u0432 \u044D\u0442\u043E\u0433\u043E \u0442\u0438\u043F\u0430 +{0}"
+    description: "\u0414\u043E\u0445\u043E\u0434 \u0431\u0438\u0437\u043D\u0435\u0441\u043E\u0432
+      \u044D\u0442\u043E\u0433\u043E \u0442\u0438\u043F\u0430 +{0}"
     effect: 4
     instantRubles: 0
-    instantRublesGrowthPer10Levels: 0.30
+    instantRublesGrowthPer10Levels: 0.3
     temporaryIncomeMultiplier: 2
     temporaryDurationSeconds: 600
     marketCurrency: 2
