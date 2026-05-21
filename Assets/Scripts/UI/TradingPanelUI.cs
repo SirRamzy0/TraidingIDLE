@@ -5,6 +5,7 @@ using System.Globalization;
 using TMPro;
 using TraidingIDLE.Currencies;
 using TraidingIDLE.Integrations;
+using TraidingIDLE.Localization;
 using TraidingIDLE.Player;
 using UnityEngine;
 using UnityEngine.EventSystems;
@@ -127,6 +128,8 @@ namespace TraidingIDLE.UI
 
         private void OnEnable()
         {
+            LocalizationManager.LanguageChanged += OnLanguageChanged;
+
             if (profile != null)
             {
                 profile.RublesChanged += OnRublesChanged;
@@ -239,6 +242,16 @@ namespace TraidingIDLE.UI
 
             if (capUpgradeBuyButton != null)
                 capUpgradeBuyButton.onClick.RemoveListener(OnCapUpgradeBuyClicked);
+
+            LocalizationManager.LanguageChanged -= OnLanguageChanged;
+        }
+
+        private void OnLanguageChanged()
+        {
+            RefreshHoldings();
+            RefreshValueAndProfit();
+            RefreshTransaction();
+            RefreshCapUpgradeUi();
         }
 
         private void OnActiveCurrencyChanged(CurrencyId id)
@@ -433,7 +446,7 @@ namespace TraidingIDLE.UI
             var cap = profile.GetCap(_activeCurrency);
 
             holdingsText.text = string.Format(
-                SafeFormat(holdingsFormat, "{0}/{1}"),
+                SafeFormat(LocalizationManager.Tr("trading.holdings_format", holdingsFormat), "{0}/{1}"),
                 FormatThousands(amount),
                 FormatThousands(cap));
         }
@@ -451,7 +464,7 @@ namespace TraidingIDLE.UI
             if (totalValueText != null)
             {
                 totalValueText.text = string.Format(
-                    SafeFormat(totalValueFormat, "{0}"),
+                    SafeFormat(LocalizationManager.Tr("trading.total_value_format", totalValueFormat), "{0}"),
                     FormatThousands(totalValue));
             }
 
@@ -506,7 +519,9 @@ namespace TraidingIDLE.UI
             if (totalText != null)
             {
                 totalText.text = string.Format(
-                    SafeFormat(totalFormat, "{0}"),
+                    SafeFormat(
+                        LocalizationManager.Tr(totalFormat == buyTotalFormat ? "trading.buy_total_format" : "trading.sell_total_format", totalFormat),
+                        "{0}"),
                     FormatThousands(total));
             }
 
@@ -570,7 +585,12 @@ namespace TraidingIDLE.UI
         private void RefreshCapUpgradeUi()
         {
             if (capUpgradeOpenButton != null)
+            {
                 capUpgradeOpenButton.interactable = profile != null;
+                var openButtonText = capUpgradeOpenButton.GetComponentInChildren<TMP_Text>(true);
+                if (openButtonText != null)
+                    openButtonText.text = LocalizationManager.Tr("common.increase", "Увеличить");
+            }
 
             if (profile == null)
             {
@@ -601,7 +621,7 @@ namespace TraidingIDLE.UI
             if (capUpgradeDescriptionText != null)
             {
                 capUpgradeDescriptionText.text = string.Format(
-                    SafeFormat(capUpgradeDescriptionFormat, "Увеличить с {0} до {1}"),
+                    SafeFormat(LocalizationManager.Tr("trading.cap_upgrade_description_format", capUpgradeDescriptionFormat), "Увеличить с {0} до {1}"),
                     FormatThousands(currentCap),
                     FormatThousands(nextCap));
             }
@@ -609,7 +629,7 @@ namespace TraidingIDLE.UI
             if (capUpgradeCurrentLimitText != null)
             {
                 capUpgradeCurrentLimitText.text = string.Format(
-                    SafeFormat(capUpgradeCurrentLimitFormat, "Текущий лимит {0} - {1} монет"),
+                    SafeFormat(LocalizationManager.Tr("trading.cap_upgrade_current_limit_format", capUpgradeCurrentLimitFormat), "Текущий лимит {0} - {1} монет"),
                     _activeCurrency.ToString(),
                     FormatThousands(currentCap));
             }
@@ -617,7 +637,7 @@ namespace TraidingIDLE.UI
             if (capUpgradeBuyPriceText != null)
             {
                 capUpgradeBuyPriceText.text = useRewardedAd
-                    ? capUpgradeAdPriceText
+                    ? LocalizationManager.Tr("common.ad", capUpgradeAdPriceText)
                     : string.Format(
                         SafeFormat(capUpgradeBuyPriceFormat, "{0}"),
                         FormatThousands(cost));

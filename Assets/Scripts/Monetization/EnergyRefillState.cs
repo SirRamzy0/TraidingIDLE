@@ -17,6 +17,11 @@ namespace TraidingIDLE.Monetization
         private static bool _loaded;
         private static long _nextAdAvailableUtc;
 
+        static EnergyRefillState()
+        {
+            SaveStorage.ExternalDataLoaded += Reload;
+        }
+
         public static bool IsAdAvailable
         {
             get
@@ -50,6 +55,13 @@ namespace TraidingIDLE.Monetization
             _loaded = true;
             if (SaveStorage.TryLoadJson<SaveData>(SaveKey, out var data))
                 _nextAdAvailableUtc = Math.Max(0L, data.nextAdAvailableUtc);
+        }
+
+        private static void Reload()
+        {
+            _loaded = false;
+            _nextAdAvailableUtc = 0;
+            EnsureLoaded();
         }
 
         private static void Save()

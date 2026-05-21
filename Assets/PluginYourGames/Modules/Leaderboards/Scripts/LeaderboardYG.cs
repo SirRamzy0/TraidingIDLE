@@ -45,6 +45,16 @@ namespace YG
         [Tooltip(Langs.t_updateLBMethod)]
 #endif
         public UpdateLBMethod updateLBMethod = UpdateLBMethod.OnEnable;
+
+#if UNITY_EDITOR
+        [Header("Request Throttling")]
+#endif
+        public bool throttleRequests = true;
+#if UNITY_EDITOR
+        [Min(0f)]
+#endif
+        public float minRequestIntervalSeconds = 60f;
+
 #if UNITY_EDITOR
         [Tooltip(Langs.t_entriesText)]
 #endif
@@ -84,6 +94,7 @@ namespace YG
 
         private LBPlayerDataYG[] players = new LBPlayerDataYG[0];
         private bool fallbackRequestInProgress;
+        private float lastRequestRealtime = -9999f;
 
         private void OnEnable()
         {
@@ -113,7 +124,7 @@ namespace YG
             if (ShouldRequestMissingPlayerFallback(lbData))
             {
                 fallbackRequestInProgress = true;
-                UpdateLB(Mathf.Max(1, missingCurrentPlayerTop), 0);
+                UpdateLB(Mathf.Max(1, missingCurrentPlayerTop), 0, true);
                 return;
             }
 
@@ -278,11 +289,23 @@ namespace YG
 
         public void UpdateLB()
         {
-            UpdateLB(quantityTop, quantityAround);
+            UpdateLB(quantityTop, quantityAround, false);
         }
 
         private void UpdateLB(int top, int around)
         {
+            UpdateLB(top, around, false);
+        }
+
+        private void UpdateLB(int top, int around, bool force)
+        {
+            if (!force && throttleRequests && minRequestIntervalSeconds > 0f)
+            {
+                var timeSinceRequest = Time.realtimeSinceStartup - lastRequestRealtime;
+                if (timeSinceRequest < minRequestIntervalSeconds)
+                    return;
+            }
+
             string photoSize = "nonePhoto";
 
             switch (playerPhoto)
@@ -298,6 +321,7 @@ namespace YG
                     break;
             }
 
+            lastRequestRealtime = Time.realtimeSinceStartup;
             YG2.GetLeaderboard(nameLB, top, around, photoSize);
         }
 

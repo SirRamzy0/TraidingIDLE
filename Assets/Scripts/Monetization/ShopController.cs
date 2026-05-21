@@ -5,6 +5,7 @@ using System.Globalization;
 using System.Linq;
 using TMPro;
 using TraidingIDLE.Analytics;
+using TraidingIDLE.Localization;
 using TraidingIDLE.Player;
 using TraidingIDLE.Saves;
 using UnityEngine;
@@ -155,6 +156,8 @@ namespace TraidingIDLE.Monetization
         private void OnEnable()
         {
             SceneManager.sceneLoaded += OnSceneLoaded;
+            LocalizationManager.LanguageChanged += OnLanguageChanged;
+            SaveStorage.ExternalDataLoaded += OnExternalDataLoaded;
 
 #if Payments_yg
             YG.YG2.onPurchaseSuccess += OnPurchaseSuccess;
@@ -172,6 +175,8 @@ namespace TraidingIDLE.Monetization
         private void OnDisable()
         {
             SceneManager.sceneLoaded -= OnSceneLoaded;
+            LocalizationManager.LanguageChanged -= OnLanguageChanged;
+            SaveStorage.ExternalDataLoaded -= OnExternalDataLoaded;
 
 #if Payments_yg
             YG.YG2.onPurchaseSuccess -= OnPurchaseSuccess;
@@ -417,9 +422,11 @@ namespace TraidingIDLE.Monetization
 
 #if Payments_yg
             YG.YG2.BuyPayments(productId);
-#else
+#elif UNITY_EDITOR
             AnalyticsTracker.ReportPurchaseSuccess(productId);
             ApplyPurchase(productId);
+#else
+            Debug.LogWarning($"Purchase was requested, but Payments_yg is not enabled. Product id: {productId}", this);
 #endif
         }
 
@@ -586,8 +593,22 @@ namespace TraidingIDLE.Monetization
                 var text = button.GetComponentInChildren<TMP_Text>(true);
 
                 if (text != null)
-                    text.text = "Куплено";
+                    text.text = LocalizationManager.Tr("common.purchased", "Куплено");
             }
+        }
+
+        private void OnLanguageChanged()
+        {
+            RefreshDailyRewards();
+            RefreshNoAdsButtons();
+        }
+
+        private void OnExternalDataLoaded()
+        {
+            RefreshGems();
+            RefreshDailyRewards();
+            RefreshNoAdsButtons();
+            RefreshPriceTexts();
         }
 
         private void ClaimDailyReward(int index)
@@ -713,22 +734,26 @@ namespace TraidingIDLE.Monetization
             {
                 if (isAvailable)
                 {
-                    view.ButtonText.text = dailyClaimAvailableText;
+                    view.ButtonText.text = LocalizationManager.Tr("daily.claim_available", dailyClaimAvailableText);
                 }
                 else if (isWaitingNextDay)
                 {
+                    var countdownFormat = LocalizationManager.Tr(
+                        "daily.next_countdown_format",
+                        string.IsNullOrWhiteSpace(dailyNextRewardCountdownFormat) ? "{0}" : dailyNextRewardCountdownFormat);
+
                     view.ButtonText.text = string.Format(
                         CultureInfo.InvariantCulture,
-                        string.IsNullOrWhiteSpace(dailyNextRewardCountdownFormat) ? "{0}" : dailyNextRewardCountdownFormat,
+                        countdownFormat,
                         nextRewardCountdownText);
                 }
                 else if (isClaimed)
                 {
-                    view.ButtonText.text = dailyClaimedText;
+                    view.ButtonText.text = LocalizationManager.Tr("daily.claimed", dailyClaimedText);
                 }
                 else
                 {
-                    view.ButtonText.text = dailyLockedText;
+                    view.ButtonText.text = LocalizationManager.Tr("daily.locked", dailyLockedText);
                 }
             }
 
@@ -774,8 +799,10 @@ namespace TraidingIDLE.Monetization
             var totalMinutes = Math.Max(1, (int)Math.Ceiling(remaining.TotalMinutes));
             var hours = totalMinutes / 60;
             var minutes = totalMinutes % 60;
+            var hoursText = LocalizationManager.Format("time.hours_short_format", "{0}ч", hours);
+            var minutesText = LocalizationManager.Format("time.minutes_short_format", "{0}м", minutes.ToString("00", CultureInfo.InvariantCulture));
 
-            return $"{hours}ч {minutes:00}м";
+            return $"{hoursText} {minutesText}";
         }
 
         private static DailyRewardSaveData LoadDailyRewardData()

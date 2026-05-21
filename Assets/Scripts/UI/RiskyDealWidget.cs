@@ -3,6 +3,7 @@ using System.Globalization;
 using TMPro;
 using TraidingIDLE.Business;
 using TraidingIDLE.Currencies;
+using TraidingIDLE.Localization;
 using TraidingIDLE.Player;
 using TraidingIDLE.Saves;
 using UnityEngine;
@@ -72,25 +73,26 @@ namespace TraidingIDLE.UI
 
         [Header("Random ranges")]
         [Range(1f, 99f)]
-        [SerializeField] private float chanceMinPercent = 15f;
+        [SerializeField] private float chanceMinPercent = 60f;
         [Range(1f, 99f)]
-        [SerializeField] private float chanceMaxPercent = 65f;
+        [SerializeField] private float chanceMaxPercent = 75f;
+        [SerializeField, Range(1, 25)] private int chanceStepPercent = 5;
 
-        [SerializeField, Min(0)] private long stakeMinRubles = 100_000;
-        [SerializeField, Min(0)] private long stakeMaxRubles = 5_000_000;
+        [SerializeField, Min(0)] private long stakeMinRubles = 250_000;
+        [SerializeField, Min(0)] private long stakeMaxRubles = 15_000_000;
 
         [Header("Adaptive stake")]
         [SerializeField] private bool useAdaptiveStake = true;
-        [SerializeField, Min(0)] private long adaptiveStakeHardMinRubles = 5_000;
-        [SerializeField, Min(0)] private long adaptiveStakeHardMaxRubles = 150_000_000;
-        [SerializeField, Min(0)] private long noIncomeStakeMinRubles = 5_000;
-        [SerializeField, Min(0)] private long noIncomeStakeMaxRubles = 8_000;
-        [SerializeField, Min(0f)] private float incomeStakeMinSeconds = 20f;
-        [SerializeField, Min(0f)] private float incomeStakeMaxSeconds = 180f;
+        [SerializeField, Min(0)] private long adaptiveStakeHardMinRubles = 50_000;
+        [SerializeField, Min(0)] private long adaptiveStakeHardMaxRubles = 300_000_000;
+        [SerializeField, Min(0)] private long noIncomeStakeMinRubles = 50_000;
+        [SerializeField, Min(0)] private long noIncomeStakeMaxRubles = 150_000;
+        [SerializeField, Min(0f)] private float incomeStakeMinSeconds = 45f;
+        [SerializeField, Min(0f)] private float incomeStakeMaxSeconds = 300f;
         [Range(0f, 1f)]
-        [SerializeField] private float portfolioStakeMin01 = 0.008f;
+        [SerializeField] private float portfolioStakeMin01 = 0.02f;
         [Range(0f, 1f)]
-        [SerializeField] private float portfolioStakeMax01 = 0.030f;
+        [SerializeField] private float portfolioStakeMax01 = 0.055f;
 
         [Header("Payout multipliers")]
         [Tooltip("If player placed a bet, payout multiplier is picked as: x2(50%), x3(30%), x5(20%).")]
@@ -128,6 +130,7 @@ namespace TraidingIDLE.UI
             public bool betPlaced;
             public bool fomoNoBet;
             public bool claimTaken;
+            public bool firstGuaranteedSuccessUsed;
             public long stakeRubles;
             public long displayStakeRubles;
             public float chance01;
@@ -143,6 +146,7 @@ namespace TraidingIDLE.UI
         private bool _betPlaced;
         private bool _fomoNoBet;
         private bool _claimTaken;
+        private bool _firstGuaranteedSuccessUsed;
         private long _stakeRubles;
         private long _displayStakeRubles;
         private float _chance01;
@@ -184,9 +188,13 @@ namespace TraidingIDLE.UI
 
         private void OnEnable()
         {
+            LocalizationManager.LanguageChanged += OnLanguageChanged;
+            SaveStorage.ExternalDataLoaded += ReloadFromExternalStorage;
+
             if (offerBetButton != null) offerBetButton.onClick.AddListener(OnBetClicked);
             if (successClaimButton != null) successClaimButton.onClick.AddListener(OnClaimClicked);
 
+            RefreshButtonLabels();
             SyncDialogVisibility();
             RefreshAllTexts();
             UpdateButtons();
@@ -194,6 +202,9 @@ namespace TraidingIDLE.UI
 
         private void OnDisable()
         {
+            LocalizationManager.LanguageChanged -= OnLanguageChanged;
+            SaveStorage.ExternalDataLoaded -= ReloadFromExternalStorage;
+
             if (offerBetButton != null) offerBetButton.onClick.RemoveListener(OnBetClicked);
             if (successClaimButton != null) successClaimButton.onClick.RemoveListener(OnClaimClicked);
         }
@@ -296,7 +307,12 @@ namespace TraidingIDLE.UI
         private void Resolve()
         {
             var successChance01 = _fomoNoBet ? 0.5f : _chance01;
-            var success = UnityEngine.Random.value < successChance01;
+            var guaranteedSuccess = _betPlaced && !_firstGuaranteedSuccessUsed;
+            var success = guaranteedSuccess || UnityEngine.Random.value < successChance01;
+
+            if (_betPlaced && !_firstGuaranteedSuccessUsed)
+                _firstGuaranteedSuccessUsed = true;
+
             if (success)
             {
                 var payoutMultiplier = _fomoNoBet
@@ -345,7 +361,7 @@ namespace TraidingIDLE.UI
 
             profile.AddRubles(-_stakeRubles);
             _betPlaced = true;
-            SetOfferBetButtonLabel(offerBetWaitingLabel);
+            SetOfferBetButtonLabel(LocalizationManager.Tr("risky.button_waiting", offerBetWaitingLabel));
             if (offerBetButton != null)
                 offerBetButton.interactable = false;
             UpdateButtons();
@@ -371,7 +387,7 @@ namespace TraidingIDLE.UI
             profile.AddRubles(payout);
 
             _claimTaken = true;
-            SetSuccessClaimButtonLabel(successClaimedLabel);
+            SetSuccessClaimButtonLabel(LocalizationManager.Tr("daily.claimed", successClaimedLabel));
             if (successClaimButton != null)
                 successClaimButton.interactable = false;
 
@@ -396,9 +412,15 @@ namespace TraidingIDLE.UI
             profile.AddRubles(payout);
 
             _claimTaken = true;
-            SetSuccessClaimButtonLabel(successClaimedLabel);
+            SetSuccessClaimButtonLabel(LocalizationManager.Tr("daily.claimed", successClaimedLabel));
 
             return true;
+        }
+
+        private void OnLanguageChanged()
+        {
+            RefreshButtonLabels();
+            RefreshAllTexts();
         }
 
         private void EnterWaitingForDeal()
@@ -475,7 +497,9 @@ namespace TraidingIDLE.UI
 
             if (offerStakeText != null)
             {
-                var fmt = _betPlaced ? offerStakeCommittedFormat : offerStakePromptFormat;
+                var fmt = _betPlaced
+                    ? LocalizationManager.Tr("risky.stake_committed_format", offerStakeCommittedFormat)
+                    : LocalizationManager.Tr("risky.stake_prompt_format", offerStakePromptFormat);
                 offerStakeText.text = string.Format(SafeFormat(fmt, "{0}"), FormatRubles(_stakeRubles));
             }
 
@@ -485,7 +509,9 @@ namespace TraidingIDLE.UI
             if (analysisStakeText != null)
             {
                 var analysisStake = _betPlaced ? _stakeRubles : 0;
-                analysisStakeText.text = string.Format(SafeFormat(analysisStakeFormat, "{0}"), FormatRubles(analysisStake));
+                analysisStakeText.text = string.Format(
+                    SafeFormat(LocalizationManager.Tr("risky.stake_committed_format", analysisStakeFormat), "{0}"),
+                    FormatRubles(analysisStake));
             }
 
             if (analysisTimerText != null && _state == State.Analysis)
@@ -494,21 +520,31 @@ namespace TraidingIDLE.UI
             if (successStakeText != null)
             {
                 successStakeText.text = _state == State.Success && !_betPlaced
-                    ? missedSuccessStakeText
+                    ? LocalizationManager.Tr("risky.missed_success_stake", missedSuccessStakeText)
                     : string.Format(
-                        SafeFormat(_state == State.Success ? successPayoutFormat : successStakeFormat, "{0}"),
+                        SafeFormat(
+                            LocalizationManager.Tr(
+                                _state == State.Success ? "risky.success_payout_format" : "risky.stake_committed_format",
+                                _state == State.Success ? successPayoutFormat : successStakeFormat),
+                            "{0}"),
                         FormatRubles(_displayStakeRubles + (_state == State.Success ? _profitRubles : 0)));
             }
 
             if (successProfitText != null)
             {
                 successProfitText.text = string.Format(
-                    SafeFormat(_state == State.Success && !_betPlaced ? missedProfitFormat : profitFormat, "{0}"),
+                    SafeFormat(
+                        LocalizationManager.Tr(
+                            _state == State.Success && !_betPlaced ? "risky.missed_profit_format" : "risky.profit_format",
+                            _state == State.Success && !_betPlaced ? missedProfitFormat : profitFormat),
+                        "{0}"),
                     FormatRubles(_profitRubles));
             }
 
             if (failStakeText != null)
-                failStakeText.text = string.Format(SafeFormat(successStakeFormat, "{0}"), FormatRubles(_displayStakeRubles));
+                failStakeText.text = string.Format(
+                    SafeFormat(LocalizationManager.Tr("risky.stake_committed_format", successStakeFormat), "{0}"),
+                    FormatRubles(_displayStakeRubles));
         }
 
         private long RollStake()
@@ -630,7 +666,13 @@ namespace TraidingIDLE.UI
         {
             var min = Mathf.Min(chanceMinPercent, chanceMaxPercent);
             var max = Mathf.Max(chanceMinPercent, chanceMaxPercent);
-            var percent = UnityEngine.Random.Range(min, max);
+            var step = Mathf.Max(1, chanceStepPercent);
+            var minStep = Mathf.CeilToInt(min / step);
+            var maxStep = Mathf.FloorToInt(max / step);
+            if (maxStep < minStep)
+                maxStep = minStep;
+
+            var percent = UnityEngine.Random.Range(minStep, maxStep + 1) * step;
             return Mathf.Clamp01(percent / 100f);
         }
 
@@ -700,7 +742,7 @@ namespace TraidingIDLE.UI
 
         private void ResetOfferBetButtonLabel()
         {
-            SetOfferBetButtonLabel(offerBetEnterLabel);
+            SetOfferBetButtonLabel(LocalizationManager.Tr("risky.button_enter", offerBetEnterLabel));
         }
 
         private void SetSuccessClaimButtonLabel(string text)
@@ -711,7 +753,20 @@ namespace TraidingIDLE.UI
 
         private void ResetSuccessClaimButtonLabel()
         {
-            SetSuccessClaimButtonLabel(successClaimLabel);
+            SetSuccessClaimButtonLabel(LocalizationManager.Tr("common.claim", successClaimLabel));
+        }
+
+        private void RefreshButtonLabels()
+        {
+            if (_betPlaced)
+                SetOfferBetButtonLabel(LocalizationManager.Tr("risky.button_waiting", offerBetWaitingLabel));
+            else
+                ResetOfferBetButtonLabel();
+
+            if (_claimTaken)
+                SetSuccessClaimButtonLabel(LocalizationManager.Tr("daily.claimed", successClaimedLabel));
+            else
+                ResetSuccessClaimButtonLabel();
         }
 
         private static void SetActiveSafe(GameObject go, bool active)
@@ -737,6 +792,7 @@ namespace TraidingIDLE.UI
                 betPlaced = _betPlaced,
                 fomoNoBet = _fomoNoBet,
                 claimTaken = _claimTaken,
+                firstGuaranteedSuccessUsed = _firstGuaranteedSuccessUsed,
                 stakeRubles = _stakeRubles,
                 displayStakeRubles = _displayStakeRubles,
                 chance01 = _chance01,
@@ -759,6 +815,7 @@ namespace TraidingIDLE.UI
             _betPlaced = data.betPlaced;
             _fomoNoBet = data.fomoNoBet;
             _claimTaken = data.claimTaken;
+            _firstGuaranteedSuccessUsed = data.firstGuaranteedSuccessUsed;
             _stakeRubles = Math.Max(0, data.stakeRubles);
             _displayStakeRubles = Math.Max(0, data.displayStakeRubles);
             _chance01 = Mathf.Clamp01(data.chance01);
@@ -775,6 +832,21 @@ namespace TraidingIDLE.UI
             return true;
         }
 
+        private void ReloadFromExternalStorage()
+        {
+            if (LoadFromStorage())
+            {
+                ApplyLoadedLabelsAndUI();
+                return;
+            }
+
+            ScheduleNextOffer(useFirstRestartDelay: false);
+            _idleVisibleDialog = State.IdleBetweenOffers;
+            SetState(State.IdleBetweenOffers, force: true);
+            RefreshAllTexts();
+            UpdateButtons();
+        }
+
         private static State ClampState(int v)
         {
             if (v < 0 || v > (int)State.IdleBetweenOffers)
@@ -785,12 +857,12 @@ namespace TraidingIDLE.UI
         private void ApplyLoadedLabelsAndUI()
         {
             if (_betPlaced)
-                SetOfferBetButtonLabel(offerBetWaitingLabel);
+                SetOfferBetButtonLabel(LocalizationManager.Tr("risky.button_waiting", offerBetWaitingLabel));
             else
                 ResetOfferBetButtonLabel();
 
             if (_claimTaken)
-                SetSuccessClaimButtonLabel(successClaimedLabel);
+                SetSuccessClaimButtonLabel(LocalizationManager.Tr("daily.claimed", successClaimedLabel));
             else
                 ResetSuccessClaimButtonLabel();
 

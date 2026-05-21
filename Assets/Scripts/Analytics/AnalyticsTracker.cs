@@ -215,6 +215,7 @@ namespace TraidingIDLE.Analytics
             if (string.IsNullOrWhiteSpace(eventName))
                 return false;
 
+#if Metrica_yg
             try
             {
                 if (data == null || data.Count == 0)
@@ -229,6 +230,10 @@ namespace TraidingIDLE.Analytics
                 Debug.LogWarning($"Metrica event failed: {eventName}. {ex.Message}", this);
                 return false;
             }
+#else
+            Debug.LogWarning($"Metrica event was requested, but Metrica_yg is not enabled. Event: {eventName}", this);
+            return false;
+#endif
         }
 
         private void Load()

@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using TMPro;
+using TraidingIDLE.Localization;
 using TraidingIDLE.UI;
 using UnityEngine;
 using UnityEngine.UI;
@@ -145,8 +146,8 @@ namespace TraidingIDLE.Business
 
             if (x5BoostStatusText != null)
                 x5BoostStatusText.text = active
-                    ? "Доход увеличен"
-                    : "Увеличь доход на час!";
+                    ? LocalizationManager.Tr("business.x5_active", "Доход увеличен")
+                    : LocalizationManager.Tr("business.x5_prompt", "Увеличь доход на час!");
 
             if (x5BoostTimerText != null)
                 x5BoostTimerText.text = active ? timer : "";

@@ -1,5 +1,6 @@
 using System;
 using System.Collections;
+using TraidingIDLE.Monetization;
 using TraidingIDLE.Saves;
 using UnityEngine;
 using UnityEngine.SceneManagement;
@@ -16,6 +17,7 @@ namespace TraidingIDLE.UI
 
         [Header("References")]
         [SerializeField] private TradingPanelUI tradingPanel;
+        [SerializeField] private ShopController shopController;
         [SerializeField] private Button buyButtonOverride;
         [SerializeField] private RectTransform buyButtonAnchorOverride;
         [SerializeField] private Canvas handCanvasOverride;
@@ -45,7 +47,8 @@ namespace TraidingIDLE.UI
         private Canvas _currentCanvas;
         private RectTransform _handRect;
         private CanvasGroup _handCanvasGroup;
-        private bool _subscribed;
+        private bool _tradingPanelSubscribed;
+        private bool _shopSubscribed;
 
         [Serializable]
         private sealed class SaveData
@@ -67,6 +70,7 @@ namespace TraidingIDLE.UI
         private void OnEnable()
         {
             SceneManager.sceneLoaded += OnSceneLoaded;
+            SaveStorage.ExternalDataLoaded += ReloadFromExternalStorage;
             _bindRoutine = StartCoroutine(BindAfterFrame());
             _refreshRoutine = StartCoroutine(RefreshRoutine());
         }
@@ -74,7 +78,9 @@ namespace TraidingIDLE.UI
         private void OnDisable()
         {
             SceneManager.sceneLoaded -= OnSceneLoaded;
+            SaveStorage.ExternalDataLoaded -= ReloadFromExternalStorage;
             UnsubscribeTradingPanel();
+            UnsubscribeShop();
 
             if (_bindRoutine != null)
             {
@@ -103,6 +109,7 @@ namespace TraidingIDLE.UI
         {
             yield return null;
             BindTradingPanel();
+            BindShopController();
             EvaluateNow();
             _bindRoutine = null;
         }
@@ -137,20 +144,57 @@ namespace TraidingIDLE.UI
 
         private void SubscribeTradingPanel()
         {
-            if (tradingPanel == null || _subscribed)
+            if (tradingPanel == null || _tradingPanelSubscribed)
                 return;
 
             tradingPanel.BuyButtonClicked += OnBuyButtonClicked;
-            _subscribed = true;
+            _tradingPanelSubscribed = true;
         }
 
         private void UnsubscribeTradingPanel()
         {
-            if (tradingPanel == null || !_subscribed)
+            if (tradingPanel == null || !_tradingPanelSubscribed)
                 return;
 
             tradingPanel.BuyButtonClicked -= OnBuyButtonClicked;
-            _subscribed = false;
+            _tradingPanelSubscribed = false;
+        }
+
+        private void BindShopController()
+        {
+            var found = shopController != null
+                ? shopController
+                : FindFirstObjectByType<ShopController>(FindObjectsInactive.Include);
+
+            if (found == shopController)
+            {
+                SubscribeShop();
+                return;
+            }
+
+            UnsubscribeShop();
+            shopController = found;
+            SubscribeShop();
+        }
+
+        private void SubscribeShop()
+        {
+            if (shopController == null || _shopSubscribed)
+                return;
+
+            shopController.ShopOpened += OnShopOpened;
+            shopController.ShopClosed += EvaluateNow;
+            _shopSubscribed = true;
+        }
+
+        private void UnsubscribeShop()
+        {
+            if (shopController == null || !_shopSubscribed)
+                return;
+
+            shopController.ShopOpened -= OnShopOpened;
+            shopController.ShopClosed -= EvaluateNow;
+            _shopSubscribed = false;
         }
 
         private void EvaluateNow()
@@ -171,6 +215,12 @@ namespace TraidingIDLE.UI
                 }
             }
 
+            if (IsShopOpen())
+            {
+                HideHand();
+                return;
+            }
+
             var target = buyButtonAnchorOverride != null
                 ? buyButtonAnchorOverride
                 : buyButtonOverride != null
@@ -180,6 +230,14 @@ namespace TraidingIDLE.UI
                         : null;
 
             ShowAt(target);
+        }
+
+        private bool IsShopOpen()
+        {
+            if (shopController == null)
+                BindShopController();
+
+            return shopController != null && shopController.IsShopOpen;
         }
 
         private void ShowAt(RectTransform target)
@@ -363,11 +421,22 @@ namespace TraidingIDLE.UI
             HideHand();
         }
 
+        private void OnShopOpened()
+        {
+            HideHand();
+        }
+
         private void Load()
         {
             _save = SaveStorage.TryLoadJson<SaveData>(SaveKey, out var data) && data != null
                 ? data
                 : new SaveData();
+        }
+
+        private void ReloadFromExternalStorage()
+        {
+            Load();
+            HideHand();
         }
 
         private void Save()

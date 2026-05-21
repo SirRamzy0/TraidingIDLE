@@ -1,0 +1,303 @@
+﻿key	category	ru_context	current_en	new_en	note
+common.buy	common	Купить	Buy		
+common.sell	common	Продать	Sell		
+common.upgrade	common	Улучшить	Upgrade		
+common.claim	common	Забрать	Claim		
+common.close	common	Закрыть	Close		
+common.purchased	common	Куплено	Purchased		
+common.locked	common	Закрыто	Locked		
+common.soon	common	Скоро	Soon		
+common.active	common	Активно	Active		
+common.max	common	MAX	MAX		
+common.level_format	common	Уровень {0}	Level {0}		
+common.upgrade_cost_format	common	Улучшить\n{0}	Upgrade\n{0}		
+common.ad	common	Реклама	Ad		
+common.watch_more	common	Смотреть еще	Watch more		
+common.watch_ad	common	Удвоить за рекламу	Double with ad		
+common.buy_cost_format	common	Купить\n{0}	Buy\n{0}		
+common.ok	common	Понятно	Got it		
+common.start	common	Запустить	Start		
+nav.trading	nav	Торговля	Trading		
+nav.business	nav	Бизнес	Business		
+nav.mining	nav	Майнинг	Mining		
+nav.shop	nav	Магазин	Shop		
+nav.temki	nav	Темки	Deals		
+nav.collections	nav	Коллекции	Collections		
+helper.trading	helper	Покупай валюту дешевле и продавай дороже, чтобы зарабатывать рубли.	Buy coins low and sell them high to earn rubles.		
+helper.mining	helper	Запускай майнинг и улучшай оборудование, чтобы получать больше ресурсов.	Start mining and upgrade your rigs to earn more resources.		
+helper.trading_alt	helper	Следи за движением рынка и используй возможности для быстрой прибыли.	Watch market moves and use the best moments for quick profit.		
+helper.business	helper	Покупай и улучшай бизнесы, чтобы получать пассивный доход.	Buy and upgrade businesses to earn passive income.		
+helper.fallback	helper	Следи за рынком и развивай доход.	Watch the market and grow your income.		
+daily.claim_available	daily	Получить	Claim		
+daily.claimed	daily	Получено	Claimed		
+daily.locked	daily	Скоро	Soon		
+daily.next_countdown_format	daily	{0}	{0}		
+ad.interstitial_pause_countdown	ad	Игра приостановлена. Реклама через {0} сек	Game paused. Ad in {0} sec		
+leaderboard.millionaires	leaderboard	Топ миллионеров	Top Millionaires		
+risky.title	risky	Рисковая сделка	Risky Deal		
+risky.success	risky	Успешная сделка	Successful Deal		
+risky.profit	risky	Прибыль:	Profit:		
+risky.invested	risky	Вложено:	Invested:		
+risky.chance	risky	Шанс:	Chance:		
+risky.stake_prompt_format	risky	Вложить: {0}	Invest: {0}		
+risky.stake_committed_format	risky	Вложено: {0}	Invested: {0}		
+risky.success_payout_format	risky	К выплате: {0}	Payout: {0}		
+risky.profit_format	risky	Прибыль: +{0}	Profit: +{0}		
+risky.missed_profit_format	risky	Упущенная прибыль: +{0}	Missed profit: +{0}		
+risky.missed_success_stake	risky	Ты не вошел в сделку	You skipped the deal		
+risky.button_enter	risky	Войти	Enter		
+risky.button_waiting	risky	Ожидание	Waiting		
+minigame.title	minigame	Мини игра	Mini Game		
+minigame.starts_in	minigame	Игра начнется через:	Game starts in:		
+crash.betting_status_format	crash	Прием ставок: {0}	Bets close in: {0}		
+crash.playing_status	crash	Ожидание результата	Waiting for result		
+crash.win_status_format	crash	Выигрыш: {0} руб	Win: {0} rub		
+crash.lose_status	crash	Ставка не сыграла	Bet lost		
+crash.round_finished	crash	Раунд завершен	Round finished		
+crash.potential_win_format	crash	{0} руб	{0} rub		
+crash.place_bet	crash	Сделать ставку	Place bet		
+crash.bet_accepted	crash	Ставка принята	Bet accepted		
+crash.wait_next_round	crash	Жди следующий раунд	Wait for next round		
+business.income_per_hour	business	Доход в час	Income per hour		
+business.total_income_per_hour	business	Общий доход в час	Total income per hour		
+business.income_per_hour_format	business	{0} в час	{0} per hour		
+business.locked_skill_format	business	Улучши до {0} уровня чтобы открыть	Upgrade to level {0} to unlock		
+business.skill_instant_rubles_format	business	Мгновенно приносит {0}.	Instantly gives {0}.		
+business.skill_category_income_format	business	Доход бизнесов этого типа +{0}	Income of this business type +{0}		
+mining.rigs_bought	mining	Куплено ригов	Rigs bought		
+mining.rig_name_format	mining	Риг #{0}	Rig #{0}		
+mining.income_per_hour_format	mining	{0} {1} в час	{0} {1} per hour		
+mining.total_income_format	mining	{0} {1}	{0} {1}		
+mining.accumulated_format	mining	{0} {1}	{0} {1}		
+mining.buy_new_rig	mining	Купить\nновый риг	Buy\nnew rig		
+mining.locked_rig_message	mining	Купи предыдущий\nриг что бы\nразблокировать\nэтой слот	Buy the previous\nrig to unlock\nthis slot		
+mining.activate	mining	Активировать	Activate		
+mining.boost_active_format	mining	Активно {0}	Active {0}		
+mining.speed_level_format	mining	x{0} скорости	x{0} speed		
+mining.income_level_format	mining	x{0} дохода	x{0} income		
+mining.duration_format	mining	На {0}	For {0}		
+mining.gem_cost_format	mining	За {0} гемов	For {0} gems		
+mining.coin_cost_format	mining	За {0} {1}	For {0} {1}		
+mining.new_currency	mining	Новая валюта	New currency		
+mining.all_currencies_open	mining	Все валюты открыты	All currencies unlocked		
+mining.currency_unlock_description_format	mining	Все риги начнут добывать {0}	All rigs will start mining {0}		
+mining.currency_unlock_button_format	mining	Открыть {0}	Unlock {0}		
+time.hours_short_format	time	{0}ч	{0}h		
+time.minutes_short_format	time	{0}м	{0}m		
+time.seconds_short_format	time	{0}с	{0}s		
+trading.holdings_format	trading	кол-во: {0}/{1}	owned: {0}/{1}		
+trading.total_value_format	trading	Общая стоимость: {0}	Total value: {0}		
+trading.buy_total_format	trading	Р {0}	R {0}		
+trading.sell_total_format	trading	Р {0}	R {0}		
+trading.cap_upgrade_description_format	trading	Увеличить с {0} до {1}	Increase from {0} to {1}		
+trading.cap_upgrade_current_limit_format	trading	Текущий лимит {0} - {1} монет	Current {0} limit - {1} coins		
+scene.game_currency	scene	Игровая валюта	Game Currency		
+scene.gems	scene	Кристаллы	Gems		
+scene.daily_gift	scene	Ежедневный подарок	Daily Gift		
+scene.best_offer	scene	ЛУЧШЕЕ ПРЕДЛОЖЕНИЕ	BEST OFFER		
+scene.no_ads	scene	ОТКЛЮЧИТЬ РЕКЛАМУ	REMOVE ADS		
+scene.select_multiplier	scene	Выбери множитель	Choose multiplier		
+scene.select_stake	scene	Выбери ставку	Choose stake		
+scene.stake_size	scene	Размер ставки	Stake size		
+scene.reward	scene	Награда	Reward		
+scene.statistics	scene	Статистика	Stats		
+scene.available_energy	scene	Доступно энергии	Energy available		
+scene.active_skill	scene	Активное умение	Active skill		
+scene.income_boost	scene	Бонус к доходу	Income bonus		
+scene.farm_upgrade	scene	Улучшение фермы	Farm upgrade		
+scene.final_item	scene	Финальный предмет	Final item		
+scene.car_collection	scene	КОЛЛЕКЦИЯ АВТО	CAR COLLECTION		
+scene.all	scene	Все	All		
+scene.goods	scene	Товары	Goods		
+scene.auto	scene	Авто	Cars		
+scene.real_estate	scene	Хаты	Real Estate		
+scene.clothes	scene	Шмот	Clothes		
+scene.boats	scene	Яхты	Yachts		
+scene.aviation	scene	Авиа	Aviation		
+scene.hotel_chain	scene	Сеть отелей	Hotel Chain		
+scene.construction	scene	Стройка	Construction		
+scene.cooldown	scene	Охлаждение	Cooldown		
+scene.time	scene	Время	Time		
+scene.names	scene	Названия	Names		
+scene.player_nickname	scene	Никнейм игрока	Player nickname		
+scene.day_1	scene	День 1	Day 1		
+scene.day_2	scene	День 2	Day 2		
+scene.day_3	scene	День 3	Day 3		
+scene.day_4	scene	День 4	Day 4		
+scene.day_5	scene	День 5	Day 5		
+scene.day_6	scene	День 6	Day 6		
+scene.day_7	scene	День 7	Day 7		
+scene.level	scene	Уровень	Level		
+scene.level_1	scene	Уровень 1	Level 1		
+scene.accumulated	scene	Накоплено:	Accumulated:		
+scene.chance	scene	Шанс	Chance		
+scene.chance_colon	scene	Шанс:	Chance:		
+scene.buy_for	scene	Купить за	Buy for		
+scene.buy_for_ad	scene	Купить\nза рекламу	Buy\nwith ad		
+scene.income_x5	scene	Доход X5	Income X5		
+scene.income_plus_5	scene	+5% к доходу	+5% income		
+scene.income_plus_20	scene	+20% к доходу	+20% income		
+scene.mining_speed_plus_5	scene	+5% к скорости добычи	+5% mining speed		
+scene.failed_deal	scene	Сделка сорвалась	Deal failed		
+scene.analysis_deal	scene	Анализ сделки...	Analyzing deal...		
+scene.analysis_running	scene	Идет анализ...	Analyzing...		
+scene.forecast_failed	scene	Прогноз не сбылся	Forecast failed		
+scene.place_bet	scene	Сделать ставку	Place bet		
+scene.total_bonus_50	scene	Общий бонус 50%	Total bonus 50%		
+scene.collected_3_10	scene	Собрано 3/10	Collected 3/10		
+scene.bought_3_10	scene	3/10 куплено	3/10 bought		
+scene.big_starter_pack	scene	Большой стартовый\nнабор	Big starter\npack		
+scene.income	scene	Доход	Income		
+collections.final_locked	collections	Собери всю коллекцию чтобы разблокировать	Complete the collection to unlock		
+collections.progress_format	collections	Собрано {0}/{1}	Collected {0}/{1}		
+collections.total_bonus_format	collections	Общий бонус: {0}%	Total bonus: {0}%		
+collections.bonus_target_title_format	collections	Бонусы к бизнесу с типом "{0}"	Bonuses for "{0}" businesses		
+collections.bonus_target_description_format	collections	Сбор этой коллекции дает бонус к доходу всех ваших бизнесов с типом «{0}»	Completing this collection boosts income for all your "{0}" businesses		
+collections.bonus_condition_format	collections	{0}/{1} куплено	{0}/{1} bought		
+collections.bonus_value_format	collections	+ {0}% к доходу	+ {0}% income		
+temki.stake_format	temki	{0}р	{0}R		
+temki.risk	temki	Рискнуть	Risk it		
+temki.check	temki	Проверить	Check		
+temki.fail	temki	Темка не стрельнула	The deal failed		
+common.increase	common	Увеличить	Increase		
+shop.offer_gems_coins	shop	Кристаллы + монеты	Gems + coins		
+shop.no_ads_week_description	shop	Отключает рекламу в игре на неделю	Removes ads in the game for one week		
+daily.description	daily	Заходи каждый день и получай подарки	Come back every day and claim rewards		
+history.buy_format	history	{0} купил	{0} bought		
+history.sell_format	history	{0} продал	{0} sold		
+mining.tab_description	mining	Покупай компьютеры и улучшай их и майни крипту автоматически	Buy computers, upgrade them, and mine crypto automatically		
+mining.upgrades_affect_all_rigs	mining	Улучшения влияют на все риги	Upgrades affect all rigs		
+mining.progress_scale	mining	Шкала добычи	Mining progress		
+mining.maxed_rigs_stat	mining	Макс улучшенных ригов	Maxed rigs		
+mining.speed_bonus_stat	mining	Бонус к времени добычи	Mining time bonus		
+business.tab_description	business	Вкладывай деньги и получай стабильный пассивный доход\nЭто путь к успеху!	Invest money and earn steady passive income\nThis is the path to success!		
+business.unlock_requirement_format	business	{0}: уровень {1}	{0}: level {1}		
+business.x5_active	business	Доход увеличен	Income boosted		
+business.x5_prompt	business	Увеличь доход на час!	Boost income for one hour!		
+temki.tab_description	temki	Рискуй и побеждай! Темки могут помочь быстро подняться, но будь аккуратен!	Take risks and win! Deals can boost you fast, but be careful!		
+category.goods_business	category	Товарный бизнес	Goods		
+category.auto_business	category	Автобизнес	Cars		
+category.construction	category	Строительство	Construction		
+category.sea_business	category	Морской бизнес	Yachts		
+category.sea_business_short	category	Море	Yachts		
+category.aviation_business	category	Авиабизнес	Aviation		
+category.aviation_business_short	category	Авиа	Aviation		
+business.name.fashion_boutique	business	Модный бутик	Fashion Boutique		
+business.name.market_stall	business	Точка в ТЦ	Mall Stand		
+business.name.premium_clothing_factory	business	Фабрика премиальной одежды	Premium Clothing Factory		
+business.name.private_atelier	business	Частное ателье	Private Atelier		
+business.name.sneaker_store	business	Магазин кроссовок	Sneaker Store		
+business.name.supercar_showroom	business	Шоурум суперкаров	Supercar Showroom		
+business.name.shinka	business	Шиномонтаж	Tire Service		
+business.name.auto_service	business	Автосервис	Auto Service		
+business.name.car_dealer	business	Автосалон	Car Dealership		
+business.name.sportcar_rental	business	Прокат спорткаров	Sports Car Rental		
+business.name.yacht_marina	business	Марина для яхт	Yacht Marina		
+business.name.yacht_club	business	Яхт-клуб	Yacht Club		
+business.name.private_boat_rental	business	Прокат частных лодок	Private Boat Rental		
+business.name.private_vessel_showroom	business	Салон по продаже яхт	Private Vessel Showroom		
+business.name.jet_ski_rental	business	Прокат гидроциклов	Jet Ski Rental		
+business.name.private_jet_service	business	Частные рейсы	Private Jet Service		
+business.name.cargo_airline	business	Авиаклуб	Aviation Club		
+business.name.aero_club	business	Авиа туры	Air Tours		
+business.name.aircraft_hangar	business	Ангар для самолётов	Aircraft Hangar		
+business.name.airport	business	Аэропорт	Airport		
+business.name.construction_company	business	Строительная компания	Construction Company		
+business.name.interior_design_studio	business	Студия дизайна	Design Studio		
+business.name.real_estate_agency	business	Агентство недвижимости	Real Estate Agency		
+business.name.urban_developer	business	Городской застройщик	Urban Developer		
+business.name.apartment_network	business	Сеть апартаментов	Apartment Network		
+business.skill.collect_money	business	Собрать деньги	Collect money		
+business.skill.collect_profit	business	Собрать прибыль	Collect profit		
+business.skill.increase_income	business	Увеличить доход	Increase income		
+business.skill.boost_income	business	Усилить доход	Boost income		
+business.skill.collect_revenue	business	Получить выручку	Collect revenue		
+temki.name.temka_sneakers	temki	Продать кроссы	Sell sneakers		
+temki.description.temka_sneakers	temki	Попробовать реализовать партию новой коллекции	Try to sell a batch from a new collection		
+temki.name.temka_car_run	temki	Перегнать тачку	Move a car		
+temki.description.temka_car_run	temki	Купил, пригнал, надеюсь что купят	Bought it, moved it, hope someone buys it		
+temki.name.temka_listing	temki	Обещанный листинг	Promised listing		
+temki.description.temka_listing	temki	Закуплю монет на старте, вдруг взлетит	Buy coins at launch, maybe it moons		
+temki.name.temka_container	temki	Портовый контейнер	Port container		
+temki.description.temka_container	temki	Иногда там что-то ценное	Sometimes there is something valuable inside		
+temki.name.temka_casino	temki	Ставка в казик	Casino bet		
+temki.description.temka_casino	temki	Я фартовый, мне залетит	I am lucky, this will hit		
+temki.name.temka_long_deal	temki	Долгая схема	Long scheme		
+temki.description.temka_long_deal	temki	Зайдет не быстро, но может окупить весь день	Not fast, but it can pay for the whole day		
+collection.name.auto	collection	Автомобили	Cars		
+collection.description.auto	collection	Коллекция автомобилей усиливает доход автобизнеса.	A car collection boosts income from car businesses.		
+collection.name.branded_clothes	collection	Брендовая одежда	Branded Clothes		
+collection.description.branded_clothes	collection	Коллекция брендовой одежды усиливает доход товарного бизнеса.	A branded clothing collection boosts income from goods businesses.		
+collection.name.premium_real_estate	collection	Премиум-недвижимость	Premium Real Estate		
+collection.description.premium_real_estate	collection	Коллекция премиум-недвижимости усиливает доход строительного бизнеса.	A premium real estate collection boosts income from construction businesses.		
+collection.name.yachts_and_boats	collection	Яхты и катера	Yachts and Boats		
+collection.description.yachts_and_boats	collection	Коллекция яхт усиливает доход морского бизнеса.	A yacht collection boosts income from sea businesses.		
+collection.name.air_transport	collection	Авиатранспорт	Air Transport		
+collection.description.air_transport	collection	Коллекция авиатранспорта усиливает доход авиабизнеса.	An air transport collection boosts income from aviation businesses.		
+collection.card.auto.auto_card_01	collection	Supra	Supra		
+collection.card.auto.auto_card_02	collection	Mustang GT	Mustang GT		
+collection.card.auto.auto_card_03	collection	Escalade	Escalade		
+collection.card.auto.auto_card_04	collection	Mercedes G63	Mercedes G63		
+collection.card.auto.auto_card_05	collection	Porsche 911	Porsche 911		
+collection.card.auto.auto_card_06	collection	Range Rover SV	Range Rover SV		
+collection.card.auto.auto_card_07	collection	GTR	GTR		
+collection.card.auto.auto_card_08	collection	Urus	Urus		
+collection.card.auto.auto_card_09	collection	Ferrari 812	Ferrari 812		
+collection.card.auto.auto_card_10	collection	Cullinan	Cullinan		
+collection.final.auto.auto_final	collection	Бугатти Вейрон	Bugatti Veyron		
+collection.card.branded_clothes.branded_clothes_card_01	collection	Surpim	Surpim		
+collection.card.branded_clothes.branded_clothes_card_02	collection	NK Sneakers	NK Sneakers		
+collection.card.branded_clothes.branded_clothes_card_03	collection	Off Fight Hoodie	Off Fight Hoodie		
+collection.card.branded_clothes.branded_clothes_card_04	collection	Monsler	Monsler		
+collection.card.branded_clothes.branded_clothes_card_05	collection	LV Bag	LV Bag		
+collection.card.branded_clothes.branded_clothes_card_06	collection	Gold Rolexes	Gold Rolexes		
+collection.card.branded_clothes.branded_clothes_card_07	collection	Piget Royal	Piget Royal		
+collection.card.branded_clothes.branded_clothes_card_08	collection	RM 11	RM 11		
+collection.card.branded_clothes.branded_clothes_card_09	collection	Cartier Bracelet	Cartier Bracelet		
+collection.card.branded_clothes.branded_clothes_card_10	collection	Astronomy Watch	Astronomy Watch		
+collection.final.branded_clothes.branded_clothes_final	collection	Часы тифани	Tiffany Watch		
+collection.card.premium_real_estate.premium_real_estate_card_01	collection	NYC Loft	NYC Loft		
+collection.card.premium_real_estate.premium_real_estate_card_02	collection	City Penthouse	City Penthouse		
+collection.card.premium_real_estate.premium_real_estate_card_03	collection	Bali Villa	Bali Villa		
+collection.card.premium_real_estate.premium_real_estate_card_04	collection	Courchevel Chalet	Courchevel Chalet		
+collection.card.premium_real_estate.premium_real_estate_card_05	collection	Beverly Mansion	Beverly Mansion		
+collection.card.premium_real_estate.premium_real_estate_card_06	collection	Riviera Villa	Riviera Villa		
+collection.card.premium_real_estate.premium_real_estate_card_07	collection	Como Villa	Como Villa		
+collection.card.premium_real_estate.premium_real_estate_card_08	collection	Dubai Estate	Dubai Estate		
+collection.card.premium_real_estate.premium_real_estate_card_09	collection	Monaco Residence	Monaco Residence		
+collection.card.premium_real_estate.premium_real_estate_card_10	collection	Island Villa	Island Villa		
+collection.final.premium_real_estate.premium_real_estate_final	collection	Вилла Леопольда	Villa Leopolda		
+collection.card.yachts_and_boats.yachts_and_boats_card_01	collection	Yamaha FX	Yamaha FX		
+collection.card.yachts_and_boats.yachts_and_boats_card_02	collection	Sea Ray	Sea Ray		
+collection.card.yachts_and_boats.yachts_and_boats_card_03	collection	Bayliner VR6	Bayliner VR6		
+collection.card.yachts_and_boats.yachts_and_boats_card_04	collection	Axpar	Axpar		
+collection.card.yachts_and_boats.yachts_and_boats_card_05	collection	Princess	Princess		
+collection.card.yachts_and_boats.yachts_and_boats_card_06	collection	Predator	Predator		
+collection.card.yachts_and_boats.yachts_and_boats_card_07	collection	Ferretti	Ferretti		
+collection.card.yachts_and_boats.yachts_and_boats_card_08	collection	Riva Corsaro	Riva Corsaro		
+collection.card.yachts_and_boats.yachts_and_boats_card_09	collection	Benetti Oasis	Benetti Oasis		
+collection.card.yachts_and_boats.yachts_and_boats_card_10	collection	Moonlight	Moonlight		
+collection.final.yachts_and_boats.yachts_and_boats_final	collection	Аззам	Azzam		
+collection.card.air_transport.air_transport_card_01	collection	Cessna 172	Cessna 172		
+collection.card.air_transport.air_transport_card_02	collection	SR22	SR22		
+collection.card.air_transport.air_transport_card_03	collection	PC-12	PC-12		
+collection.card.air_transport.air_transport_card_04	collection	King Air	King Air		
+collection.card.air_transport.air_transport_card_05	collection	Phenom 300	Phenom 300		
+collection.card.air_transport.air_transport_card_06	collection	Learjet 75	Learjet 75		
+collection.card.air_transport.air_transport_card_07	collection	Falcon 2000	Falcon 2000		
+collection.card.air_transport.air_transport_card_08	collection	Gulfstream	Gulfstream		
+collection.card.air_transport.air_transport_card_09	collection	Global 7500	Global 7500		
+collection.card.air_transport.air_transport_card_10	collection	Business Jet	Business Jet		
+collection.final.air_transport.air_transport_final	collection	Эйрбас АСЖ 350	Airbus ACJ 350		
+crash.potential_win_title	crash	Потенциальный выигрыш	Potential win		
+collections.this_business_type	collections	бизнесов этого типа	for this business type		
+collections.income_this_business_type	collections	доход бизнесов этого типа	income for this business type		
+risky.success_with_icon	risky	🏆 Успешная сделка	🏆 Successful deal		
+scene.failed_deal_with_icon	scene	✖ Сделка сорвалась	✖ Deal failed		
+risky.waiting_new_opportunities	risky	Ожидание новых возможностей	Waiting for new opportunities		
+number.thousand_suffix	number	 тыс	K		
+number.million_suffix	number	 млн	M		
+number.billion_suffix	number	 млрд	B		
+helper.temki	helper	Быстрые деньги, но высокий риск. Угадай куда пойдет график и умножь свою ставку на x5 x10 или даже x20	Fast money, high risk. Guess where the chart goes and multiply your stake by x5, x10, or even x20.		
+helper.collections	helper	Собирай коллекции, чтобы усиливать доход бизнесов.	Collect items to boost your business income.		
+currency.rubles_short	currency	руб	R		

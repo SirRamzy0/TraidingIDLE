@@ -1,4 +1,5 @@
 using TMPro;
+using TraidingIDLE.Localization;
 using UnityEngine;
 
 namespace TraidingIDLE.Mining
@@ -11,7 +12,7 @@ namespace TraidingIDLE.Mining
         public void Configure(int rigIndex)
         {
             if (messageText != null)
-                messageText.text = messageFormat;
+                messageText.text = LocalizationManager.Tr("mining.locked_rig_message", messageFormat);
         }
     }
 }

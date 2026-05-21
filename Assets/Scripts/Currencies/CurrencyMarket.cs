@@ -57,6 +57,11 @@ namespace TraidingIDLE.Currencies
             _lastActiveCurrency = activeCurrency;
         }
 
+        private void OnEnable()
+        {
+            SaveStorage.ExternalDataLoaded += ReloadFromExternalStorage;
+        }
+
         private void Update()
         {
             if (!_dirty)
@@ -71,6 +76,8 @@ namespace TraidingIDLE.Currencies
 
         private void OnDisable()
         {
+            SaveStorage.ExternalDataLoaded -= ReloadFromExternalStorage;
+
             if (_dirty)
                 FlushSave();
         }
@@ -146,6 +153,17 @@ namespace TraidingIDLE.Currencies
 
             if (migratedLegacyPrices)
                 MarkDirty();
+        }
+
+        private void ReloadFromExternalStorage()
+        {
+            _dirty = false;
+            _saveCooldown = 0f;
+            LoadFromStorage();
+            _lastActiveCurrency = activeCurrency;
+
+            for (var i = 0; i < prices.Length; i++)
+                PriceChanged?.Invoke(prices[i].id, prices[i].price);
         }
 
         private void OnValidate()

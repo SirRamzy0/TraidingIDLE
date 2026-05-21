@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using UnityEngine;
 #if RedefinePlayerPrefs_yg
 using YG;
-using PlayerPrefs = RedefineYG.PlayerPrefs;
 #endif
 
 namespace TraidingIDLE.Saves
@@ -17,23 +16,41 @@ namespace TraidingIDLE.Saves
 
         private static bool _writesSuspended;
         private static bool _flushPending;
+        private static bool _criticalFlushPending;
         private static bool _pendingDeleteAll;
         private static SaveStorageFlushRunner _flushRunner;
         private static bool _flushWarningLogged;
+        private static bool _ygDataEventSeen;
+
+        public static event Action ExternalDataLoaded;
+
+#if RedefinePlayerPrefs_yg
+        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.BeforeSceneLoad)]
+        private static void BootstrapYandexStorageEvents()
+        {
+            YG2.onGetSDKData -= OnYandexStorageDataLoaded;
+            YG2.onGetSDKData += OnYandexStorageDataLoaded;
+            _ygDataEventSeen = false;
+        }
+#endif
 
         public static bool HasKey(string key)
         {
+            EnsureYandexStorageEventSubscription();
+
             if (PendingStringWrites.ContainsKey(key))
                 return true;
 
             if (_pendingDeleteAll || PendingDeletedKeys.Contains(key))
                 return false;
 
-            return PlayerPrefs.HasKey(key);
+            return HasStoredKey(key);
         }
 
         public static void SaveJson<T>(string key, T data) where T : class
         {
+            EnsureYandexStorageEventSubscription();
+
             if (_writesSuspended)
                 return;
 
@@ -43,11 +60,13 @@ namespace TraidingIDLE.Saves
             var json = JsonUtility.ToJson(data);
             PendingDeletedKeys.Remove(key);
             PendingStringWrites[key] = json;
-            PlayerPrefs.SetString(key, json);
+            SetStoredString(key, json);
         }
 
         public static bool TryLoadJson<T>(string key, out T data) where T : class, new()
         {
+            EnsureYandexStorageEventSubscription();
+
             data = null!;
             if (PendingStringWrites.TryGetValue(key, out var pendingJson))
                 return TryDeserialize(pendingJson, out data);
@@ -55,10 +74,10 @@ namespace TraidingIDLE.Saves
             if (_pendingDeleteAll || PendingDeletedKeys.Contains(key))
                 return false;
 
-            if (!PlayerPrefs.HasKey(key))
+            if (!HasStoredKey(key))
                 return false;
 
-            var json = PlayerPrefs.GetString(key);
+            var json = GetStoredString(key);
             if (string.IsNullOrEmpty(json))
                 return false;
 
@@ -67,20 +86,24 @@ namespace TraidingIDLE.Saves
 
         public static void DeleteKey(string key)
         {
+            EnsureYandexStorageEventSubscription();
+
             PendingStringWrites.Remove(key);
             if (!_pendingDeleteAll)
                 PendingDeletedKeys.Add(key);
 
-            if (PlayerPrefs.HasKey(key))
-                PlayerPrefs.DeleteKey(key);
+            if (HasStoredKey(key))
+                DeleteStoredKey(key);
         }
 
         public static void DeleteAll()
         {
+            EnsureYandexStorageEventSubscription();
+
             PendingStringWrites.Clear();
             PendingDeletedKeys.Clear();
             _pendingDeleteAll = true;
-            PlayerPrefs.DeleteAll();
+            DeleteAllStored();
         }
 
         public static void SuspendWrites()
@@ -93,16 +116,29 @@ namespace TraidingIDLE.Saves
             _writesSuspended = false;
 
             if (_flushPending)
-                Flush();
+                FlushInternal(false);
         }
 
         public static void Flush()
         {
+            FlushInternal(false);
+        }
+
+        public static void FlushCritical()
+        {
+            FlushInternal(true);
+        }
+
+        private static void FlushInternal(bool forceCloudImmediate)
+        {
+            EnsureYandexStorageEventSubscription();
+
             if (_writesSuspended)
                 return;
 
             _flushPending = true;
-            if (!TryFlushNow())
+            _criticalFlushPending |= forceCloudImmediate;
+            if (!TryFlushNow(forceCloudImmediate))
                 EnsureFlushRunner();
         }
 
@@ -123,7 +159,7 @@ namespace TraidingIDLE.Saves
             }
         }
 
-        private static bool TryFlushNow()
+        private static bool TryFlushNow(bool forceCloudImmediate = false)
         {
             if (_writesSuspended)
                 return false;
@@ -136,10 +172,12 @@ namespace TraidingIDLE.Saves
 
             try
             {
+                var shouldForceCloudImmediate = forceCloudImmediate || _criticalFlushPending;
                 ApplyPendingChanges();
-                PlayerPrefs.Save();
+                SavePlayerPrefs(shouldForceCloudImmediate);
                 ClearPendingChanges();
                 _flushPending = false;
+                _criticalFlushPending = false;
                 _flushWarningLogged = false;
                 StopFlushRunnerIfIdle();
                 return true;
@@ -160,18 +198,18 @@ namespace TraidingIDLE.Saves
         {
             if (_pendingDeleteAll)
             {
-                PlayerPrefs.DeleteAll();
+                DeleteAllStored();
             }
 
             foreach (var key in PendingDeletedKeys)
             {
-                if (PlayerPrefs.HasKey(key))
-                    PlayerPrefs.DeleteKey(key);
+                if (HasStoredKey(key))
+                    DeleteStoredKey(key);
             }
 
             foreach (var pair in PendingStringWrites)
             {
-                PlayerPrefs.SetString(pair.Key, pair.Value);
+                SetStoredString(pair.Key, pair.Value);
             }
         }
 
@@ -214,6 +252,165 @@ namespace TraidingIDLE.Saves
         internal static bool RunPendingFlushForRunner()
         {
             return TryFlushNow();
+        }
+
+        private static void SavePlayerPrefs(bool forceCloudImmediate)
+        {
+#if RedefinePlayerPrefs_yg && Storage_yg
+            if (!forceCloudImmediate)
+            {
+                SaveStoredPrefs();
+                return;
+            }
+
+            var previousFlush = YG2.infoYG.Storage.flush;
+            try
+            {
+                YG2.infoYG.Storage.flush = true;
+                SaveStoredPrefs();
+            }
+            finally
+            {
+                YG2.infoYG.Storage.flush = previousFlush;
+            }
+#else
+            SaveStoredPrefs();
+#endif
+        }
+
+        private static bool HasStoredKey(string key)
+        {
+#if RedefinePlayerPrefs_yg
+            try
+            {
+                if (YG2.iPlatform != null)
+                    return RedefineYG.PlayerPrefs.HasKey(key);
+            }
+            catch
+            {
+                // Local editor checks can run before YG2 initializes its storage platform.
+            }
+#endif
+            return UnityEngine.PlayerPrefs.HasKey(key);
+        }
+
+        private static string GetStoredString(string key)
+        {
+#if RedefinePlayerPrefs_yg
+            try
+            {
+                if (YG2.iPlatform != null)
+                    return RedefineYG.PlayerPrefs.GetString(key);
+            }
+            catch
+            {
+                // Local editor fallback.
+            }
+#endif
+            return UnityEngine.PlayerPrefs.GetString(key);
+        }
+
+        private static void SetStoredString(string key, string value)
+        {
+#if RedefinePlayerPrefs_yg
+            try
+            {
+                if (YG2.iPlatform != null)
+                {
+                    RedefineYG.PlayerPrefs.SetString(key, value);
+                    return;
+                }
+            }
+            catch
+            {
+                // Local editor fallback.
+            }
+#endif
+            UnityEngine.PlayerPrefs.SetString(key, value);
+        }
+
+        private static void DeleteStoredKey(string key)
+        {
+#if RedefinePlayerPrefs_yg
+            try
+            {
+                if (YG2.iPlatform != null)
+                {
+                    RedefineYG.PlayerPrefs.DeleteKey(key);
+                    return;
+                }
+            }
+            catch
+            {
+                // Local editor fallback.
+            }
+#endif
+            UnityEngine.PlayerPrefs.DeleteKey(key);
+        }
+
+        private static void DeleteAllStored()
+        {
+#if RedefinePlayerPrefs_yg
+            try
+            {
+                if (YG2.iPlatform != null)
+                {
+                    RedefineYG.PlayerPrefs.DeleteAll();
+                    return;
+                }
+            }
+            catch
+            {
+                // Local editor fallback.
+            }
+#endif
+            UnityEngine.PlayerPrefs.DeleteAll();
+        }
+
+        private static void SaveStoredPrefs()
+        {
+#if RedefinePlayerPrefs_yg
+            try
+            {
+                if (YG2.iPlatform != null)
+                {
+                    RedefineYG.PlayerPrefs.Save();
+                    return;
+                }
+            }
+            catch
+            {
+                // Local editor fallback.
+            }
+#endif
+            UnityEngine.PlayerPrefs.Save();
+        }
+
+#if RedefinePlayerPrefs_yg
+        private static void OnYandexStorageDataLoaded()
+        {
+            if (!_ygDataEventSeen)
+            {
+                _ygDataEventSeen = true;
+                ExternalDataLoaded?.Invoke();
+                return;
+            }
+
+            ClearPendingChanges();
+            _flushPending = false;
+            _criticalFlushPending = false;
+
+            ExternalDataLoaded?.Invoke();
+            FlushCritical();
+        }
+#endif
+
+        private static void EnsureYandexStorageEventSubscription()
+        {
+#if RedefinePlayerPrefs_yg
+            YG2.onGetSDKData -= OnYandexStorageDataLoaded;
+            YG2.onGetSDKData += OnYandexStorageDataLoaded;
+#endif
         }
     }
 

@@ -1,0 +1,2118 @@
+{
+  "entries": [
+    {
+      "key": "common.buy",
+      "ru": "Купить",
+      "en": "Buy",
+      "de": "Kaufen",
+      "es": "Comprar"
+    },
+    {
+      "key": "common.sell",
+      "ru": "Продать",
+      "en": "Sell",
+      "de": "Verkaufen",
+      "es": "Vender"
+    },
+    {
+      "key": "common.upgrade",
+      "ru": "Улучшить",
+      "en": "Upgrade",
+      "de": "Verbessern",
+      "es": "Mejorar"
+    },
+    {
+      "key": "common.claim",
+      "ru": "Забрать",
+      "en": "Claim",
+      "de": "Abholen",
+      "es": "Recoger"
+    },
+    {
+      "key": "common.close",
+      "ru": "Закрыть",
+      "en": "Close",
+      "de": "Schließen",
+      "es": "Cerrar"
+    },
+    {
+      "key": "common.purchased",
+      "ru": "Куплено",
+      "en": "Purchased",
+      "de": "Gekauft",
+      "es": "Comprado"
+    },
+    {
+      "key": "common.locked",
+      "ru": "Закрыто",
+      "en": "Locked",
+      "de": "Gesperrt",
+      "es": "Bloqueado"
+    },
+    {
+      "key": "common.soon",
+      "ru": "Скоро",
+      "en": "Soon",
+      "de": "Bald",
+      "es": "Pronto"
+    },
+    {
+      "key": "common.active",
+      "ru": "Активно",
+      "en": "Active",
+      "de": "Aktiv",
+      "es": "Activo"
+    },
+    {
+      "key": "common.max",
+      "ru": "MAX",
+      "en": "MAX",
+      "de": "MAX",
+      "es": "MAX"
+    },
+    {
+      "key": "common.level_format",
+      "ru": "Уровень {0}",
+      "en": "Level {0}",
+      "de": "Level {0}",
+      "es": "Nivel {0}"
+    },
+    {
+      "key": "common.upgrade_cost_format",
+      "ru": "Улучшить\n{0}",
+      "en": "Upgrade\n{0}",
+      "de": "Verbessern\n{0}",
+      "es": "Mejorar\n{0}"
+    },
+    {
+      "key": "common.ad",
+      "ru": "Реклама",
+      "en": "Ad",
+      "de": "Werbung",
+      "es": "Anuncio"
+    },
+    {
+      "key": "common.watch_more",
+      "ru": "Смотреть еще",
+      "en": "Watch more",
+      "de": "Mehr ansehen",
+      "es": "Ver más"
+    },
+    {
+      "key": "common.watch_ad",
+      "ru": "Удвоить за рекламу",
+      "en": "Double with ad",
+      "de": "Per Werbung verdoppeln",
+      "es": "Duplicar con anuncio"
+    },
+    {
+      "key": "common.buy_cost_format",
+      "ru": "Купить\n{0}",
+      "en": "Buy\n{0}",
+      "de": "Kaufen\n{0}",
+      "es": "Comprar\n{0}"
+    },
+    {
+      "key": "common.ok",
+      "ru": "Понятно",
+      "en": "Got it",
+      "de": "Verstanden",
+      "es": "Entendido"
+    },
+    {
+      "key": "common.start",
+      "ru": "Запустить",
+      "en": "Start",
+      "de": "Starten",
+      "es": "Iniciar"
+    },
+    {
+      "key": "nav.trading",
+      "ru": "Торговля",
+      "en": "Trading",
+      "de": "Handel",
+      "es": "Trading"
+    },
+    {
+      "key": "nav.business",
+      "ru": "Бизнес",
+      "en": "Business",
+      "de": "Business",
+      "es": "Negocios"
+    },
+    {
+      "key": "nav.mining",
+      "ru": "Майнинг",
+      "en": "Mining",
+      "de": "Mining",
+      "es": "Minería"
+    },
+    {
+      "key": "nav.shop",
+      "ru": "Магазин",
+      "en": "Shop",
+      "de": "Shop",
+      "es": "Tienda"
+    },
+    {
+      "key": "nav.temki",
+      "ru": "Темки",
+      "en": "Deals",
+      "de": "Deals",
+      "es": "Tratos"
+    },
+    {
+      "key": "nav.collections",
+      "ru": "Коллекции",
+      "en": "Collections",
+      "de": "Sammlungen",
+      "es": "Colecciones"
+    },
+    {
+      "key": "helper.trading",
+      "ru": "Покупай валюту дешевле и продавай дороже, чтобы зарабатывать рубли.",
+      "en": "Buy coins low and sell them high to earn rubles.",
+      "de": "Kaufe Coins günstig und verkaufe sie teurer, um Rubel zu verdienen.",
+      "es": "Compra monedas baratas y véndelas más caras para ganar rublos."
+    },
+    {
+      "key": "helper.mining",
+      "ru": "Запускай майнинг и улучшай оборудование, чтобы получать больше ресурсов.",
+      "en": "Start mining and upgrade your rigs to earn more resources.",
+      "de": "Starte Mining und verbessere deine Ausrüstung, um mehr Ressourcen zu verdienen.",
+      "es": "Activa la minería y mejora tus equipos para conseguir más recursos."
+    },
+    {
+      "key": "helper.trading_alt",
+      "ru": "Следи за движением рынка и используй возможности для быстрой прибыли.",
+      "en": "Watch market moves and use the best moments for quick profit.",
+      "de": "Beobachte den Markt und nutze gute Momente für schnellen Gewinn.",
+      "es": "Sigue el mercado y aprovecha los mejores momentos para ganar rápido."
+    },
+    {
+      "key": "helper.business",
+      "ru": "Покупай и улучшай бизнесы, чтобы получать пассивный доход.",
+      "en": "Buy and upgrade businesses to earn passive income.",
+      "de": "Kaufe und verbessere Businesses, um passives Einkommen zu erhalten.",
+      "es": "Compra y mejora negocios para generar ingresos pasivos."
+    },
+    {
+      "key": "helper.fallback",
+      "ru": "Следи за рынком и развивай доход.",
+      "en": "Watch the market and grow your income.",
+      "de": "Beobachte den Markt und steigere dein Einkommen.",
+      "es": "Sigue el mercado y aumenta tus ingresos."
+    },
+    {
+      "key": "daily.claim_available",
+      "ru": "Получить",
+      "en": "Claim",
+      "de": "Abholen",
+      "es": "Recoger"
+    },
+    {
+      "key": "daily.claimed",
+      "ru": "Получено",
+      "en": "Claimed",
+      "de": "Erhalten",
+      "es": "Recibido"
+    },
+    {
+      "key": "daily.locked",
+      "ru": "Скоро",
+      "en": "Soon",
+      "de": "Bald",
+      "es": "Pronto"
+    },
+    {
+      "key": "daily.next_countdown_format",
+      "ru": "{0}",
+      "en": "{0}",
+      "de": "{0}",
+      "es": "{0}"
+    },
+    {
+      "key": "ad.interstitial_pause_countdown",
+      "ru": "Игра приостановлена. Реклама через {0} сек",
+      "en": "Game paused. Ad in {0} sec",
+      "de": "Spiel pausiert. Werbung in {0} Sek.",
+      "es": "Juego en pausa. Anuncio en {0} s"
+    },
+    {
+      "key": "leaderboard.millionaires",
+      "ru": "Топ миллионеров",
+      "en": "Top Millionaires",
+      "de": "Top-Millionäre",
+      "es": "Top millonarios"
+    },
+    {
+      "key": "risky.title",
+      "ru": "Рисковая сделка",
+      "en": "Risky Deal",
+      "de": "Riskanter Deal",
+      "es": "Trato arriesgado"
+    },
+    {
+      "key": "risky.success",
+      "ru": "Успешная сделка",
+      "en": "Successful Deal",
+      "de": "Erfolgreicher Deal",
+      "es": "Trato exitoso"
+    },
+    {
+      "key": "risky.profit",
+      "ru": "Прибыль:",
+      "en": "Profit:",
+      "de": "Gewinn:",
+      "es": "Ganancia:"
+    },
+    {
+      "key": "risky.invested",
+      "ru": "Вложено:",
+      "en": "Invested:",
+      "de": "Investiert:",
+      "es": "Invertido:"
+    },
+    {
+      "key": "risky.chance",
+      "ru": "Шанс:",
+      "en": "Chance:",
+      "de": "Chance:",
+      "es": "Probabilidad:"
+    },
+    {
+      "key": "risky.stake_prompt_format",
+      "ru": "Вложить: {0}",
+      "en": "Invest: {0}",
+      "de": "Investieren: {0}",
+      "es": "Invertir: {0}"
+    },
+    {
+      "key": "risky.stake_committed_format",
+      "ru": "Вложено: {0}",
+      "en": "Invested: {0}",
+      "de": "Investiert: {0}",
+      "es": "Invertido: {0}"
+    },
+    {
+      "key": "risky.success_payout_format",
+      "ru": "К выплате: {0}",
+      "en": "Payout: {0}",
+      "de": "Auszahlung: {0}",
+      "es": "Pago: {0}"
+    },
+    {
+      "key": "risky.profit_format",
+      "ru": "Прибыль: +{0}",
+      "en": "Profit: +{0}",
+      "de": "Gewinn: +{0}",
+      "es": "Ganancia: +{0}"
+    },
+    {
+      "key": "risky.missed_profit_format",
+      "ru": "Упущенная прибыль: +{0}",
+      "en": "Missed profit: +{0}",
+      "de": "Verpasster Gewinn: +{0}",
+      "es": "Ganancia perdida: +{0}"
+    },
+    {
+      "key": "risky.missed_success_stake",
+      "ru": "Ты не вошел в сделку",
+      "en": "You skipped the deal",
+      "de": "Du bist nicht eingestiegen",
+      "es": "No entraste al trato"
+    },
+    {
+      "key": "risky.button_enter",
+      "ru": "Войти",
+      "en": "Enter",
+      "de": "Einsteigen",
+      "es": "Entrar"
+    },
+    {
+      "key": "risky.button_waiting",
+      "ru": "Ожидание",
+      "en": "Waiting",
+      "de": "Warten",
+      "es": "Esperando"
+    },
+    {
+      "key": "minigame.title",
+      "ru": "Мини игра",
+      "en": "Mini Game",
+      "de": "Minispiel",
+      "es": "Minijuego"
+    },
+    {
+      "key": "minigame.starts_in",
+      "ru": "Игра начнется через:",
+      "en": "Game starts in:",
+      "de": "Spiel startet in:",
+      "es": "El juego empieza en:"
+    },
+    {
+      "key": "crash.betting_status_format",
+      "ru": "Прием ставок: {0}",
+      "en": "Bets close in: {0}",
+      "de": "Einsatzphase: {0}",
+      "es": "Apuestas abiertas: {0}"
+    },
+    {
+      "key": "crash.playing_status",
+      "ru": "Ожидание результата",
+      "en": "Waiting for result",
+      "de": "Warte auf Ergebnis",
+      "es": "Esperando resultado"
+    },
+    {
+      "key": "crash.win_status_format",
+      "ru": "Выигрыш: {0} руб",
+      "en": "Win: {0} rub",
+      "de": "Gewinn: {0} Rub",
+      "es": "Premio: {0} rub"
+    },
+    {
+      "key": "crash.lose_status",
+      "ru": "Ставка не сыграла",
+      "en": "Bet lost",
+      "de": "Einsatz verloren",
+      "es": "Apuesta perdida"
+    },
+    {
+      "key": "crash.round_finished",
+      "ru": "Раунд завершен",
+      "en": "Round finished",
+      "de": "Runde beendet",
+      "es": "Ronda terminada"
+    },
+    {
+      "key": "crash.potential_win_format",
+      "ru": "{0} руб",
+      "en": "{0} rub",
+      "de": "{0} Rub",
+      "es": "{0} rub"
+    },
+    {
+      "key": "crash.place_bet",
+      "ru": "Сделать ставку",
+      "en": "Place bet",
+      "de": "Einsatz setzen",
+      "es": "Apostar"
+    },
+    {
+      "key": "crash.bet_accepted",
+      "ru": "Ставка принята",
+      "en": "Bet accepted",
+      "de": "Einsatz angenommen",
+      "es": "Apuesta aceptada"
+    },
+    {
+      "key": "crash.wait_next_round",
+      "ru": "Жди следующий раунд",
+      "en": "Wait for next round",
+      "de": "Warte auf die nächste Runde",
+      "es": "Espera la siguiente ronda"
+    },
+    {
+      "key": "business.income_per_hour",
+      "ru": "Доход в час",
+      "en": "Income per hour",
+      "de": "Einkommen pro Stunde",
+      "es": "Ingresos por hora"
+    },
+    {
+      "key": "business.total_income_per_hour",
+      "ru": "Общий доход в час",
+      "en": "Total income per hour",
+      "de": "Gesamteinkommen pro Stunde",
+      "es": "Ingresos totales por hora"
+    },
+    {
+      "key": "business.income_per_hour_format",
+      "ru": "{0} в час",
+      "en": "{0} per hour",
+      "de": "{0} pro Stunde",
+      "es": "{0} por hora"
+    },
+    {
+      "key": "business.locked_skill_format",
+      "ru": "Улучши до {0} уровня чтобы открыть",
+      "en": "Upgrade to level {0} to unlock",
+      "de": "Auf Level {0} verbessern zum Freischalten",
+      "es": "Mejora al nivel {0} para desbloquear"
+    },
+    {
+      "key": "business.skill_instant_rubles_format",
+      "ru": "Мгновенно приносит {0}.",
+      "en": "Instantly gives {0}.",
+      "de": "Bringt sofort {0}.",
+      "es": "Da {0} al instante."
+    },
+    {
+      "key": "business.skill_category_income_format",
+      "ru": "Доход бизнесов этого типа +{0}",
+      "en": "Income of this business type +{0}",
+      "de": "Einkommen dieses Business-Typs +{0}",
+      "es": "Ingresos de este tipo de negocio +{0}"
+    },
+    {
+      "key": "mining.rigs_bought",
+      "ru": "Куплено ригов",
+      "en": "Rigs bought",
+      "de": "Rigs gekauft",
+      "es": "Rigs comprados"
+    },
+    {
+      "key": "mining.rig_name_format",
+      "ru": "Риг #{0}",
+      "en": "Rig #{0}",
+      "de": "Rig #{0}",
+      "es": "Rig #{0}"
+    },
+    {
+      "key": "mining.income_per_hour_format",
+      "ru": "{0} {1} в час",
+      "en": "{0} {1} per hour",
+      "de": "{0} {1} pro Stunde",
+      "es": "{0} {1} por hora"
+    },
+    {
+      "key": "mining.total_income_format",
+      "ru": "{0} {1}",
+      "en": "{0} {1}",
+      "de": "{0} {1}",
+      "es": "{0} {1}"
+    },
+    {
+      "key": "mining.accumulated_format",
+      "ru": "{0} {1}",
+      "en": "{0} {1}",
+      "de": "{0} {1}",
+      "es": "{0} {1}"
+    },
+    {
+      "key": "mining.buy_new_rig",
+      "ru": "Купить\nновый риг",
+      "en": "Buy\nnew rig",
+      "de": "Neuen\nRig kaufen",
+      "es": "Comprar\nnuevo rig"
+    },
+    {
+      "key": "mining.locked_rig_message",
+      "ru": "Купи предыдущий\nриг что бы\nразблокировать\nэтой слот",
+      "en": "Buy the previous\nrig to unlock\nthis slot",
+      "de": "Kaufe den vorherigen\nRig, um diesen\nSlot freizuschalten",
+      "es": "Compra el rig anterior\npara desbloquear\neste espacio"
+    },
+    {
+      "key": "mining.activate",
+      "ru": "Активировать",
+      "en": "Activate",
+      "de": "Aktivieren",
+      "es": "Activar"
+    },
+    {
+      "key": "mining.boost_active_format",
+      "ru": "Активно {0}",
+      "en": "Active {0}",
+      "de": "Aktiv {0}",
+      "es": "Activo {0}"
+    },
+    {
+      "key": "mining.speed_level_format",
+      "ru": "x{0} скорости",
+      "en": "x{0} speed",
+      "de": "x{0} Tempo",
+      "es": "x{0} velocidad"
+    },
+    {
+      "key": "mining.income_level_format",
+      "ru": "x{0} дохода",
+      "en": "x{0} income",
+      "de": "x{0} Einkommen",
+      "es": "x{0} ingresos"
+    },
+    {
+      "key": "mining.duration_format",
+      "ru": "На {0}",
+      "en": "For {0}",
+      "de": "Für {0}",
+      "es": "Por {0}"
+    },
+    {
+      "key": "mining.gem_cost_format",
+      "ru": "За {0} гемов",
+      "en": "For {0} gems",
+      "de": "Für {0} Gems",
+      "es": "Por {0} gemas"
+    },
+    {
+      "key": "mining.coin_cost_format",
+      "ru": "За {0} {1}",
+      "en": "For {0} {1}",
+      "de": "Für {0} {1}",
+      "es": "Por {0} {1}"
+    },
+    {
+      "key": "mining.new_currency",
+      "ru": "Новая валюта",
+      "en": "New currency",
+      "de": "Neue Währung",
+      "es": "Nueva moneda"
+    },
+    {
+      "key": "mining.all_currencies_open",
+      "ru": "Все валюты открыты",
+      "en": "All currencies unlocked",
+      "de": "Alle Währungen freigeschaltet",
+      "es": "Todas las monedas desbloqueadas"
+    },
+    {
+      "key": "mining.currency_unlock_description_format",
+      "ru": "Все риги начнут добывать {0}",
+      "en": "All rigs will start mining {0}",
+      "de": "Alle Rigs minen ab jetzt {0}",
+      "es": "Todos los rigs empezarán a minar {0}"
+    },
+    {
+      "key": "mining.currency_unlock_button_format",
+      "ru": "Открыть {0}",
+      "en": "Unlock {0}",
+      "de": "{0} freischalten",
+      "es": "Desbloquear {0}"
+    },
+    {
+      "key": "time.hours_short_format",
+      "ru": "{0}ч",
+      "en": "{0}h",
+      "de": "{0} Std.",
+      "es": "{0}h"
+    },
+    {
+      "key": "time.minutes_short_format",
+      "ru": "{0}м",
+      "en": "{0}m",
+      "de": "{0} Min.",
+      "es": "{0}m"
+    },
+    {
+      "key": "time.seconds_short_format",
+      "ru": "{0}с",
+      "en": "{0}s",
+      "de": "{0} Sek.",
+      "es": "{0}s"
+    },
+    {
+      "key": "trading.holdings_format",
+      "ru": "кол-во: {0}/{1}",
+      "en": "owned: {0}/{1}",
+      "de": "Besitz: {0}/{1}",
+      "es": "tienes: {0}/{1}"
+    },
+    {
+      "key": "trading.total_value_format",
+      "ru": "Общая стоимость: {0}",
+      "en": "Total value: {0}",
+      "de": "Gesamtwert: {0}",
+      "es": "Valor total: {0}"
+    },
+    {
+      "key": "trading.buy_total_format",
+      "ru": "Р {0}",
+      "en": "R {0}",
+      "de": "R {0}",
+      "es": "R {0}"
+    },
+    {
+      "key": "trading.sell_total_format",
+      "ru": "Р {0}",
+      "en": "R {0}",
+      "de": "R {0}",
+      "es": "R {0}"
+    },
+    {
+      "key": "trading.cap_upgrade_description_format",
+      "ru": "Увеличить с {0} до {1}",
+      "en": "Increase from {0} to {1}",
+      "de": "Von {0} auf {1} erhöhen",
+      "es": "Aumentar de {0} a {1}"
+    },
+    {
+      "key": "trading.cap_upgrade_current_limit_format",
+      "ru": "Текущий лимит {0} - {1} монет",
+      "en": "Current {0} limit - {1} coins",
+      "de": "Aktuelles {0}-Limit - {1} Coins",
+      "es": "Límite actual de {0} - {1} monedas"
+    },
+    {
+      "key": "scene.game_currency",
+      "ru": "Игровая валюта",
+      "en": "Game Currency",
+      "de": "Spielwährung",
+      "es": "Moneda del juego"
+    },
+    {
+      "key": "scene.gems",
+      "ru": "Кристаллы",
+      "en": "Gems",
+      "de": "Edelsteine",
+      "es": "Gemas"
+    },
+    {
+      "key": "scene.daily_gift",
+      "ru": "Ежедневный подарок",
+      "en": "Daily Gift",
+      "de": "Tägliches Geschenk",
+      "es": "Regalo diario"
+    },
+    {
+      "key": "scene.best_offer",
+      "ru": "ЛУЧШЕЕ ПРЕДЛОЖЕНИЕ",
+      "en": "BEST OFFER",
+      "de": "BESTES ANGEBOT",
+      "es": "MEJOR OFERTA"
+    },
+    {
+      "key": "scene.no_ads",
+      "ru": "ОТКЛЮЧИТЬ РЕКЛАМУ",
+      "en": "REMOVE ADS",
+      "de": "WERBUNG ENTFERNEN",
+      "es": "QUITAR ANUNCIOS"
+    },
+    {
+      "key": "scene.select_multiplier",
+      "ru": "Выбери множитель",
+      "en": "Choose multiplier",
+      "de": "Multiplikator wählen",
+      "es": "Elige multiplicador"
+    },
+    {
+      "key": "scene.select_stake",
+      "ru": "Выбери ставку",
+      "en": "Choose stake",
+      "de": "Einsatz wählen",
+      "es": "Elige apuesta"
+    },
+    {
+      "key": "scene.stake_size",
+      "ru": "Размер ставки",
+      "en": "Stake size",
+      "de": "Einsatzhöhe",
+      "es": "Tamaño de apuesta"
+    },
+    {
+      "key": "scene.reward",
+      "ru": "Награда",
+      "en": "Reward",
+      "de": "Belohnung",
+      "es": "Recompensa"
+    },
+    {
+      "key": "scene.statistics",
+      "ru": "Статистика",
+      "en": "Stats",
+      "de": "Statistik",
+      "es": "Estadísticas"
+    },
+    {
+      "key": "scene.available_energy",
+      "ru": "Доступно энергии",
+      "en": "Energy available",
+      "de": "Verfügbare Energie",
+      "es": "Energía disponible"
+    },
+    {
+      "key": "scene.active_skill",
+      "ru": "Активное умение",
+      "en": "Active skill",
+      "de": "Aktive Fähigkeit",
+      "es": "Habilidad activa"
+    },
+    {
+      "key": "scene.income_boost",
+      "ru": "Бонус к доходу",
+      "en": "Income bonus",
+      "de": "Einkommensbonus",
+      "es": "Bono de ingresos"
+    },
+    {
+      "key": "scene.farm_upgrade",
+      "ru": "Улучшение фермы",
+      "en": "Farm upgrade",
+      "de": "Farm verbessern",
+      "es": "Mejora de granja"
+    },
+    {
+      "key": "scene.final_item",
+      "ru": "Финальный предмет",
+      "en": "Final item",
+      "de": "Finaler Gegenstand",
+      "es": "Objeto final"
+    },
+    {
+      "key": "scene.car_collection",
+      "ru": "КОЛЛЕКЦИЯ АВТО",
+      "en": "CAR COLLECTION",
+      "de": "AUTO-SAMMLUNG",
+      "es": "COLECCIÓN DE AUTOS"
+    },
+    {
+      "key": "scene.all",
+      "ru": "Все",
+      "en": "All",
+      "de": "Alle",
+      "es": "Todo"
+    },
+    {
+      "key": "scene.goods",
+      "ru": "Товары",
+      "en": "Goods",
+      "de": "Waren",
+      "es": "Productos"
+    },
+    {
+      "key": "scene.auto",
+      "ru": "Авто",
+      "en": "Cars",
+      "de": "Autos",
+      "es": "Autos"
+    },
+    {
+      "key": "scene.real_estate",
+      "ru": "Хаты",
+      "en": "Real Estate",
+      "de": "Immobilien",
+      "es": "Inmuebles"
+    },
+    {
+      "key": "scene.clothes",
+      "ru": "Шмот",
+      "en": "Clothes",
+      "de": "Kleidung",
+      "es": "Ropa"
+    },
+    {
+      "key": "scene.boats",
+      "ru": "Яхты",
+      "en": "Yachts",
+      "de": "Yachten",
+      "es": "Yates"
+    },
+    {
+      "key": "scene.aviation",
+      "ru": "Авиа",
+      "en": "Aviation",
+      "de": "Luftfahrt",
+      "es": "Aviación"
+    },
+    {
+      "key": "scene.hotel_chain",
+      "ru": "Сеть отелей",
+      "en": "Hotel Chain",
+      "de": "Hotelkette",
+      "es": "Cadena hotelera"
+    },
+    {
+      "key": "scene.construction",
+      "ru": "Стройка",
+      "en": "Construction",
+      "de": "Bau",
+      "es": "Construcción"
+    },
+    {
+      "key": "scene.cooldown",
+      "ru": "Охлаждение",
+      "en": "Cooldown",
+      "de": "Abklingzeit",
+      "es": "Enfriamiento"
+    },
+    {
+      "key": "scene.time",
+      "ru": "Время",
+      "en": "Time",
+      "de": "Zeit",
+      "es": "Tiempo"
+    },
+    {
+      "key": "scene.names",
+      "ru": "Названия",
+      "en": "Names",
+      "de": "Namen",
+      "es": "Nombres"
+    },
+    {
+      "key": "scene.player_nickname",
+      "ru": "Никнейм игрока",
+      "en": "Player nickname",
+      "de": "Spielername",
+      "es": "Nombre del jugador"
+    },
+    {
+      "key": "scene.day_1",
+      "ru": "День 1",
+      "en": "Day 1",
+      "de": "Tag 1",
+      "es": "Día 1"
+    },
+    {
+      "key": "scene.day_2",
+      "ru": "День 2",
+      "en": "Day 2",
+      "de": "Tag 2",
+      "es": "Día 2"
+    },
+    {
+      "key": "scene.day_3",
+      "ru": "День 3",
+      "en": "Day 3",
+      "de": "Tag 3",
+      "es": "Día 3"
+    },
+    {
+      "key": "scene.day_4",
+      "ru": "День 4",
+      "en": "Day 4",
+      "de": "Tag 4",
+      "es": "Día 4"
+    },
+    {
+      "key": "scene.day_5",
+      "ru": "День 5",
+      "en": "Day 5",
+      "de": "Tag 5",
+      "es": "Día 5"
+    },
+    {
+      "key": "scene.day_6",
+      "ru": "День 6",
+      "en": "Day 6",
+      "de": "Tag 6",
+      "es": "Día 6"
+    },
+    {
+      "key": "scene.day_7",
+      "ru": "День 7",
+      "en": "Day 7",
+      "de": "Tag 7",
+      "es": "Día 7"
+    },
+    {
+      "key": "scene.level",
+      "ru": "Уровень",
+      "en": "Level",
+      "de": "Level",
+      "es": "Nivel"
+    },
+    {
+      "key": "scene.level_1",
+      "ru": "Уровень 1",
+      "en": "Level 1",
+      "de": "Level 1",
+      "es": "Nivel 1"
+    },
+    {
+      "key": "scene.accumulated",
+      "ru": "Накоплено:",
+      "en": "Accumulated:",
+      "de": "Gesammelt:",
+      "es": "Acumulado:"
+    },
+    {
+      "key": "scene.chance",
+      "ru": "Шанс",
+      "en": "Chance",
+      "de": "Chance",
+      "es": "Probabilidad"
+    },
+    {
+      "key": "scene.chance_colon",
+      "ru": "Шанс:",
+      "en": "Chance:",
+      "de": "Chance:",
+      "es": "Probabilidad:"
+    },
+    {
+      "key": "scene.buy_for",
+      "ru": "Купить за",
+      "en": "Buy for",
+      "de": "Kaufen für",
+      "es": "Comprar por"
+    },
+    {
+      "key": "scene.buy_for_ad",
+      "ru": "Купить\nза рекламу",
+      "en": "Buy\nwith ad",
+      "de": "Per Werbung\nkaufen",
+      "es": "Comprar\ncon anuncio"
+    },
+    {
+      "key": "scene.income_x5",
+      "ru": "Доход X5",
+      "en": "Income X5",
+      "de": "Einkommen X5",
+      "es": "Ingresos X5"
+    },
+    {
+      "key": "scene.income_plus_5",
+      "ru": "+5% к доходу",
+      "en": "+5% income",
+      "de": "+5% Einkommen",
+      "es": "+5% ingresos"
+    },
+    {
+      "key": "scene.income_plus_20",
+      "ru": "+20% к доходу",
+      "en": "+20% income",
+      "de": "+20% Einkommen",
+      "es": "+20% ingresos"
+    },
+    {
+      "key": "scene.mining_speed_plus_5",
+      "ru": "+5% к скорости добычи",
+      "en": "+5% mining speed",
+      "de": "+5% Mining-Tempo",
+      "es": "+5% velocidad de minería"
+    },
+    {
+      "key": "scene.failed_deal",
+      "ru": "Сделка сорвалась",
+      "en": "Deal failed",
+      "de": "Deal geplatzt",
+      "es": "Trato fallido"
+    },
+    {
+      "key": "scene.analysis_deal",
+      "ru": "Анализ сделки...",
+      "en": "Analyzing deal...",
+      "de": "Deal wird analysiert...",
+      "es": "Analizando trato..."
+    },
+    {
+      "key": "scene.analysis_running",
+      "ru": "Идет анализ...",
+      "en": "Analyzing...",
+      "de": "Analyse läuft...",
+      "es": "Analizando..."
+    },
+    {
+      "key": "scene.forecast_failed",
+      "ru": "Прогноз не сбылся",
+      "en": "Forecast failed",
+      "de": "Prognose fehlgeschlagen",
+      "es": "El pronóstico falló"
+    },
+    {
+      "key": "scene.place_bet",
+      "ru": "Сделать ставку",
+      "en": "Place bet",
+      "de": "Einsatz setzen",
+      "es": "Apostar"
+    },
+    {
+      "key": "scene.total_bonus_50",
+      "ru": "Общий бонус 50%",
+      "en": "Total bonus 50%",
+      "de": "Gesamtbonus 50%",
+      "es": "Bono total 50%"
+    },
+    {
+      "key": "scene.collected_3_10",
+      "ru": "Собрано 3/10",
+      "en": "Collected 3/10",
+      "de": "Gesammelt 3/10",
+      "es": "Coleccionado 3/10"
+    },
+    {
+      "key": "scene.bought_3_10",
+      "ru": "3/10 куплено",
+      "en": "3/10 bought",
+      "de": "3/10 gekauft",
+      "es": "3/10 comprado"
+    },
+    {
+      "key": "scene.big_starter_pack",
+      "ru": "Большой стартовый\nнабор",
+      "en": "Big starter\npack",
+      "de": "Großes Starter-\npaket",
+      "es": "Gran pack\ninicial"
+    },
+    {
+      "key": "scene.income",
+      "ru": "Доход",
+      "en": "Income",
+      "de": "Einkommen",
+      "es": "Ingresos"
+    },
+    {
+      "key": "collections.final_locked",
+      "ru": "Собери всю коллекцию чтобы разблокировать",
+      "en": "Complete the collection to unlock",
+      "de": "Vervollständige die Sammlung zum Freischalten",
+      "es": "Completa la colección para desbloquear"
+    },
+    {
+      "key": "collections.progress_format",
+      "ru": "Собрано {0}/{1}",
+      "en": "Collected {0}/{1}",
+      "de": "Gesammelt {0}/{1}",
+      "es": "Coleccionado {0}/{1}"
+    },
+    {
+      "key": "collections.total_bonus_format",
+      "ru": "Общий бонус: {0}%",
+      "en": "Total bonus: {0}%",
+      "de": "Gesamtbonus: {0}%",
+      "es": "Bono total: {0}%"
+    },
+    {
+      "key": "collections.bonus_target_title_format",
+      "ru": "Бонусы к бизнесу с типом \"{0}\"",
+      "en": "Bonuses for \"{0}\" businesses",
+      "de": "Boni für Businesses vom Typ \"{0}\"",
+      "es": "Bonos para negocios de tipo \"{0}\""
+    },
+    {
+      "key": "collections.bonus_target_description_format",
+      "ru": "Сбор этой коллекции дает бонус к доходу всех ваших бизнесов с типом «{0}»",
+      "en": "Completing this collection boosts income for all your \"{0}\" businesses",
+      "de": "Diese Sammlung erhöht das Einkommen aller Businesses vom Typ \"{0}\"",
+      "es": "Completar esta colección aumenta los ingresos de tus negocios de tipo \"{0}\""
+    },
+    {
+      "key": "collections.bonus_condition_format",
+      "ru": "{0}/{1} куплено",
+      "en": "{0}/{1} bought",
+      "de": "{0}/{1} gekauft",
+      "es": "{0}/{1} comprado"
+    },
+    {
+      "key": "collections.bonus_value_format",
+      "ru": "+ {0}% к доходу",
+      "en": "+ {0}% income",
+      "de": "+ {0}% Einkommen",
+      "es": "+ {0}% ingresos"
+    },
+    {
+      "key": "temki.stake_format",
+      "ru": "{0}р",
+      "en": "{0}R",
+      "de": "{0}R",
+      "es": "{0}R"
+    },
+    {
+      "key": "temki.risk",
+      "ru": "Рискнуть",
+      "en": "Risk it",
+      "de": "Riskieren",
+      "es": "Arriesgar"
+    },
+    {
+      "key": "temki.check",
+      "ru": "Проверить",
+      "en": "Check",
+      "de": "Prüfen",
+      "es": "Comprobar"
+    },
+    {
+      "key": "temki.fail",
+      "ru": "Темка не стрельнула",
+      "en": "The deal failed",
+      "de": "Der Deal ist geplatzt",
+      "es": "El trato falló"
+    },
+    {
+      "key": "common.increase",
+      "ru": "Увеличить",
+      "en": "Increase",
+      "de": "Erhöhen",
+      "es": "Aumentar"
+    },
+    {
+      "key": "shop.offer_gems_coins",
+      "ru": "Кристаллы + монеты",
+      "en": "Gems + coins",
+      "de": "Edelsteine + Coins",
+      "es": "Gemas + monedas"
+    },
+    {
+      "key": "shop.no_ads_week_description",
+      "ru": "Отключает рекламу в игре на неделю",
+      "en": "Removes ads in the game for one week",
+      "de": "Entfernt Werbung im Spiel für eine Woche",
+      "es": "Quita los anuncios del juego durante una semana"
+    },
+    {
+      "key": "daily.description",
+      "ru": "Заходи каждый день и получай подарки",
+      "en": "Come back every day and claim rewards",
+      "de": "Komm jeden Tag zurück und hol dir Belohnungen",
+      "es": "Entra cada día y consigue recompensas"
+    },
+    {
+      "key": "history.buy_format",
+      "ru": "{0} купил",
+      "en": "{0} bought",
+      "de": "{0} kaufte",
+      "es": "{0} compró"
+    },
+    {
+      "key": "history.sell_format",
+      "ru": "{0} продал",
+      "en": "{0} sold",
+      "de": "{0} verkaufte",
+      "es": "{0} vendió"
+    },
+    {
+      "key": "mining.tab_description",
+      "ru": "Покупай компьютеры и улучшай их и майни крипту автоматически",
+      "en": "Buy computers, upgrade them, and mine crypto automatically",
+      "de": "Kaufe Computer, verbessere sie und mine automatisch Krypto",
+      "es": "Compra ordenadores, mejóralos y mina cripto automáticamente"
+    },
+    {
+      "key": "mining.upgrades_affect_all_rigs",
+      "ru": "Улучшения влияют на все риги",
+      "en": "Upgrades affect all rigs",
+      "de": "Upgrades wirken auf alle Rigs",
+      "es": "Las mejoras afectan a todos los rigs"
+    },
+    {
+      "key": "mining.progress_scale",
+      "ru": "Шкала добычи",
+      "en": "Mining progress",
+      "de": "Mining-Fortschritt",
+      "es": "Progreso de minería"
+    },
+    {
+      "key": "mining.maxed_rigs_stat",
+      "ru": "Макс улучшенных ригов",
+      "en": "Maxed rigs",
+      "de": "Maximierte Rigs",
+      "es": "Rigs al máximo"
+    },
+    {
+      "key": "mining.speed_bonus_stat",
+      "ru": "Бонус к времени добычи",
+      "en": "Mining time bonus",
+      "de": "Bonus auf Mining-Zeit",
+      "es": "Bonificación de tiempo de minería"
+    },
+    {
+      "key": "business.tab_description",
+      "ru": "Вкладывай деньги и получай стабильный пассивный доход\nЭто путь к успеху!",
+      "en": "Invest money and earn steady passive income\nThis is the path to success!",
+      "de": "Investiere Geld und verdiene stabiles passives Einkommen\nDas ist der Weg zum Erfolg!",
+      "es": "Invierte dinero y gana ingresos pasivos estables\n¡Este es el camino al éxito!"
+    },
+    {
+      "key": "business.unlock_requirement_format",
+      "ru": "{0}: уровень {1}",
+      "en": "{0}: level {1}",
+      "de": "{0}: Level {1}",
+      "es": "{0}: nivel {1}"
+    },
+    {
+      "key": "business.x5_active",
+      "ru": "Доход увеличен",
+      "en": "Income boosted",
+      "de": "Einkommen erhöht",
+      "es": "Ingresos aumentados"
+    },
+    {
+      "key": "business.x5_prompt",
+      "ru": "Увеличь доход на час!",
+      "en": "Boost income for one hour!",
+      "de": "Erhöhe Einkommen für eine Stunde!",
+      "es": "¡Aumenta ingresos durante una hora!"
+    },
+    {
+      "key": "temki.tab_description",
+      "ru": "Рискуй и побеждай! Темки могут помочь быстро подняться, но будь аккуратен!",
+      "en": "Take risks and win! Deals can boost you fast, but be careful!",
+      "de": "Riskiere und gewinne! Deals können dich schnell pushen, aber sei vorsichtig!",
+      "es": "¡Arriesga y gana! Los tratos pueden impulsarte rápido, pero ten cuidado."
+    },
+    {
+      "key": "category.goods_business",
+      "ru": "Товарный бизнес",
+      "en": "Goods",
+      "de": "Waren",
+      "es": "Productos"
+    },
+    {
+      "key": "category.auto_business",
+      "ru": "Автобизнес",
+      "en": "Cars",
+      "de": "Autos",
+      "es": "Autos"
+    },
+    {
+      "key": "category.construction",
+      "ru": "Строительство",
+      "en": "Construction",
+      "de": "Bau",
+      "es": "Construcción"
+    },
+    {
+      "key": "category.sea_business",
+      "ru": "Морской бизнес",
+      "en": "Yachts",
+      "de": "Yachten",
+      "es": "Yates"
+    },
+    {
+      "key": "category.sea_business_short",
+      "ru": "Море",
+      "en": "Yachts",
+      "de": "Yachten",
+      "es": "Yates"
+    },
+    {
+      "key": "category.aviation_business",
+      "ru": "Авиабизнес",
+      "en": "Aviation",
+      "de": "Luftfahrt",
+      "es": "Aviación"
+    },
+    {
+      "key": "category.aviation_business_short",
+      "ru": "Авиа",
+      "en": "Aviation",
+      "de": "Luftfahrt",
+      "es": "Aviación"
+    },
+    {
+      "key": "business.name.fashion_boutique",
+      "ru": "Модный бутик",
+      "en": "Fashion Boutique",
+      "de": "Modeboutique",
+      "es": "Boutique de moda"
+    },
+    {
+      "key": "business.name.market_stall",
+      "ru": "Точка в ТЦ",
+      "en": "Mall Stand",
+      "de": "Stand im Einkaufszentrum",
+      "es": "Puesto en centro comercial"
+    },
+    {
+      "key": "business.name.premium_clothing_factory",
+      "ru": "Фабрика премиальной одежды",
+      "en": "Premium Clothing Factory",
+      "de": "Premium-Kleidungsfabrik",
+      "es": "Fábrica de ropa premium"
+    },
+    {
+      "key": "business.name.private_atelier",
+      "ru": "Частное ателье",
+      "en": "Private Atelier",
+      "de": "Privates Atelier",
+      "es": "Atelier privado"
+    },
+    {
+      "key": "business.name.sneaker_store",
+      "ru": "Магазин кроссовок",
+      "en": "Sneaker Store",
+      "de": "Sneaker-Laden",
+      "es": "Tienda de zapatillas"
+    },
+    {
+      "key": "business.name.supercar_showroom",
+      "ru": "Шоурум суперкаров",
+      "en": "Supercar Showroom",
+      "de": "Supercar-Showroom",
+      "es": "Showroom de supercoches"
+    },
+    {
+      "key": "business.name.shinka",
+      "ru": "Шиномонтаж",
+      "en": "Tire Service",
+      "de": "Reifenservice",
+      "es": "Taller de neumáticos"
+    },
+    {
+      "key": "business.name.auto_service",
+      "ru": "Автосервис",
+      "en": "Auto Service",
+      "de": "Autowerkstatt",
+      "es": "Servicio de autos"
+    },
+    {
+      "key": "business.name.car_dealer",
+      "ru": "Автосалон",
+      "en": "Car Dealership",
+      "de": "Autohaus",
+      "es": "Concesionario"
+    },
+    {
+      "key": "business.name.sportcar_rental",
+      "ru": "Прокат спорткаров",
+      "en": "Sports Car Rental",
+      "de": "Sportwagenvermietung",
+      "es": "Alquiler de deportivos"
+    },
+    {
+      "key": "business.name.yacht_marina",
+      "ru": "Марина для яхт",
+      "en": "Yacht Marina",
+      "de": "Yacht-Marina",
+      "es": "Marina de yates"
+    },
+    {
+      "key": "business.name.yacht_club",
+      "ru": "Яхт-клуб",
+      "en": "Yacht Club",
+      "de": "Yachtclub",
+      "es": "Club náutico"
+    },
+    {
+      "key": "business.name.private_boat_rental",
+      "ru": "Прокат частных лодок",
+      "en": "Private Boat Rental",
+      "de": "Private Bootsvermietung",
+      "es": "Alquiler de barcos privados"
+    },
+    {
+      "key": "business.name.private_vessel_showroom",
+      "ru": "Салон по продаже яхт",
+      "en": "Private Vessel Showroom",
+      "de": "Yacht-Showroom",
+      "es": "Showroom de embarcaciones"
+    },
+    {
+      "key": "business.name.jet_ski_rental",
+      "ru": "Прокат гидроциклов",
+      "en": "Jet Ski Rental",
+      "de": "Jetski-Vermietung",
+      "es": "Alquiler de motos acuáticas"
+    },
+    {
+      "key": "business.name.private_jet_service",
+      "ru": "Частные рейсы",
+      "en": "Private Jet Service",
+      "de": "Privatjet-Service",
+      "es": "Servicio de jets privados"
+    },
+    {
+      "key": "business.name.cargo_airline",
+      "ru": "Авиаклуб",
+      "en": "Aviation Club",
+      "de": "Flugclub",
+      "es": "Club de aviación"
+    },
+    {
+      "key": "business.name.aero_club",
+      "ru": "Авиа туры",
+      "en": "Air Tours",
+      "de": "Flugtouren",
+      "es": "Tours aéreos"
+    },
+    {
+      "key": "business.name.aircraft_hangar",
+      "ru": "Ангар для самолётов",
+      "en": "Aircraft Hangar",
+      "de": "Flugzeughangar",
+      "es": "Hangar de aviones"
+    },
+    {
+      "key": "business.name.airport",
+      "ru": "Аэропорт",
+      "en": "Airport",
+      "de": "Flughafen",
+      "es": "Aeropuerto"
+    },
+    {
+      "key": "business.name.construction_company",
+      "ru": "Строительная компания",
+      "en": "Construction Company",
+      "de": "Baufirma",
+      "es": "Constructora"
+    },
+    {
+      "key": "business.name.interior_design_studio",
+      "ru": "Студия дизайна",
+      "en": "Design Studio",
+      "de": "Designstudio",
+      "es": "Estudio de diseño"
+    },
+    {
+      "key": "business.name.real_estate_agency",
+      "ru": "Агентство недвижимости",
+      "en": "Real Estate Agency",
+      "de": "Immobilienagentur",
+      "es": "Agencia inmobiliaria"
+    },
+    {
+      "key": "business.name.urban_developer",
+      "ru": "Городской застройщик",
+      "en": "Urban Developer",
+      "de": "Stadtentwickler",
+      "es": "Desarrollador urbano"
+    },
+    {
+      "key": "business.name.apartment_network",
+      "ru": "Сеть апартаментов",
+      "en": "Apartment Network",
+      "de": "Apartment-Netzwerk",
+      "es": "Red de apartamentos"
+    },
+    {
+      "key": "business.skill.collect_money",
+      "ru": "Собрать деньги",
+      "en": "Collect money",
+      "de": "Geld einsammeln",
+      "es": "Cobrar dinero"
+    },
+    {
+      "key": "business.skill.collect_profit",
+      "ru": "Собрать прибыль",
+      "en": "Collect profit",
+      "de": "Gewinn einsammeln",
+      "es": "Cobrar ganancias"
+    },
+    {
+      "key": "business.skill.increase_income",
+      "ru": "Увеличить доход",
+      "en": "Increase income",
+      "de": "Einkommen erhöhen",
+      "es": "Aumentar ingresos"
+    },
+    {
+      "key": "business.skill.boost_income",
+      "ru": "Усилить доход",
+      "en": "Boost income",
+      "de": "Einkommen verstärken",
+      "es": "Potenciar ingresos"
+    },
+    {
+      "key": "business.skill.collect_revenue",
+      "ru": "Получить выручку",
+      "en": "Collect revenue",
+      "de": "Umsatz einsammeln",
+      "es": "Cobrar ingresos"
+    },
+    {
+      "key": "temki.name.temka_sneakers",
+      "ru": "Продать кроссы",
+      "en": "Sell sneakers",
+      "de": "Sneaker verkaufen",
+      "es": "Vender zapatillas"
+    },
+    {
+      "key": "temki.description.temka_sneakers",
+      "ru": "Попробовать реализовать партию новой коллекции",
+      "en": "Try to sell a batch from a new collection",
+      "de": "Versuche eine Charge der neuen Kollektion zu verkaufen",
+      "es": "Intenta vender un lote de la nueva colección"
+    },
+    {
+      "key": "temki.name.temka_car_run",
+      "ru": "Перегнать тачку",
+      "en": "Move a car",
+      "de": "Auto überführen",
+      "es": "Mover un coche"
+    },
+    {
+      "key": "temki.description.temka_car_run",
+      "ru": "Купил, пригнал, надеюсь что купят",
+      "en": "Bought it, moved it, hope someone buys it",
+      "de": "Gekauft, überführt, hoffentlich kauft es jemand",
+      "es": "Comprado, trasladado, espero que alguien lo compre"
+    },
+    {
+      "key": "temki.name.temka_listing",
+      "ru": "Обещанный листинг",
+      "en": "Promised listing",
+      "de": "Versprochenes Listing",
+      "es": "Listado prometido"
+    },
+    {
+      "key": "temki.description.temka_listing",
+      "ru": "Закуплю монет на старте, вдруг взлетит",
+      "en": "Buy coins at launch, maybe it moons",
+      "de": "Coins zum Start kaufen, vielleicht geht es hoch",
+      "es": "Comprar monedas al inicio, quizá despega"
+    },
+    {
+      "key": "temki.name.temka_container",
+      "ru": "Портовый контейнер",
+      "en": "Port container",
+      "de": "Hafencontainer",
+      "es": "Contenedor portuario"
+    },
+    {
+      "key": "temki.description.temka_container",
+      "ru": "Иногда там что-то ценное",
+      "en": "Sometimes there is something valuable inside",
+      "de": "Manchmal ist etwas Wertvolles drin",
+      "es": "A veces hay algo valioso dentro"
+    },
+    {
+      "key": "temki.name.temka_casino",
+      "ru": "Ставка в казик",
+      "en": "Casino bet",
+      "de": "Casino-Einsatz",
+      "es": "Apuesta en casino"
+    },
+    {
+      "key": "temki.description.temka_casino",
+      "ru": "Я фартовый, мне залетит",
+      "en": "I am lucky, this will hit",
+      "de": "Ich habe Glück, das klappt",
+      "es": "Tengo suerte, esto saldrá bien"
+    },
+    {
+      "key": "temki.name.temka_long_deal",
+      "ru": "Долгая схема",
+      "en": "Long scheme",
+      "de": "Langer Deal",
+      "es": "Plan largo"
+    },
+    {
+      "key": "temki.description.temka_long_deal",
+      "ru": "Зайдет не быстро, но может окупить весь день",
+      "en": "Not fast, but it can pay for the whole day",
+      "de": "Nicht schnell, kann aber den ganzen Tag bezahlen",
+      "es": "No será rápido, pero puede pagar todo el día"
+    },
+    {
+      "key": "collection.name.auto",
+      "ru": "Автомобили",
+      "en": "Cars",
+      "de": "Autos",
+      "es": "Autos"
+    },
+    {
+      "key": "collection.description.auto",
+      "ru": "Коллекция автомобилей усиливает доход автобизнеса.",
+      "en": "A car collection boosts income from car businesses.",
+      "de": "Eine Autosammlung erhöht Einkommen aus Auto-Businesses.",
+      "es": "Una colección de autos aumenta ingresos de negocios de autos."
+    },
+    {
+      "key": "collection.name.branded_clothes",
+      "ru": "Брендовая одежда",
+      "en": "Branded Clothes",
+      "de": "Markenkleidung",
+      "es": "Ropa de marca"
+    },
+    {
+      "key": "collection.description.branded_clothes",
+      "ru": "Коллекция брендовой одежды усиливает доход товарного бизнеса.",
+      "en": "A branded clothing collection boosts income from goods businesses.",
+      "de": "Eine Markenkleidung-Sammlung erhöht Einkommen aus Waren-Businesses.",
+      "es": "Una colección de ropa de marca aumenta ingresos de productos."
+    },
+    {
+      "key": "collection.name.premium_real_estate",
+      "ru": "Премиум-недвижимость",
+      "en": "Premium Real Estate",
+      "de": "Premium-Immobilien",
+      "es": "Inmuebles premium"
+    },
+    {
+      "key": "collection.description.premium_real_estate",
+      "ru": "Коллекция премиум-недвижимости усиливает доход строительного бизнеса.",
+      "en": "A premium real estate collection boosts income from construction businesses.",
+      "de": "Eine Premium-Immobilien-Sammlung erhöht Einkommen aus Bau-Businesses.",
+      "es": "Una colección inmobiliaria premium aumenta ingresos de construcción."
+    },
+    {
+      "key": "collection.name.yachts_and_boats",
+      "ru": "Яхты и катера",
+      "en": "Yachts and Boats",
+      "de": "Yachten und Boote",
+      "es": "Yates y barcos"
+    },
+    {
+      "key": "collection.description.yachts_and_boats",
+      "ru": "Коллекция яхт усиливает доход морского бизнеса.",
+      "en": "A yacht collection boosts income from sea businesses.",
+      "de": "Eine Yacht-Sammlung erhöht Einkommen aus Yacht-Businesses.",
+      "es": "Una colección de yates aumenta ingresos de negocios marítimos."
+    },
+    {
+      "key": "collection.name.air_transport",
+      "ru": "Авиатранспорт",
+      "en": "Air Transport",
+      "de": "Lufttransport",
+      "es": "Transporte aéreo"
+    },
+    {
+      "key": "collection.description.air_transport",
+      "ru": "Коллекция авиатранспорта усиливает доход авиабизнеса.",
+      "en": "An air transport collection boosts income from aviation businesses.",
+      "de": "Eine Lufttransport-Sammlung erhöht Einkommen aus Luftfahrt-Businesses.",
+      "es": "Una colección aérea aumenta ingresos de aviación."
+    },
+    {
+      "key": "collection.card.auto.auto_card_01",
+      "ru": "Supra",
+      "en": "Supra",
+      "de": "Supra",
+      "es": "Supra"
+    },
+    {
+      "key": "collection.card.auto.auto_card_02",
+      "ru": "Mustang GT",
+      "en": "Mustang GT",
+      "de": "Mustang GT",
+      "es": "Mustang GT"
+    },
+    {
+      "key": "collection.card.auto.auto_card_03",
+      "ru": "Escalade",
+      "en": "Escalade",
+      "de": "Escalade",
+      "es": "Escalade"
+    },
+    {
+      "key": "collection.card.auto.auto_card_04",
+      "ru": "Mercedes G63",
+      "en": "Mercedes G63",
+      "de": "Mercedes G63",
+      "es": "Mercedes G63"
+    },
+    {
+      "key": "collection.card.auto.auto_card_05",
+      "ru": "Porsche 911",
+      "en": "Porsche 911",
+      "de": "Porsche 911",
+      "es": "Porsche 911"
+    },
+    {
+      "key": "collection.card.auto.auto_card_06",
+      "ru": "Range Rover SV",
+      "en": "Range Rover SV",
+      "de": "Range Rover SV",
+      "es": "Range Rover SV"
+    },
+    {
+      "key": "collection.card.auto.auto_card_07",
+      "ru": "GTR",
+      "en": "GTR",
+      "de": "GTR",
+      "es": "GTR"
+    },
+    {
+      "key": "collection.card.auto.auto_card_08",
+      "ru": "Urus",
+      "en": "Urus",
+      "de": "Urus",
+      "es": "Urus"
+    },
+    {
+      "key": "collection.card.auto.auto_card_09",
+      "ru": "Ferrari 812",
+      "en": "Ferrari 812",
+      "de": "Ferrari 812",
+      "es": "Ferrari 812"
+    },
+    {
+      "key": "collection.card.auto.auto_card_10",
+      "ru": "Cullinan",
+      "en": "Cullinan",
+      "de": "Cullinan",
+      "es": "Cullinan"
+    },
+    {
+      "key": "collection.final.auto.auto_final",
+      "ru": "Бугатти Вейрон",
+      "en": "Bugatti Veyron",
+      "de": "Bugatti Veyron",
+      "es": "Bugatti Veyron"
+    },
+    {
+      "key": "collection.card.branded_clothes.branded_clothes_card_01",
+      "ru": "Surpim",
+      "en": "Surpim",
+      "de": "Surpim",
+      "es": "Surpim"
+    },
+    {
+      "key": "collection.card.branded_clothes.branded_clothes_card_02",
+      "ru": "NK Sneakers",
+      "en": "NK Sneakers",
+      "de": "NK Sneakers",
+      "es": "NK Sneakers"
+    },
+    {
+      "key": "collection.card.branded_clothes.branded_clothes_card_03",
+      "ru": "Off Fight Hoodie",
+      "en": "Off Fight Hoodie",
+      "de": "Off Fight Hoodie",
+      "es": "Off Fight Hoodie"
+    },
+    {
+      "key": "collection.card.branded_clothes.branded_clothes_card_04",
+      "ru": "Monsler",
+      "en": "Monsler",
+      "de": "Monsler",
+      "es": "Monsler"
+    },
+    {
+      "key": "collection.card.branded_clothes.branded_clothes_card_05",
+      "ru": "LV Bag",
+      "en": "LV Bag",
+      "de": "LV Bag",
+      "es": "LV Bag"
+    },
+    {
+      "key": "collection.card.branded_clothes.branded_clothes_card_06",
+      "ru": "Gold Rolexes",
+      "en": "Gold Rolexes",
+      "de": "Gold Rolexes",
+      "es": "Gold Rolexes"
+    },
+    {
+      "key": "collection.card.branded_clothes.branded_clothes_card_07",
+      "ru": "Piget Royal",
+      "en": "Piget Royal",
+      "de": "Piget Royal",
+      "es": "Piget Royal"
+    },
+    {
+      "key": "collection.card.branded_clothes.branded_clothes_card_08",
+      "ru": "RM 11",
+      "en": "RM 11",
+      "de": "RM 11",
+      "es": "RM 11"
+    },
+    {
+      "key": "collection.card.branded_clothes.branded_clothes_card_09",
+      "ru": "Cartier Bracelet",
+      "en": "Cartier Bracelet",
+      "de": "Cartier Bracelet",
+      "es": "Cartier Bracelet"
+    },
+    {
+      "key": "collection.card.branded_clothes.branded_clothes_card_10",
+      "ru": "Astronomy Watch",
+      "en": "Astronomy Watch",
+      "de": "Astronomy Watch",
+      "es": "Astronomy Watch"
+    },
+    {
+      "key": "collection.final.branded_clothes.branded_clothes_final",
+      "ru": "Часы тифани",
+      "en": "Tiffany Watch",
+      "de": "Tiffany-Uhr",
+      "es": "Reloj Tiffany"
+    },
+    {
+      "key": "collection.card.premium_real_estate.premium_real_estate_card_01",
+      "ru": "NYC Loft",
+      "en": "NYC Loft",
+      "de": "NYC Loft",
+      "es": "NYC Loft"
+    },
+    {
+      "key": "collection.card.premium_real_estate.premium_real_estate_card_02",
+      "ru": "City Penthouse",
+      "en": "City Penthouse",
+      "de": "City Penthouse",
+      "es": "City Penthouse"
+    },
+    {
+      "key": "collection.card.premium_real_estate.premium_real_estate_card_03",
+      "ru": "Bali Villa",
+      "en": "Bali Villa",
+      "de": "Bali Villa",
+      "es": "Bali Villa"
+    },
+    {
+      "key": "collection.card.premium_real_estate.premium_real_estate_card_04",
+      "ru": "Courchevel Chalet",
+      "en": "Courchevel Chalet",
+      "de": "Courchevel Chalet",
+      "es": "Courchevel Chalet"
+    },
+    {
+      "key": "collection.card.premium_real_estate.premium_real_estate_card_05",
+      "ru": "Beverly Mansion",
+      "en": "Beverly Mansion",
+      "de": "Beverly Mansion",
+      "es": "Beverly Mansion"
+    },
+    {
+      "key": "collection.card.premium_real_estate.premium_real_estate_card_06",
+      "ru": "Riviera Villa",
+      "en": "Riviera Villa",
+      "de": "Riviera Villa",
+      "es": "Riviera Villa"
+    },
+    {
+      "key": "collection.card.premium_real_estate.premium_real_estate_card_07",
+      "ru": "Como Villa",
+      "en": "Como Villa",
+      "de": "Como Villa",
+      "es": "Como Villa"
+    },
+    {
+      "key": "collection.card.premium_real_estate.premium_real_estate_card_08",
+      "ru": "Dubai Estate",
+      "en": "Dubai Estate",
+      "de": "Dubai Estate",
+      "es": "Dubai Estate"
+    },
+    {
+      "key": "collection.card.premium_real_estate.premium_real_estate_card_09",
+      "ru": "Monaco Residence",
+      "en": "Monaco Residence",
+      "de": "Monaco Residence",
+      "es": "Monaco Residence"
+    },
+    {
+      "key": "collection.card.premium_real_estate.premium_real_estate_card_10",
+      "ru": "Island Villa",
+      "en": "Island Villa",
+      "de": "Island Villa",
+      "es": "Island Villa"
+    },
+    {
+      "key": "collection.final.premium_real_estate.premium_real_estate_final",
+      "ru": "Вилла Леопольда",
+      "en": "Villa Leopolda",
+      "de": "Villa Leopolda",
+      "es": "Villa Leopolda"
+    },
+    {
+      "key": "collection.card.yachts_and_boats.yachts_and_boats_card_01",
+      "ru": "Yamaha FX",
+      "en": "Yamaha FX",
+      "de": "Yamaha FX",
+      "es": "Yamaha FX"
+    },
+    {
+      "key": "collection.card.yachts_and_boats.yachts_and_boats_card_02",
+      "ru": "Sea Ray",
+      "en": "Sea Ray",
+      "de": "Sea Ray",
+      "es": "Sea Ray"
+    },
+    {
+      "key": "collection.card.yachts_and_boats.yachts_and_boats_card_03",
+      "ru": "Bayliner VR6",
+      "en": "Bayliner VR6",
+      "de": "Bayliner VR6",
+      "es": "Bayliner VR6"
+    },
+    {
+      "key": "collection.card.yachts_and_boats.yachts_and_boats_card_04",
+      "ru": "Axpar",
+      "en": "Axpar",
+      "de": "Axpar",
+      "es": "Axpar"
+    },
+    {
+      "key": "collection.card.yachts_and_boats.yachts_and_boats_card_05",
+      "ru": "Princess",
+      "en": "Princess",
+      "de": "Princess",
+      "es": "Princess"
+    },
+    {
+      "key": "collection.card.yachts_and_boats.yachts_and_boats_card_06",
+      "ru": "Predator",
+      "en": "Predator",
+      "de": "Predator",
+      "es": "Predator"
+    },
+    {
+      "key": "collection.card.yachts_and_boats.yachts_and_boats_card_07",
+      "ru": "Ferretti",
+      "en": "Ferretti",
+      "de": "Ferretti",
+      "es": "Ferretti"
+    },
+    {
+      "key": "collection.card.yachts_and_boats.yachts_and_boats_card_08",
+      "ru": "Riva Corsaro",
+      "en": "Riva Corsaro",
+      "de": "Riva Corsaro",
+      "es": "Riva Corsaro"
+    },
+    {
+      "key": "collection.card.yachts_and_boats.yachts_and_boats_card_09",
+      "ru": "Benetti Oasis",
+      "en": "Benetti Oasis",
+      "de": "Benetti Oasis",
+      "es": "Benetti Oasis"
+    },
+    {
+      "key": "collection.card.yachts_and_boats.yachts_and_boats_card_10",
+      "ru": "Moonlight",
+      "en": "Moonlight",
+      "de": "Moonlight",
+      "es": "Moonlight"
+    },
+    {
+      "key": "collection.final.yachts_and_boats.yachts_and_boats_final",
+      "ru": "Аззам",
+      "en": "Azzam",
+      "de": "Azzam",
+      "es": "Azzam"
+    },
+    {
+      "key": "collection.card.air_transport.air_transport_card_01",
+      "ru": "Cessna 172",
+      "en": "Cessna 172",
+      "de": "Cessna 172",
+      "es": "Cessna 172"
+    },
+    {
+      "key": "collection.card.air_transport.air_transport_card_02",
+      "ru": "SR22",
+      "en": "SR22",
+      "de": "SR22",
+      "es": "SR22"
+    },
+    {
+      "key": "collection.card.air_transport.air_transport_card_03",
+      "ru": "PC-12",
+      "en": "PC-12",
+      "de": "PC-12",
+      "es": "PC-12"
+    },
+    {
+      "key": "collection.card.air_transport.air_transport_card_04",
+      "ru": "King Air",
+      "en": "King Air",
+      "de": "King Air",
+      "es": "King Air"
+    },
+    {
+      "key": "collection.card.air_transport.air_transport_card_05",
+      "ru": "Phenom 300",
+      "en": "Phenom 300",
+      "de": "Phenom 300",
+      "es": "Phenom 300"
+    },
+    {
+      "key": "collection.card.air_transport.air_transport_card_06",
+      "ru": "Learjet 75",
+      "en": "Learjet 75",
+      "de": "Learjet 75",
+      "es": "Learjet 75"
+    },
+    {
+      "key": "collection.card.air_transport.air_transport_card_07",
+      "ru": "Falcon 2000",
+      "en": "Falcon 2000",
+      "de": "Falcon 2000",
+      "es": "Falcon 2000"
+    },
+    {
+      "key": "collection.card.air_transport.air_transport_card_08",
+      "ru": "Gulfstream",
+      "en": "Gulfstream",
+      "de": "Gulfstream",
+      "es": "Gulfstream"
+    },
+    {
+      "key": "collection.card.air_transport.air_transport_card_09",
+      "ru": "Global 7500",
+      "en": "Global 7500",
+      "de": "Global 7500",
+      "es": "Global 7500"
+    },
+    {
+      "key": "collection.card.air_transport.air_transport_card_10",
+      "ru": "Business Jet",
+      "en": "Business Jet",
+      "de": "Business Jet",
+      "es": "Business Jet"
+    },
+    {
+      "key": "collection.final.air_transport.air_transport_final",
+      "ru": "Эйрбас АСЖ 350",
+      "en": "Airbus ACJ 350",
+      "de": "Airbus ACJ 350",
+      "es": "Airbus ACJ 350"
+    },
+    {
+      "key": "crash.potential_win_title",
+      "ru": "Потенциальный выигрыш",
+      "en": "Potential win",
+      "de": "Möglicher Gewinn",
+      "es": "Ganancia potencial"
+    },
+    {
+      "key": "collections.this_business_type",
+      "ru": "бизнесов этого типа",
+      "en": "for this business type",
+      "de": "für diesen Business-Typ",
+      "es": "para este tipo de negocio"
+    },
+    {
+      "key": "collections.income_this_business_type",
+      "ru": "доход бизнесов этого типа",
+      "en": "income for this business type",
+      "de": "Einkommen für diesen Business-Typ",
+      "es": "ingresos para este tipo de negocio"
+    },
+    {
+      "key": "risky.success_with_icon",
+      "ru": "🏆 Успешная сделка",
+      "en": "🏆 Successful deal",
+      "de": "🏆 Erfolgreicher Deal",
+      "es": "🏆 Trato exitoso"
+    },
+    {
+      "key": "scene.failed_deal_with_icon",
+      "ru": "✖ Сделка сорвалась",
+      "en": "✖ Deal failed",
+      "de": "✖ Deal geplatzt",
+      "es": "✖ Trato fallido"
+    },
+    {
+      "key": "risky.waiting_new_opportunities",
+      "ru": "Ожидание новых возможностей",
+      "en": "Waiting for new opportunities",
+      "de": "Warte auf neue Möglichkeiten",
+      "es": "Esperando nuevas oportunidades"
+    },
+    {
+      "key": "number.thousand_suffix",
+      "ru": " тыс",
+      "en": "K",
+      "de": " Tsd.",
+      "es": " mil"
+    },
+    {
+      "key": "number.million_suffix",
+      "ru": " млн",
+      "en": "M",
+      "de": " Mio.",
+      "es": " M"
+    },
+    {
+      "key": "number.billion_suffix",
+      "ru": " млрд",
+      "en": "B",
+      "de": " Mrd.",
+      "es": " mil M"
+    },
+    {
+      "key": "helper.temki",
+      "ru": "Быстрые деньги, но высокий риск. Угадай куда пойдет график и умножь свою ставку на x5 x10 или даже x20",
+      "en": "Fast money, high risk. Guess where the chart goes and multiply your stake by x5, x10, or even x20.",
+      "de": "Schnelles Geld, hohes Risiko. Errate die Richtung des Charts und multipliziere deinen Einsatz mit x5, x10 oder sogar x20.",
+      "es": "Dinero rápido, alto riesgo. Adivina hacia dónde va el gráfico y multiplica tu apuesta por x5, x10 o incluso x20."
+    },
+    {
+      "key": "helper.collections",
+      "ru": "Собирай коллекции, чтобы усиливать доход бизнесов.",
+      "en": "Collect items to boost your business income.",
+      "de": "Sammle Kollektionen, um dein Business-Einkommen zu erhöhen.",
+      "es": "Colecciona objetos para aumentar ingresos de negocios."
+    },
+    {
+      "key": "currency.rubles_short",
+      "ru": "руб",
+      "en": "R",
+      "de": "R",
+      "es": "R"
+    }
+  ]
+}

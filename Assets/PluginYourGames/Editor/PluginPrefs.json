@@ -2,7 +2,7 @@
     "stringPrefs": [
         {
             "key": "SelectModuleToggle_YG2",
-            "value": "YandexGames;Payments"
+            "value": "YandexGames;Payments;Localization;AutoTranslateLangs"
         }
     ],
     "intPrefs": [

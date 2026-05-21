@@ -2,6 +2,7 @@ using System;
 using System.Globalization;
 using TMPro;
 using TraidingIDLE.Currencies;
+using TraidingIDLE.Localization;
 using UnityEngine;
 
 namespace TraidingIDLE.UI
@@ -138,6 +139,7 @@ namespace TraidingIDLE.UI
 
         private void OnEnable()
         {
+            LocalizationManager.LanguageChanged += RenderRows;
             EnsureEntriesSize();
 
             if (fillRowsOnStart)
@@ -151,6 +153,11 @@ namespace TraidingIDLE.UI
             }
 
             ResetRefreshTimer();
+        }
+
+        private void OnDisable()
+        {
+            LocalizationManager.LanguageChanged -= RenderRows;
         }
 
         private void Update()
@@ -272,7 +279,15 @@ namespace TraidingIDLE.UI
         private void RenderRow(HistoryRow row, TradeEntry entry)
         {
             if (row.nameText != null)
-                row.nameText.text = entry.TraderName;
+            {
+                var traderName = LocalizationManager.CurrentLanguage == GameLanguage.Ru
+                    ? entry.TraderName
+                    : Transliterate(entry.TraderName);
+
+                row.nameText.text = entry.IsBuy
+                    ? LocalizationManager.Format("history.buy_format", "{0} bought", traderName)
+                    : LocalizationManager.Format("history.sell_format", "{0} sold", traderName);
+            }
 
             if (row.coinAmountText != null)
                 row.coinAmountText.text = $"{FormatAmount(entry.Amount, entry.AmountDecimals)} {entry.CurrencyDisplayName}";
@@ -332,6 +347,55 @@ namespace TraidingIDLE.UI
         private static int GetAmountDecimals(CoinTradeSettings coin)
         {
             return coin.id == CurrencyId.BTC ? 0 : Mathf.Clamp(coin.amountDecimals, 0, 6);
+        }
+
+        private static string Transliterate(string value)
+        {
+            if (string.IsNullOrWhiteSpace(value))
+                return value ?? string.Empty;
+
+            var result = value;
+            string[,] map =
+            {
+                { "Щ", "Shch" }, { "щ", "shch" },
+                { "Ё", "Yo" }, { "ё", "yo" },
+                { "Ж", "Zh" }, { "ж", "zh" },
+                { "Х", "Kh" }, { "х", "kh" },
+                { "Ц", "Ts" }, { "ц", "ts" },
+                { "Ч", "Ch" }, { "ч", "ch" },
+                { "Ш", "Sh" }, { "ш", "sh" },
+                { "Ю", "Yu" }, { "ю", "yu" },
+                { "Я", "Ya" }, { "я", "ya" },
+                { "А", "A" }, { "а", "a" },
+                { "Б", "B" }, { "б", "b" },
+                { "В", "V" }, { "в", "v" },
+                { "Г", "G" }, { "г", "g" },
+                { "Д", "D" }, { "д", "d" },
+                { "Е", "E" }, { "е", "e" },
+                { "З", "Z" }, { "з", "z" },
+                { "И", "I" }, { "и", "i" },
+                { "Й", "Y" }, { "й", "y" },
+                { "К", "K" }, { "к", "k" },
+                { "Л", "L" }, { "л", "l" },
+                { "М", "M" }, { "м", "m" },
+                { "Н", "N" }, { "н", "n" },
+                { "О", "O" }, { "о", "o" },
+                { "П", "P" }, { "п", "p" },
+                { "Р", "R" }, { "р", "r" },
+                { "С", "S" }, { "с", "s" },
+                { "Т", "T" }, { "т", "t" },
+                { "У", "U" }, { "у", "u" },
+                { "Ф", "F" }, { "ф", "f" },
+                { "Ы", "Y" }, { "ы", "y" },
+                { "Э", "E" }, { "э", "e" },
+                { "Ь", "" }, { "ь", "" },
+                { "Ъ", "" }, { "ъ", "" },
+            };
+
+            for (var i = 0; i < map.GetLength(0); i++)
+                result = result.Replace(map[i, 0], map[i, 1]);
+
+            return result;
         }
     }
 }

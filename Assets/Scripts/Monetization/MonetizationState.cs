@@ -16,6 +16,11 @@ namespace TraidingIDLE.Monetization
         private static bool _loaded;
         private static bool _noAdsPurchased;
 
+        static MonetizationState()
+        {
+            SaveStorage.ExternalDataLoaded += Reload;
+        }
+
         public static bool NoAdsPurchased
         {
             get
@@ -43,6 +48,13 @@ namespace TraidingIDLE.Monetization
             _loaded = true;
             if (SaveStorage.TryLoadJson<SaveData>(SaveKey, out var data))
                 _noAdsPurchased = data.noAdsPurchased;
+        }
+
+        private static void Reload()
+        {
+            _loaded = false;
+            _noAdsPurchased = false;
+            EnsureLoaded();
         }
 
         private static void Save()

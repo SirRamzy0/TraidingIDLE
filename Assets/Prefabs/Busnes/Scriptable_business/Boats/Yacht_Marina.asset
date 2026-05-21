@@ -20,7 +20,7 @@ MonoBehaviour:
   artwork: {fileID: 21300000, guid: a6ce912b627958a4ba8f09c36edc01ad, type: 3}
   progression:
     requiredBusinessSaveId: private_boat_rental
-    requiredBusinessLevel: 7
+    requiredBusinessLevel: 15
     startRublesCost: 50000000
     startUpgradeRublesCost: 35000000
     upgradeCostGrowthPerLevel: 1.195
@@ -33,14 +33,14 @@ MonoBehaviour:
   - incomeRublesPerHour: 10000
     upgradeRublesCost: 1000
   skill:
-    unlockLevel: 6
+    unlockLevel: 10
     energyCost: 2
     icon: {fileID: 21300000, guid: 922b7c528aa957a4a9213a45bdaeafa9, type: 3}
     title: "\u0421\u043E\u0431\u0440\u0430\u0442\u044C \u043F\u0440\u0438\u0431\u044B\u043B\u044C"
     description: "\u041C\u0433\u043D\u043E\u0432\u0435\u043D\u043D\u043E \u043F\u0440\u0438\u043D\u043E\u0441\u0438\u0442
       {0}."
     effect: 0
-    instantRubles: 22000000
+    instantRubles: 96000000
     instantRublesGrowthPer10Levels: 0.3
     temporaryIncomeMultiplier: 1.25
     temporaryDurationSeconds: 300

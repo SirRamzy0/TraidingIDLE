@@ -1,5 +1,6 @@
 using System;
 using TMPro;
+using TraidingIDLE.Localization;
 using TraidingIDLE.UI;
 using UnityEngine;
 using UnityEngine.UI;
@@ -71,9 +72,9 @@ namespace TraidingIDLE.Temki
             }
 
             if (titleText != null)
-                titleText.text = definition.DisplayName;
+                titleText.text = KnownLocalization.TranslateTemkaName(definition.SaveId, definition.DisplayName);
             if (descriptionText != null)
-                descriptionText.text = definition.Description;
+                descriptionText.text = KnownLocalization.TranslateTemkaDescription(definition.SaveId, definition.Description);
             if (chanceText != null)
             {
                 var displayedChancePercent = RoundChanceToFive(definition.DisplayedSuccessChance * 100f);
@@ -85,13 +86,16 @@ namespace TraidingIDLE.Temki
             if (durationText != null)
                 durationText.text = GameTextFormatter.Format(durationFormat, "{0}", formattedDuration);
             if (stakeText != null)
-                stakeText.text = GameTextFormatter.Format(stakeFormat, "{0}р", formattedStake);
+                stakeText.text = GameTextFormatter.Format(
+                    LocalizationManager.Tr("temki.stake_format", stakeFormat),
+                    "{0}р",
+                    formattedStake);
         }
 
         public void PresentRisk(bool canAfford)
         {
             ResolveReferences();
-            SetButton(riskButtonSprite, riskLabel, canAfford);
+            SetButton(riskButtonSprite, LocalizationManager.Tr("temki.risk", riskLabel), canAfford);
         }
 
         public void PresentTimer(long secondsLeft)
@@ -103,7 +107,7 @@ namespace TraidingIDLE.Temki
         public void PresentCheck()
         {
             ResolveReferences();
-            SetButton(checkButtonSprite, checkLabel, true);
+            SetButton(checkButtonSprite, LocalizationManager.Tr("temki.check", checkLabel), true);
         }
 
         private void SetButton(Sprite sprite, string label, bool interactable)

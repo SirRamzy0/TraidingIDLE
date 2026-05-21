@@ -59,6 +59,16 @@ namespace TraidingIDLE.Player
             LoadFromStorage();
         }
 
+        private void OnEnable()
+        {
+            SaveStorage.ExternalDataLoaded += ReloadFromStorage;
+        }
+
+        private void OnDisable()
+        {
+            SaveStorage.ExternalDataLoaded -= ReloadFromStorage;
+        }
+
         private void OnValidate()
         {
             EnsureHoldingsConfigured();
@@ -262,7 +272,7 @@ namespace TraidingIDLE.Player
 
             _gems = Math.Max(0, _gems + delta);
             GemsChanged?.Invoke(_gems);
-            SaveToStorage();
+            SaveToStorageCritical();
         }
 
         public bool TrySpendRubles(long amount)
@@ -287,11 +297,21 @@ namespace TraidingIDLE.Player
 
             _gems -= amount;
             GemsChanged?.Invoke(_gems);
-            SaveToStorage();
+            SaveToStorageCritical();
             return true;
         }
 
         public void SaveToStorage()
+        {
+            SaveToStorage(false);
+        }
+
+        public void SaveToStorageCritical()
+        {
+            SaveToStorage(true);
+        }
+
+        private void SaveToStorage(bool critical)
         {
             var data = new SaveData
             {
@@ -300,7 +320,10 @@ namespace TraidingIDLE.Player
                 holdings = (CoinHolding[])holdings.Clone(),
             };
             SaveStorage.SaveJson(SaveKey, data);
-            SaveStorage.Flush();
+            if (critical)
+                SaveStorage.FlushCritical();
+            else
+                SaveStorage.Flush();
         }
 
         private void LoadFromStorage()
@@ -346,6 +369,11 @@ namespace TraidingIDLE.Player
             GemsChanged?.Invoke(_gems);
             for (var i = 0; i < holdings.Length; i++)
                 HoldingsChanged?.Invoke(holdings[i].id);
+        }
+
+        private void ReloadFromStorage()
+        {
+            LoadFromStorage();
         }
 
         [ContextMenu("Debug/Reset save")]

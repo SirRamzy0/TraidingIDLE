@@ -14,5 +14,14 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   firstInterstitialDelaySeconds: 600
   repeatInterstitialDelaySeconds: 300
-  countdownSeconds: 5
+  countdownSeconds: 2
+  blockedRetrySeconds: 5
   pauseOverlayPrefab: {fileID: 100000, guid: 7d2b6df61d34a1841aa1911e607a41e1, type: 3}
+  blockedActiveRootNames:
+  - Shop_dialog
+  - Big_Leaderboard
+  - Reward_dialogs
+  - Messenger_Dialog
+  - CapUpgradeDialog
+  - Stavka_profit_dialog
+  - Temki_Result_Dialog

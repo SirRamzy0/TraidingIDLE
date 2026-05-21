@@ -20,7 +20,7 @@ MonoBehaviour:
   artwork: {fileID: 21300000, guid: a6ce912b627958a4ba8f09c36edc01ad, type: 3}
   progression:
     requiredBusinessSaveId: cargo_airline
-    requiredBusinessLevel: 5
+    requiredBusinessLevel: 25
     startRublesCost: 7000000000
     startUpgradeRublesCost: 5000000000
     upgradeCostGrowthPerLevel: 1.225
@@ -33,14 +33,14 @@ MonoBehaviour:
   - incomeRublesPerHour: 10000
     upgradeRublesCost: 1000
   skill:
-    unlockLevel: 8
+    unlockLevel: 15
     energyCost: 4
     icon: {fileID: 21300000, guid: 922b7c528aa957a4a9213a45bdaeafa9, type: 3}
     title: "\u041F\u043E\u043B\u0443\u0447\u0438\u0442\u044C \u0432\u044B\u0440\u0443\u0447\u043A\u0443"
     description: "\u041C\u0433\u043D\u043E\u0432\u0435\u043D\u043D\u043E \u043F\u0440\u0438\u043D\u043E\u0441\u0438\u0442
       {0}."
     effect: 0
-    instantRubles: 3000000000
+    instantRubles: 9770000000
     instantRublesGrowthPer10Levels: 0.3
     temporaryIncomeMultiplier: 2
     temporaryDurationSeconds: 600

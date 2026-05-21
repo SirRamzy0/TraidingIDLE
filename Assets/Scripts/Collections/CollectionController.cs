@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using TMPro;
 using TraidingIDLE.Business;
+using TraidingIDLE.Localization;
 using TraidingIDLE.Player;
 using TraidingIDLE.Saves;
 using TraidingIDLE.UI;
@@ -128,6 +129,9 @@ namespace TraidingIDLE.Collections
 
         private void OnEnable()
         {
+            LocalizationManager.LanguageChanged += RefreshAllUi;
+            SaveStorage.ExternalDataLoaded += ReloadFromExternalStorage;
+
             EnsureInitialized();
 
             if (profile != null)
@@ -138,6 +142,9 @@ namespace TraidingIDLE.Collections
 
         private void OnDisable()
         {
+            LocalizationManager.LanguageChanged -= RefreshAllUi;
+            SaveStorage.ExternalDataLoaded -= ReloadFromExternalStorage;
+
             if (profile != null)
                 profile.RublesChanged -= OnRublesChanged;
 
@@ -333,10 +340,10 @@ namespace TraidingIDLE.Collections
             var total = active.CardCount;
 
             if (collectionTitleText != null)
-                collectionTitleText.text = definition.DisplayName;
+                collectionTitleText.text = KnownLocalization.TranslateCollectionName(definition.SaveId, definition.DisplayName);
 
             if (collectionDescriptionText != null)
-                collectionDescriptionText.text = definition.Description;
+                collectionDescriptionText.text = KnownLocalization.TranslateCollectionDescription(definition.SaveId, definition.Description);
 
             if (progressSlider != null)
             {
@@ -346,13 +353,17 @@ namespace TraidingIDLE.Collections
             }
 
             if (progressText != null)
-                progressText.text = GameTextFormatter.Format(progressFormat, "Собрано {0}/{1}", owned, total);
+                progressText.text = GameTextFormatter.Format(
+                    LocalizationManager.Tr("collections.progress_format", progressFormat),
+                    "Собрано {0}/{1}",
+                    owned,
+                    total);
 
             var unlockedBonusPercent = GetUnlockedBonusPercent(active);
             if (totalBonusText != null)
             {
                 totalBonusText.text = GameTextFormatter.Format(
-                    totalBonusFormat,
+                    LocalizationManager.Tr("collections.total_bonus_format", totalBonusFormat),
                     "Общий бонус: {0}%",
                     GameTextFormatter.Percent(unlockedBonusPercent));
                 totalBonusText.color = unlockedBonusPercent > 0d ? totalBonusReachedColor : totalBonusLockedColor;
@@ -373,21 +384,22 @@ namespace TraidingIDLE.Collections
             var targetBusinessCategory = string.IsNullOrWhiteSpace(definition.TargetBusinessCategory)
                 ? definition.CollectionCategory
                 : definition.TargetBusinessCategory;
+            var translatedTargetBusinessCategory = KnownLocalization.TranslateCategory(targetBusinessCategory);
 
             if (bonusTargetTitleText != null)
             {
                 bonusTargetTitleText.text = GameTextFormatter.Format(
-                    bonusTargetTitleFormat,
+                    LocalizationManager.Tr("collections.bonus_target_title_format", bonusTargetTitleFormat),
                     "Бонусы к бизнесу с типом \"{0}\"",
-                    targetBusinessCategory);
+                    translatedTargetBusinessCategory);
             }
 
             if (bonusTargetDescriptionText != null)
             {
                 bonusTargetDescriptionText.text = GameTextFormatter.Format(
-                    bonusTargetDescriptionFormat,
+                    LocalizationManager.Tr("collections.bonus_target_description_format", bonusTargetDescriptionFormat),
                     "Сбор этой коллекции дает бонус к доходу всех ваших бизнесов с типом «{0}»",
-                    targetBusinessCategory);
+                    translatedTargetBusinessCategory);
             }
         }
 
@@ -422,7 +434,7 @@ namespace TraidingIDLE.Collections
                 row.Configure(
                     card.background,
                     card.artwork,
-                    card.title,
+                    KnownLocalization.TranslateCollectionCardTitle(active.definition.SaveId, card.saveId, card.title),
                     FormatNumberMoney(cost),
                     owned,
                     profile != null && profile.Rubles >= cost,
@@ -484,12 +496,12 @@ namespace TraidingIDLE.Collections
                 var reached = active.OwnedCount >= milestone.requiredOwnedCount;
                 row.Configure(
                     GameTextFormatter.Format(
-                        bonusConditionFormat,
+                        LocalizationManager.Tr("collections.bonus_condition_format", bonusConditionFormat),
                         "{0}/{1} куплено",
                         milestone.requiredOwnedCount,
                         active.CardCount),
                     GameTextFormatter.Format(
-                        bonusValueFormat,
+                        LocalizationManager.Tr("collections.bonus_value_format", bonusValueFormat),
                         "+ {0}% к доходу",
                         GameTextFormatter.Percent(milestone.bonusPercent)),
                     reached);
@@ -535,9 +547,9 @@ namespace TraidingIDLE.Collections
             finalItemUi.Configure(
                 finalItem.background,
                 finalItem.artwork,
-                finalItem.title,
+                KnownLocalization.TranslateCollectionFinalTitle(active.definition.SaveId, finalItem.saveId, finalItem.title),
                 GameTextFormatter.Format(
-                    bonusValueFormat,
+                    LocalizationManager.Tr("collections.bonus_value_format", bonusValueFormat),
                     "+ {0}% к доходу",
                     GameTextFormatter.Percent(bonusPercent)),
                 FormatNumberMoney(cost),
@@ -694,6 +706,19 @@ namespace TraidingIDLE.Collections
             }
 
             return true;
+        }
+
+        private void ReloadFromExternalStorage()
+        {
+            ResolveSceneReferences();
+            RebuildRuntimeCollections();
+            if (!Load())
+                SelectDefaultCollection();
+            _activeIndex = _runtime.Count <= 0 ? 0 : Mathf.Clamp(_activeIndex, 0, _runtime.Count - 1);
+            _dirty = false;
+            _saveTimer = 0f;
+            RefreshAllUi();
+            businessController?.RefreshIncomeFromExternalBonuses();
         }
 
         private void SelectDefaultCollection()

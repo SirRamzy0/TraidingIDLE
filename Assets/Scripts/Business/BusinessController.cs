@@ -6,6 +6,7 @@ using TMPro;
 using TraidingIDLE.Analytics;
 using TraidingIDLE.Collections;
 using TraidingIDLE.Currencies.Simulation;
+using TraidingIDLE.Localization;
 using TraidingIDLE.Player;
 using TraidingIDLE.Saves;
 using TraidingIDLE.UI;
@@ -238,6 +239,9 @@ namespace TraidingIDLE.Business
 
         private void OnEnable()
         {
+            LocalizationManager.LanguageChanged += RefreshAllUi;
+            SaveStorage.ExternalDataLoaded += ReloadFromExternalStorage;
+
             if (profile != null)
                 profile.RublesChanged += OnProfileRublesChanged;
 
@@ -247,6 +251,9 @@ namespace TraidingIDLE.Business
 
         private void OnDisable()
         {
+            LocalizationManager.LanguageChanged -= RefreshAllUi;
+            SaveStorage.ExternalDataLoaded -= ReloadFromExternalStorage;
+
             if (profile != null)
                 profile.RublesChanged -= OnProfileRublesChanged;
 
@@ -960,16 +967,23 @@ namespace TraidingIDLE.Business
 
             row.RefreshRow(
                 entry.listArtwork,
-                entry.displayName,
-                entry.category,
-                unlocked ? $"{FormatRublesAmount(displayIncome)} в час" : "-",
+                KnownLocalization.TranslateBusinessName(entry.saveId, entry.displayName),
+                KnownLocalization.TranslateCategory(entry.category),
+                unlocked
+                    ? GameTextFormatter.Format(
+                        LocalizationManager.Tr("business.income_per_hour_format", totalIncomePerHourFormat),
+                        "{0} в час",
+                        FormatRublesAmount(displayIncome))
+                    : "-",
                 !unlocked
-                    ? GameTextFormatter.Format(rowLevelFormat, "Уровень {0}", 0)
+                    ? GameTextFormatter.Format(LocalizationManager.Tr("common.level_format", rowLevelFormat), "Уровень {0}", 0)
                     : level > 0
-                    ? GameTextFormatter.Format(rowLevelFormat, "Уровень {0}", level)
-                    : GameTextFormatter.Format(rowLevelFormat, "Уровень {0}", nextLevel),
-                !unlocked ? lockedCaption : canUpgrade ? FormatReadableMoney(cost) : "",
-                !unlocked || level <= 0 ? rowPrimaryBuyCaption : rowPrimaryUpgradeCaption,
+                    ? GameTextFormatter.Format(LocalizationManager.Tr("common.level_format", rowLevelFormat), "Уровень {0}", level)
+                    : GameTextFormatter.Format(LocalizationManager.Tr("common.level_format", rowLevelFormat), "Уровень {0}", nextLevel),
+                !unlocked ? LocalizationManager.Tr("common.locked", lockedCaption) : canUpgrade ? FormatReadableMoney(cost) : "",
+                !unlocked || level <= 0
+                    ? LocalizationManager.Tr("common.buy", rowPrimaryBuyCaption)
+                    : LocalizationManager.Tr("common.upgrade", rowPrimaryUpgradeCaption),
                 canUpgrade || !unlocked,
                 canUpgrade && CanSpendRubles(cost));
 
@@ -994,13 +1008,17 @@ namespace TraidingIDLE.Business
 
             detailCard.Configure(
                 entry.detailArtwork,
-                entry.displayName,
+                KnownLocalization.TranslateBusinessName(entry.saveId, entry.displayName),
                 FormatNumberMoney(level),
                 FormatNumberMoney(nextLevel),
                 FormatDetailIncomeMoney(currentIncome),
                 FormatDetailIncomeMoney(nextIncome),
                 canUpgrade,
-                !unlocked ? lockedCaption : level <= 0 ? rowPrimaryBuyCaption : rowPrimaryUpgradeCaption,
+                !unlocked
+                    ? LocalizationManager.Tr("common.locked", lockedCaption)
+                    : level <= 0
+                        ? LocalizationManager.Tr("common.buy", rowPrimaryBuyCaption)
+                        : LocalizationManager.Tr("common.upgrade", rowPrimaryUpgradeCaption),
                 !unlocked ? GetUnlockRequirementText(_selectedIndex) : canUpgrade ? FormatReadableMoney(cost) : "",
                 canUpgrade || !unlocked,
                 canUpgrade && CanSpendRubles(cost),
@@ -1025,7 +1043,7 @@ namespace TraidingIDLE.Business
             {
                 var total = GetTotalEffectiveIncomePerHour();
                 totalIncomePerHourText.text = GameTextFormatter.Format(
-                    totalIncomePerHourFormat,
+                    LocalizationManager.Tr("business.income_per_hour_format", totalIncomePerHourFormat),
                     "{0} в час",
                     FormatRublesAmount(total));
             }
@@ -1246,8 +1264,8 @@ namespace TraidingIDLE.Business
             if (!IsBusinessUnlocked(_selectedIndex))
             {
                 skillPanel.PresentLocked(GameTextFormatter.Format(
+                    LocalizationManager.Tr("business.locked_skill_format", "Улучши до {0} уровня чтобы открыть"),
                     skill.lockedSkillFormat,
-                    "Улучши до {0} уровня чтобы открыть",
                     skill.unlockLevel));
                 skillPanel.SetLaunchListener(null);
                 return;
@@ -1256,8 +1274,8 @@ namespace TraidingIDLE.Business
             if (level < skill.unlockLevel)
             {
                 skillPanel.PresentLocked(GameTextFormatter.Format(
+                    LocalizationManager.Tr("business.locked_skill_format", "Улучши до {0} уровня чтобы открыть"),
                     skill.lockedSkillFormat,
-                    "Улучши до {0} уровня чтобы открыть",
                     skill.unlockLevel));
                 skillPanel.SetLaunchListener(null);
                 return;
@@ -1274,7 +1292,12 @@ namespace TraidingIDLE.Business
             var launchLabel = FormatNumberMoney(skill.energyCost);
             var interactable = energyOk && !temporaryBlocking;
 
-            skillPanel.PresentUnlocked(skill.icon, skill.title, FormatSkillDescription(skill, level), interactable, launchLabel);
+            skillPanel.PresentUnlocked(
+                skill.icon,
+                KnownLocalization.TranslateBusinessSkillTitle(skill.title),
+                FormatSkillDescription(skill, level),
+                interactable,
+                launchLabel);
             skillPanel.SetLaunchListener(TryLaunchSkillForSelection);
         }
 
@@ -1283,20 +1306,20 @@ namespace TraidingIDLE.Business
             if (skill.effect == BusinessSkillEffectKind.InstantRubles)
             {
                 return GameTextFormatter.Format(
+                    LocalizationManager.Tr("business.skill_instant_rubles_format", "Мгновенно приносит {0}."),
                     skill.description,
-                    "Мгновенно приносит {0}.",
                     FormatRublesAmount(CalculateInstantSkillRubles(skill, level)));
             }
 
             if (skill.effect == BusinessSkillEffectKind.TemporaryBoostCategoryBusinessIncome)
             {
                 return GameTextFormatter.Format(
+                    LocalizationManager.Tr("business.skill_category_income_format", "Доход бизнесов этого типа +{0}"),
                     skill.description,
-                    "Доход бизнесов этого типа +{0}",
                     FormatIncomeBonusPercent(skill.temporaryIncomeMultiplier));
             }
 
-            return skill.description;
+            return KnownLocalization.TranslateBusinessSkillTitle(skill.description);
         }
 
         private static string FormatIncomeBonusPercent(float multiplier)
@@ -1370,11 +1393,11 @@ namespace TraidingIDLE.Business
 
             var requiredIndex = FindBusinessIndexBySaveId(entry.progression.requiredBusinessSaveId);
             var requiredName = requiredIndex >= 0
-                ? _entries[requiredIndex].displayName
+                ? KnownLocalization.TranslateBusinessName(_entries[requiredIndex].saveId, _entries[requiredIndex].displayName)
                 : entry.progression.requiredBusinessSaveId;
 
             return GameTextFormatter.Format(
-                unlockRequirementFormat,
+                LocalizationManager.Tr("business.unlock_requirement_format", unlockRequirementFormat),
                 "{0}: уровень {1}",
                 requiredName,
                 entry.progression.requiredBusinessLevel);
@@ -1550,6 +1573,17 @@ namespace TraidingIDLE.Business
             _runtimeStateLoaded = true;
         }
 
+        private void ReloadFromExternalStorage()
+        {
+            Load();
+            _runtimeStateLoaded = true;
+            _dirty = false;
+            _saveTimer = 0f;
+            ProcessOfflineCatchUp();
+            NotifyMarketEconomyChanged();
+            RefreshAllUi();
+        }
+
         private void LoadLevelsById(BusinessLevelSave[] saved)
         {
             var map = new Dictionary<string, int>(StringComparer.Ordinal);
@@ -1586,8 +1620,9 @@ namespace TraidingIDLE.Business
 
         private string FormatRublesAmount(double value)
         {
-            var separator = rublesCurrencySuffix != null && rublesCurrencySuffix.Length > 1 ? " " : "";
-            return $"{FormatReadableMoney(value)}{separator}{rublesCurrencySuffix}";
+            var suffix = LocalizationManager.Tr("currency.rubles_short", rublesCurrencySuffix);
+            var separator = suffix != null && suffix.Length > 1 ? " " : "";
+            return $"{FormatReadableMoney(value)}{separator}{suffix}";
         }
 
         private string FormatDetailIncomeMoney(double value)
@@ -1603,11 +1638,14 @@ namespace TraidingIDLE.Business
         {
             value = Math.Max(0, value);
             if (value >= 1_000_000_000d)
-                return (value / 1_000_000_000d).ToString("0.0", CultureInfo.InvariantCulture) + billionSuffix;
+                return (value / 1_000_000_000d).ToString("0.0", CultureInfo.InvariantCulture)
+                    + LocalizationManager.Tr("number.billion_suffix", billionSuffix);
             if (value >= 1_000_000d)
-                return (value / 1_000_000d).ToString("0.0", CultureInfo.InvariantCulture) + millionSuffix;
+                return (value / 1_000_000d).ToString("0.0", CultureInfo.InvariantCulture)
+                    + LocalizationManager.Tr("number.million_suffix", millionSuffix);
             if (value >= 1000d)
-                return (value / 1000d).ToString("0.0", CultureInfo.InvariantCulture) + thousandSuffix;
+                return (value / 1000d).ToString("0.0", CultureInfo.InvariantCulture)
+                    + LocalizationManager.Tr("number.thousand_suffix", thousandSuffix);
 
             return FormatNumberMoney(value);
         }

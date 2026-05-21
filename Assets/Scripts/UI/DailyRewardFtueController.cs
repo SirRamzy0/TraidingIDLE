@@ -80,6 +80,7 @@ namespace TraidingIDLE.UI
         private void OnEnable()
         {
             SceneManager.sceneLoaded += OnSceneLoaded;
+            SaveStorage.ExternalDataLoaded += ReloadFromExternalStorage;
             _bindRoutine = StartCoroutine(BindAfterFrame());
             _refreshRoutine = StartCoroutine(RefreshRoutine());
         }
@@ -87,6 +88,7 @@ namespace TraidingIDLE.UI
         private void OnDisable()
         {
             SceneManager.sceneLoaded -= OnSceneLoaded;
+            SaveStorage.ExternalDataLoaded -= ReloadFromExternalStorage;
             UnsubscribeShop();
 
             if (_bindRoutine != null)
@@ -450,6 +452,12 @@ namespace TraidingIDLE.UI
             _save = SaveStorage.TryLoadJson<SaveData>(SaveKey, out var data) && data != null
                 ? data
                 : new SaveData();
+        }
+
+        private void ReloadFromExternalStorage()
+        {
+            Load();
+            HideHand();
         }
 
         private void Save()

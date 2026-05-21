@@ -1,5 +1,6 @@
 using System;
 using TMPro;
+using TraidingIDLE.Localization;
 using TraidingIDLE.Player;
 using TraidingIDLE.Saves;
 using TraidingIDLE.UI;
@@ -274,6 +275,9 @@ namespace TraidingIDLE.MiniGame
 
         private void OnEnable()
         {
+            LocalizationManager.LanguageChanged += OnLanguageChanged;
+            SaveStorage.ExternalDataLoaded += ReloadFromExternalStorage;
+
             BackgroundRunner.Unregister(this);
             _backgroundTickAccumulator = 0f;
 
@@ -289,6 +293,9 @@ namespace TraidingIDLE.MiniGame
 
         private void OnDisable()
         {
+            LocalizationManager.LanguageChanged -= OnLanguageChanged;
+            SaveStorage.ExternalDataLoaded -= ReloadFromExternalStorage;
+
             if (profile != null)
                 profile.RublesChanged -= OnRublesChanged;
 
@@ -299,6 +306,11 @@ namespace TraidingIDLE.MiniGame
 
             if (runWhileInactive && Application.isPlaying)
                 BackgroundRunner.Register(this);
+        }
+
+        private void OnLanguageChanged()
+        {
+            RefreshAllUi();
         }
 
         private void OnDestroy()
@@ -863,7 +875,7 @@ namespace TraidingIDLE.MiniGame
 
             if (potentialWinText != null)
                 potentialWinText.text = GameTextFormatter.Format(
-                    potentialWinFormat,
+                    LocalizationManager.Tr("crash.potential_win_format", potentialWinFormat),
                     "{0} руб",
                     FormatRubles(CalculatePayout(GetSelectedStakeRubles(), GetSelectedMultiplier())));
 
@@ -889,7 +901,7 @@ namespace TraidingIDLE.MiniGame
             bettingCountdownText.text = GameTextFormatter.Format(
                 bettingCountdownFormat,
                 "{0}\n<size=58><b><color=#25FF67>{1}</color></b></size>",
-                string.IsNullOrWhiteSpace(bettingCountdownTitle) ? "Игра начнется через:" : bettingCountdownTitle,
+                LocalizationManager.Tr("minigame.starts_in", string.IsNullOrWhiteSpace(bettingCountdownTitle) ? "Игра начнется через:" : bettingCountdownTitle),
                 GameTextFormatter.CountdownMinutes(_stageTimeLeft));
             bettingCountdownText.color = bettingCountdownColor;
             bettingCountdownText.fontSize = bettingCountdownTitleFontSize;
@@ -913,25 +925,25 @@ namespace TraidingIDLE.MiniGame
                     return bettingCountdownText != null
                         ? ""
                         : GameTextFormatter.Format(
-                            bettingStatusFormat,
+                            LocalizationManager.Tr("crash.betting_status_format", bettingStatusFormat),
                             "Прием ставок: {0}",
                             GameTextFormatter.CountdownMinutes(_stageTimeLeft));
 
                 case Stage.Playing:
-                    return playingStatusText;
+                    return LocalizationManager.Tr("crash.playing_status", playingStatusText);
 
                 case Stage.ResultPause:
                     if (!_roundHadPlayer)
-                        return idleResultStatusText;
+                        return LocalizationManager.Tr("crash.round_finished", idleResultStatusText);
                     if (_roundPlayerWon)
                     {
                         return GameTextFormatter.Format(
-                            winStatusFormat,
+                            LocalizationManager.Tr("crash.win_status_format", winStatusFormat),
                             "Выигрыш: {0} руб",
                             FormatRubles(CalculatePayout(_roundStake, _roundTargetMultiplier)));
                     }
 
-                    return loseStatusText;
+                    return LocalizationManager.Tr("crash.lose_status", loseStatusText);
 
                 default:
                     return "";
@@ -941,9 +953,11 @@ namespace TraidingIDLE.MiniGame
         private string GetPlaceButtonText()
         {
             if (_stage != Stage.Betting)
-                return waitNextRoundText;
+                return LocalizationManager.Tr("crash.wait_next_round", waitNextRoundText);
 
-            return _betPlaced ? betAcceptedText : placeBetText;
+            return _betPlaced
+                ? LocalizationManager.Tr("crash.bet_accepted", betAcceptedText)
+                : LocalizationManager.Tr("crash.place_bet", placeBetText);
         }
 
         private bool CanChangeBetOptions()
@@ -1141,6 +1155,14 @@ namespace TraidingIDLE.MiniGame
                 : 0;
             _firstBetWinConsumed = data.firstBetWinConsumed;
             _firstX10WinConsumed = data.firstX10WinConsumed;
+        }
+
+        private void ReloadFromExternalStorage()
+        {
+            Load();
+            SyncChartThresholds();
+            UpdateChartView();
+            RefreshAllUi();
         }
     }
 }

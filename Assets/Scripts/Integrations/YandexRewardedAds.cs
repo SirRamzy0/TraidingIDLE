@@ -1,4 +1,5 @@
 using System;
+using UnityEngine;
 
 namespace TraidingIDLE.Integrations
 {
@@ -15,8 +16,10 @@ namespace TraidingIDLE.Integrations
 
 #if RewardedAdv_yg
             YG.YG2.RewardedAdvShow(string.IsNullOrEmpty(id) ? "default" : id, rewarded);
-#else
+#elif UNITY_EDITOR
             rewarded.Invoke();
+#else
+            Debug.LogWarning($"Rewarded ad was requested, but RewardedAdv_yg is not enabled. Reward id: {id}");
 #endif
         }
     }

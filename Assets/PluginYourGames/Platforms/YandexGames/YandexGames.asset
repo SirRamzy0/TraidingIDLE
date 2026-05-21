@@ -21,7 +21,7 @@ MonoBehaviour:
     useYandexMetrica: 1
     metricaCounterID: 0
     skipInterAdvAfterReward: 0
-    saveLocal: 0
+    saveLocal: 1
     saveCloud: 1
     autoPauseGame: 1
     selectWebGLTemplate: 1

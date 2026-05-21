@@ -1,5 +1,6 @@
 using System;
 using TMPro;
+using TraidingIDLE.Localization;
 using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.UI;
@@ -22,6 +23,7 @@ namespace TraidingIDLE.UI
 
         private bool _selected;
         private bool _hovered;
+        private string _resolvedCategoryKey = "";
 
         protected virtual bool IsAllFilter => false;
 
@@ -32,12 +34,26 @@ namespace TraidingIDLE.UI
                 if (IsAllFilter)
                     return "";
 
+                if (!string.IsNullOrWhiteSpace(_resolvedCategoryKey))
+                    return _resolvedCategoryKey;
+
                 if (!string.IsNullOrWhiteSpace(categoryKey))
                     return categoryKey;
 
                 AutoResolveReferences();
-                return labelText != null ? labelText.text : "";
+                return _resolvedCategoryKey;
             }
+        }
+
+        private void OnEnable()
+        {
+            LocalizationManager.LanguageChanged += ApplyLocalizedLabel;
+            ApplyLocalizedLabel();
+        }
+
+        private void OnDisable()
+        {
+            LocalizationManager.LanguageChanged -= ApplyLocalizedLabel;
         }
 
         public void Bind(Action<string> clicked)
@@ -102,6 +118,28 @@ namespace TraidingIDLE.UI
 
             if (labelText == null)
                 labelText = GetComponentInChildren<TMP_Text>(true);
+
+            if (string.IsNullOrWhiteSpace(_resolvedCategoryKey))
+                _resolvedCategoryKey = !string.IsNullOrWhiteSpace(categoryKey)
+                    ? KnownLocalization.ToCanonicalCategoryKey(categoryKey)
+                    : labelText != null
+                        ? KnownLocalization.ToCanonicalCategoryKey(labelText.text)
+                        : "";
+        }
+
+        private void ApplyLocalizedLabel()
+        {
+            AutoResolveReferences();
+            if (labelText == null)
+                return;
+
+            if (IsAllFilter)
+            {
+                labelText.text = LocalizationManager.Tr("scene.all", labelText.text);
+                return;
+            }
+
+            labelText.text = KnownLocalization.TranslateCategory(_resolvedCategoryKey);
         }
 
         private static Color MultiplyColor(Color a, Color b)

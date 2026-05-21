@@ -47,6 +47,11 @@ namespace TraidingIDLE.Currencies.Simulation
             LoadFromStorage();
         }
 
+        private void OnEnable()
+        {
+            SaveStorage.ExternalDataLoaded += ReloadFromExternalStorage;
+        }
+
         private void Update()
         {
             if (!_dirty)
@@ -61,6 +66,8 @@ namespace TraidingIDLE.Currencies.Simulation
 
         private void OnDisable()
         {
+            SaveStorage.ExternalDataLoaded -= ReloadFromExternalStorage;
+
             if (_dirty)
                 FlushSave();
         }
@@ -236,6 +243,17 @@ namespace TraidingIDLE.Currencies.Simulation
 
             if (migratedLegacyHistory)
                 MarkDirty();
+        }
+
+        private void ReloadFromExternalStorage()
+        {
+            _dirty = false;
+            _saveCooldown = 0f;
+            _histories.Clear();
+            LoadFromStorage();
+            HistoryReset?.Invoke(CurrencyId.SHT);
+            HistoryReset?.Invoke(CurrencyId.ETH);
+            HistoryReset?.Invoke(CurrencyId.BTC);
         }
 
         private static bool TryNormalizePrice(float rawPrice, out float price)

@@ -1,6 +1,7 @@
 using System;
 using System.Collections;
 using TMPro;
+using TraidingIDLE.Localization;
 using UnityEngine;
 
 namespace TraidingIDLE.UI
@@ -15,6 +16,8 @@ namespace TraidingIDLE.UI
 
             [TextArea(2, 5)]
             public string text = "";
+
+            public string localizationKey = "";
         }
 
         [Header("Refs")]
@@ -75,6 +78,8 @@ namespace TraidingIDLE.UI
 
         private void OnEnable()
         {
+            LocalizationManager.LanguageChanged += RefreshTextImmediate;
+
             if (menu != null)
                 menu.SelectionChanged += OnMenuSelectionChanged;
 
@@ -83,6 +88,8 @@ namespace TraidingIDLE.UI
 
         private void OnDisable()
         {
+            LocalizationManager.LanguageChanged -= RefreshTextImmediate;
+
             if (menu != null)
                 menu.SelectionChanged -= OnMenuSelectionChanged;
 
@@ -166,12 +173,39 @@ namespace TraidingIDLE.UI
         {
             if (messages != null && index >= 0 && index < messages.Length && messages[index] != null)
             {
-                var text = messages[index].text;
+                var message = messages[index];
+                var text = message.text;
                 if (!string.IsNullOrWhiteSpace(text))
-                    return text;
+                    return LocalizationManager.Tr(GetHelperKey(index, message.localizationKey), text);
             }
 
-            return clearTextIfMessageMissing ? "" : fallbackText;
+            return clearTextIfMessageMissing ? "" : LocalizationManager.Tr("helper.fallback", fallbackText);
+        }
+
+        private static string GetHelperKey(int index, string explicitKey)
+        {
+            if (!string.IsNullOrWhiteSpace(explicitKey))
+                return explicitKey;
+
+            if (index == 0)
+                return "helper.trading";
+
+            if (index == 1)
+                return "helper.mining";
+
+            if (index == 2)
+                return "helper.trading_alt";
+
+            if (index == 3)
+                return "helper.business";
+
+            if (index == 4)
+                return "helper.temki";
+
+            if (index == 5)
+                return "helper.collections";
+
+            return "helper.fallback";
         }
     }
 }

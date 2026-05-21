@@ -6,6 +6,7 @@ using TMPro;
 using TraidingIDLE.Analytics;
 using TraidingIDLE.Currencies;
 using TraidingIDLE.Integrations;
+using TraidingIDLE.Localization;
 using TraidingIDLE.Player;
 using TraidingIDLE.Saves;
 using TraidingIDLE.UI;
@@ -252,6 +253,9 @@ namespace TraidingIDLE.Mining
 
         private void OnEnable()
         {
+            LocalizationManager.LanguageChanged += OnLanguageChanged;
+            SaveStorage.ExternalDataLoaded += ReloadFromExternalStorage;
+
             ProcessElapsedSinceLastTimestamp();
 
             if (claimButton != null)
@@ -270,6 +274,9 @@ namespace TraidingIDLE.Mining
 
         private void OnDisable()
         {
+            LocalizationManager.LanguageChanged -= OnLanguageChanged;
+            SaveStorage.ExternalDataLoaded -= ReloadFromExternalStorage;
+
             if (claimButton != null)
                 claimButton.onClick.RemoveListener(ClaimAccumulated);
 
@@ -615,12 +622,18 @@ namespace TraidingIDLE.Mining
             RefreshRigCardsStatic();
         }
 
+        private void OnLanguageChanged()
+        {
+            RebuildRigCards();
+            RefreshAll();
+        }
+
         private void RefreshDynamicUi()
         {
             if (totalIncomePerHourText != null)
             {
                 totalIncomePerHourText.text = string.Format(
-                    SafeFormat(totalIncomePerHourFormat, "{0} {1}"),
+                    SafeFormat(LocalizationManager.Tr("mining.total_income_format", totalIncomePerHourFormat), "{0} {1}"),
                     FormatAmount(GetTotalIncomePerHour(), ActiveCurrency),
                     ActiveCurrency);
             }
@@ -628,7 +641,7 @@ namespace TraidingIDLE.Mining
             if (accumulatedText != null)
             {
                 accumulatedText.text = string.Format(
-                    SafeFormat(accumulatedFormat, "{0} {1}"),
+                    SafeFormat(LocalizationManager.Tr("mining.accumulated_format", accumulatedFormat), "{0} {1}"),
                     FormatAmount(Math.Floor(_accumulated), ActiveCurrency),
                     ActiveCurrency);
             }
@@ -676,12 +689,12 @@ namespace TraidingIDLE.Mining
             {
                 var isActive = _adSpeedTimeLeft > 0f;
                 var activeText = _adSpeedTimeLeft > 0f
-                    ? FormatOne(adSpeedBoostText.activeButtonFormat, "Активно {0}", FormatTimer(_adSpeedTimeLeft))
-                    : SafeFormat(adSpeedBoostText.inactiveButtonFormat, "Активировать");
+                    ? FormatOne(LocalizationManager.Tr("mining.boost_active_format", adSpeedBoostText.activeButtonFormat), "Активно {0}", FormatTimer(_adSpeedTimeLeft))
+                    : LocalizationManager.Tr("mining.activate", SafeFormat(adSpeedBoostText.inactiveButtonFormat, "Активировать"));
                 adSpeedBoostCard.Configure(
-                    SafeFormat(adSpeedBoostText.title, "Реклама"),
-                    FormatOne(adSpeedBoostText.levelFormat, "x{0} скорости", FormatMultiplier(adSpeedMultiplier)),
-                    FormatOne(adSpeedBoostText.descriptionFormat, "На {0}", FormatDuration(adSpeedDurationSeconds)),
+                    LocalizationManager.Tr("common.ad", SafeFormat(adSpeedBoostText.title, "Реклама")),
+                    FormatOne(LocalizationManager.Tr("mining.speed_level_format", adSpeedBoostText.levelFormat), "x{0} скорости", FormatMultiplier(adSpeedMultiplier)),
+                    FormatOne(LocalizationManager.Tr("mining.duration_format", adSpeedBoostText.descriptionFormat), "На {0}", FormatDuration(adSpeedDurationSeconds)),
                     activeText,
                     !isActive,
                     RequestAdSpeedBoostRewarded);
@@ -691,12 +704,12 @@ namespace TraidingIDLE.Mining
             {
                 var isActive = _gemSpeedTimeLeft > 0f;
                 var activeText = isActive
-                    ? FormatOne(gemSpeedBoostText.activeButtonFormat, "Активно {0}", FormatTimer(_gemSpeedTimeLeft))
-                    : FormatOne(gemSpeedBoostText.inactiveButtonFormat, "За {0} гемов", FormatRubles(gemSpeedCost));
+                    ? FormatOne(LocalizationManager.Tr("mining.boost_active_format", gemSpeedBoostText.activeButtonFormat), "Активно {0}", FormatTimer(_gemSpeedTimeLeft))
+                    : FormatOne(LocalizationManager.Tr("mining.gem_cost_format", gemSpeedBoostText.inactiveButtonFormat), "За {0} гемов", FormatRubles(gemSpeedCost));
                 gemSpeedBoostCard.Configure(
-                    SafeFormat(gemSpeedBoostText.title, "Гемы"),
-                    FormatOne(gemSpeedBoostText.levelFormat, "x{0} скорости", FormatMultiplier(gemSpeedMultiplier)),
-                    FormatOne(gemSpeedBoostText.descriptionFormat, "На {0}", FormatDuration(gemSpeedDurationSeconds)),
+                    LocalizationManager.Tr("scene.gems", SafeFormat(gemSpeedBoostText.title, "Гемы")),
+                    FormatOne(LocalizationManager.Tr("mining.speed_level_format", gemSpeedBoostText.levelFormat), "x{0} скорости", FormatMultiplier(gemSpeedMultiplier)),
+                    FormatOne(LocalizationManager.Tr("mining.duration_format", gemSpeedBoostText.descriptionFormat), "На {0}", FormatDuration(gemSpeedDurationSeconds)),
                     activeText,
                     !isActive && profile != null && profile.Gems >= gemSpeedCost,
                     ActivateGemSpeedBoost);
@@ -707,12 +720,12 @@ namespace TraidingIDLE.Mining
                 var cost = GetCoinIncomeBoostCost();
                 var isActive = _coinIncomeTimeLeft > 0f;
                 var activeText = isActive
-                    ? FormatOne(coinIncomeBoostText.activeButtonFormat, "Активно {0}", FormatTimer(_coinIncomeTimeLeft))
-                    : FormatTwo(coinIncomeBoostText.inactiveButtonFormat, "За {0} {1}", FormatRubles(cost), FormatBoostCostCurrency(coinIncomeCostCurrency));
+                    ? FormatOne(LocalizationManager.Tr("mining.boost_active_format", coinIncomeBoostText.activeButtonFormat), "Активно {0}", FormatTimer(_coinIncomeTimeLeft))
+                    : FormatTwo(LocalizationManager.Tr("mining.coin_cost_format", coinIncomeBoostText.inactiveButtonFormat), "За {0} {1}", FormatRubles(cost), FormatBoostCostCurrency(coinIncomeCostCurrency));
                 coinIncomeBoostCard.Configure(
-                    SafeFormat(coinIncomeBoostText.title, "Доход"),
-                    FormatOne(coinIncomeBoostText.levelFormat, "x{0} дохода", FormatMultiplier(coinIncomeMultiplier)),
-                    FormatOne(coinIncomeBoostText.descriptionFormat, "На {0}", FormatDuration(coinIncomeDurationSeconds)),
+                    LocalizationManager.Tr("scene.income", SafeFormat(coinIncomeBoostText.title, "Доход")),
+                    FormatOne(LocalizationManager.Tr("mining.income_level_format", coinIncomeBoostText.levelFormat), "x{0} дохода", FormatMultiplier(coinIncomeMultiplier)),
+                    FormatOne(LocalizationManager.Tr("mining.duration_format", coinIncomeBoostText.descriptionFormat), "На {0}", FormatDuration(coinIncomeDurationSeconds)),
                     activeText,
                     !isActive && CanSpendBoostCost(coinIncomeCostCurrency, cost),
                     ActivateCoinIncomeBoost);
@@ -723,10 +736,10 @@ namespace TraidingIDLE.Mining
                 if (!TryGetNextCurrency(ActiveCurrency, out var next))
                 {
                     currencyUnlockBoostCard.Configure(
-                        SafeFormat(currencyUnlockBoostText.title, "Новая валюта"),
-                        SafeFormat(currencyUnlockBoostText.maxLevel, "MAX"),
-                        SafeFormat(currencyUnlockBoostText.maxDescription, "Все валюты открыты"),
-                        SafeFormat(currencyUnlockBoostText.maxButton, "MAX"),
+                        LocalizationManager.Tr("mining.new_currency", SafeFormat(currencyUnlockBoostText.title, "Новая валюта")),
+                        LocalizationManager.Tr("common.max", SafeFormat(currencyUnlockBoostText.maxLevel, "MAX")),
+                        LocalizationManager.Tr("mining.all_currencies_open", SafeFormat(currencyUnlockBoostText.maxDescription, "Все валюты открыты")),
+                        LocalizationManager.Tr("common.max", SafeFormat(currencyUnlockBoostText.maxButton, "MAX")),
                         false,
                         UnlockNextCurrency);
                 }
@@ -734,10 +747,10 @@ namespace TraidingIDLE.Mining
                 {
                     var cost = GetCurrencyUnlockCost(ActiveCurrency);
                     currencyUnlockBoostCard.Configure(
-                        SafeFormat(currencyUnlockBoostText.title, "Новая валюта"),
+                        LocalizationManager.Tr("mining.new_currency", SafeFormat(currencyUnlockBoostText.title, "Новая валюта")),
                         FormatTwo(currencyUnlockBoostText.levelFormat, "{0} → {1}", ActiveCurrency.ToString(), next.ToString()),
-                        FormatOne(currencyUnlockBoostText.descriptionFormat, "Все риги начнут добывать {0}", next.ToString()),
-                        FormatOne(currencyUnlockBoostText.buttonFormat, "Открыть {0}", FormatRubles(cost)),
+                        FormatOne(LocalizationManager.Tr("mining.currency_unlock_description_format", currencyUnlockBoostText.descriptionFormat), "Все риги начнут добывать {0}", next.ToString()),
+                        FormatOne(LocalizationManager.Tr("mining.currency_unlock_button_format", currencyUnlockBoostText.buttonFormat), "Открыть {0}", FormatRubles(cost)),
                         CanSpendRubles(cost),
                         UnlockNextCurrency);
                 }
@@ -1116,6 +1129,17 @@ namespace TraidingIDLE.Mining
                 : GetUtcSeconds();
         }
 
+        private void ReloadFromExternalStorage()
+        {
+            LoadFromStorage();
+            EnsureStateArrays();
+            _dirty = false;
+            _saveTimer = 0f;
+            ProcessElapsedSinceLastTimestamp();
+            RebuildRigCards();
+            RefreshAll();
+        }
+
         [ContextMenu("Debug/Reset mining save")]
         private void Debug_ResetSave()
         {
@@ -1180,10 +1204,10 @@ namespace TraidingIDLE.Mining
         private static string FormatDuration(float seconds)
         {
             if (seconds >= 3600f)
-                return $"{Mathf.RoundToInt(seconds / 3600f)}ч";
+                return LocalizationManager.Format("time.hours_short_format", "{0}ч", Mathf.RoundToInt(seconds / 3600f));
             if (seconds >= 60f)
-                return $"{Mathf.RoundToInt(seconds / 60f)}м";
-            return $"{Mathf.RoundToInt(seconds)}с";
+                return LocalizationManager.Format("time.minutes_short_format", "{0}м", Mathf.RoundToInt(seconds / 60f));
+            return LocalizationManager.Format("time.seconds_short_format", "{0}с", Mathf.RoundToInt(seconds));
         }
     }
 }

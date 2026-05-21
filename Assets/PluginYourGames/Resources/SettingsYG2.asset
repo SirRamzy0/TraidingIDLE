@@ -34,7 +34,7 @@ MonoBehaviour:
     testFailAds: 0
   Templates:
     logoImageFormat: 0
-    backgroundImgFormat: 3
+    backgroundImgFormat: 4
     gradientBackgroundByLoadGame:
       radial: 0
       angleInclination: 140
@@ -53,7 +53,7 @@ MonoBehaviour:
     disableForMobile: 1
     fillBackground: 0
     imageBackground: 1
-    imageName: background.png
+    imageName: background.jpg
     gradientBackgroundByAspectRatio:
       radial: 0
       angleInclination: 140

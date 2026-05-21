@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using TMPro;
 using TraidingIDLE.Integrations;
+using TraidingIDLE.Localization;
 using TraidingIDLE.Player;
 using TraidingIDLE.Saves;
 using TraidingIDLE.UI;
@@ -84,6 +85,8 @@ namespace TraidingIDLE.Temki
 
         private void OnEnable()
         {
+            SaveStorage.ExternalDataLoaded += ReloadFromExternalStorage;
+
             if (profile != null)
                 profile.RublesChanged += OnRublesChanged;
 
@@ -92,6 +95,8 @@ namespace TraidingIDLE.Temki
 
         private void OnDisable()
         {
+            SaveStorage.ExternalDataLoaded -= ReloadFromExternalStorage;
+
             if (profile != null)
                 profile.RublesChanged -= OnRublesChanged;
 
@@ -379,10 +384,10 @@ namespace TraidingIDLE.Temki
             var fail = CreatePanel(panel.transform, "Fail");
 
             var rewardText = CreateText(success.transform, "RewardText", "0р", 46, TextAlignmentOptions.Center);
-            var claim = CreateButton(success.transform, "ClaimButton", "Забрать");
-            var doubleAd = CreateButton(success.transform, "DoubleAdButton", "Удвоить за рекламу");
-            var close = CreateButton(fail.transform, "CloseButton", "Закрыть");
-            CreateText(fail.transform, "FailText", "Темка не стрельнула", 38, TextAlignmentOptions.Center);
+            var claim = CreateButton(success.transform, "ClaimButton", LocalizationManager.Tr("common.claim", "Забрать"));
+            var doubleAd = CreateButton(success.transform, "DoubleAdButton", LocalizationManager.Tr("common.watch_ad", "Удвоить за рекламу"));
+            var close = CreateButton(fail.transform, "CloseButton", LocalizationManager.Tr("common.close", "Закрыть"));
+            CreateText(fail.transform, "FailText", LocalizationManager.Tr("temki.fail", "Темка не стрельнула"), 38, TextAlignmentOptions.Center);
 
             var dialog = root.GetComponent<TemkiResultDialogUI>();
             dialog.Initialize(success, fail, rewardText, claim, doubleAd, close);
@@ -466,6 +471,15 @@ namespace TraidingIDLE.Temki
             }
 
             return true;
+        }
+
+        private void ReloadFromExternalStorage()
+        {
+            RebuildRuntime();
+            Load();
+            _dirty = false;
+            _saveTimer = 0f;
+            RefreshAll();
         }
 
         private void SaveNow()

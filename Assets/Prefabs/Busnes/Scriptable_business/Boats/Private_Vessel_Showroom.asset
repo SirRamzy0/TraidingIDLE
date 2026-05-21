@@ -21,7 +21,7 @@ MonoBehaviour:
   artwork: {fileID: 21300000, guid: a6ce912b627958a4ba8f09c36edc01ad, type: 3}
   progression:
     requiredBusinessSaveId: yacht_marina
-    requiredBusinessLevel: 6
+    requiredBusinessLevel: 20
     startRublesCost: 500000000
     startUpgradeRublesCost: 350000000
     upgradeCostGrowthPerLevel: 1.21
@@ -34,7 +34,7 @@ MonoBehaviour:
   - incomeRublesPerHour: 10000
     upgradeRublesCost: 1000
   skill:
-    unlockLevel: 7
+    unlockLevel: 12
     energyCost: 3
     icon: {fileID: 21300000, guid: bcd5ab162c0347f4ca2948bc1ddafaa2, type: 3}
     title: "\u0423\u0441\u0438\u043B\u0438\u0442\u044C \u0434\u043E\u0445\u043E\u0434"
@@ -43,7 +43,7 @@ MonoBehaviour:
     effect: 4
     instantRubles: 0
     instantRublesGrowthPer10Levels: 0.3
-    temporaryIncomeMultiplier: 2
+    temporaryIncomeMultiplier: 2.25
     temporaryDurationSeconds: 600
     marketCurrency: 2
     marketGrowDurationSeconds: {x: 18, y: 28}

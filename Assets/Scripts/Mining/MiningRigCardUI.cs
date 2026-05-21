@@ -2,6 +2,7 @@ using System;
 using System.Globalization;
 using TMPro;
 using TraidingIDLE.Currencies;
+using TraidingIDLE.Localization;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -59,10 +60,14 @@ namespace TraidingIDLE.Mining
             _upgradeClicked = upgradeClicked;
 
             if (rigNameText != null)
-                rigNameText.text = string.Format(SafeFormat(rigNameFormat, "Риг #{0}"), rigIndex + 1);
+                rigNameText.text = string.Format(
+                    SafeFormat(LocalizationManager.Tr("mining.rig_name_format", rigNameFormat), "Риг #{0}"),
+                    rigIndex + 1);
 
             if (levelText != null)
-                levelText.text = string.Format(SafeFormat(levelFormat, "Уровень {0}"), Mathf.Max(1, level));
+                levelText.text = string.Format(
+                    SafeFormat(LocalizationManager.Tr("common.level_format", levelFormat), "Уровень {0}"),
+                    Mathf.Max(1, level));
 
             if (rigImage != null && rigSprite != null)
                 rigImage.sprite = rigSprite;
@@ -70,7 +75,7 @@ namespace TraidingIDLE.Mining
             if (incomePerHourText != null)
             {
                 incomePerHourText.text = string.Format(
-                    SafeFormat(incomeFormat, "{0} {1} в час"),
+                    SafeFormat(LocalizationManager.Tr("mining.income_per_hour_format", incomeFormat), "{0} {1} в час"),
                     FormatAmount(incomePerHour, currency),
                     currency);
             }
@@ -79,8 +84,10 @@ namespace TraidingIDLE.Mining
             if (upgradeButtonText != null)
             {
                 upgradeButtonText.text = isMax
-                    ? maxLabel
-                    : string.Format(SafeFormat(upgradeFormat, "Улучшить\n{0}"), FormatRubles(upgradeCostRubles));
+                    ? LocalizationManager.Tr("common.max", maxLabel)
+                    : string.Format(
+                        SafeFormat(LocalizationManager.Tr("common.upgrade_cost_format", upgradeFormat), "Улучшить\n{0}"),
+                        FormatRubles(upgradeCostRubles));
             }
 
             if (upgradeButton != null)

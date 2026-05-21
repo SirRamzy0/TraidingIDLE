@@ -12,6 +12,7 @@ namespace TraidingIDLE.UI
         [SerializeField] private string smoothCircleShaderName = "TraidingIDLE/UI/SmoothCircleAvatar";
 
         private Material _material;
+        private Texture _lastTexture;
         private static readonly int CircleSoftnessId = Shader.PropertyToID("_CircleSoftness");
 
         private void Awake()
@@ -26,11 +27,14 @@ namespace TraidingIDLE.UI
 
         private void LateUpdate()
         {
-            if (_material == null)
+            if (targetGraphic == null)
+                targetGraphic = GetComponent<Graphic>();
+
+            var currentTexture = GetCurrentTexture();
+            if (_material == null || currentTexture == _lastTexture)
                 return;
 
-            _material.SetFloat(CircleSoftnessId, circleEdgeSoftness);
-            ApplyTextureSettings();
+            Apply();
         }
 
         private void OnDestroy()
@@ -44,6 +48,7 @@ namespace TraidingIDLE.UI
                 DestroyImmediate(_material);
 
             _material = null;
+            _lastTexture = null;
         }
 
         private void OnValidate()
@@ -89,18 +94,24 @@ namespace TraidingIDLE.UI
 
         private void ApplyTextureSettings()
         {
-            Texture texture = null;
-
-            if (targetGraphic is Image image && image.sprite != null)
-                texture = image.sprite.texture;
-            else if (targetGraphic is RawImage rawImage)
-                texture = rawImage.texture;
-
+            var texture = GetCurrentTexture();
+            _lastTexture = texture;
             if (texture == null)
                 return;
 
             texture.filterMode = FilterMode.Bilinear;
             texture.wrapMode = TextureWrapMode.Clamp;
+        }
+
+        private Texture GetCurrentTexture()
+        {
+            if (targetGraphic is Image image && image.sprite != null)
+                return image.sprite.texture;
+
+            if (targetGraphic is RawImage rawImage)
+                return rawImage.texture;
+
+            return null;
         }
     }
 }

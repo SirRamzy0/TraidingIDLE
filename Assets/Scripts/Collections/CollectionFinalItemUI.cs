@@ -1,5 +1,6 @@
 using System;
 using TMPro;
+using TraidingIDLE.Localization;
 using TraidingIDLE.UI;
 using UnityEngine;
 using UnityEngine.UI;
@@ -90,12 +91,12 @@ namespace TraidingIDLE.Collections
             if (lockedRoot != null)
                 lockedRoot.SetActive(!unlocked);
             if (lockedText != null)
-                lockedText.text = lockedMessage;
+                lockedText.text = LocalizationManager.Tr("collections.final_locked", lockedMessage);
 
             if (boughtRoot != null)
                 boughtRoot.SetActive(false);
             if (boughtText != null)
-                boughtText.text = boughtCaption;
+                boughtText.text = LocalizationManager.Tr("common.purchased", boughtCaption);
 
             _buyClicked = buyClicked;
 
@@ -107,8 +108,11 @@ namespace TraidingIDLE.Collections
 
             if (buyButtonLabel != null)
                 buyButtonLabel.text = bought
-                    ? boughtCaption
-                    : GameTextFormatter.Format(buyButtonFormat, "Купить\n{0}", price);
+                    ? LocalizationManager.Tr("common.purchased", boughtCaption)
+                    : GameTextFormatter.Format(
+                        LocalizationManager.Tr("common.buy_cost_format", buyButtonFormat),
+                        "Купить\n{0}",
+                        price);
 
             ApplyBuyButtonStyle(bought, unlocked && !bought && canBuy);
         }

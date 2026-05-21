@@ -1,5 +1,6 @@
 using System.Collections;
 using TMPro;
+using TraidingIDLE.Localization;
 using TraidingIDLE.Monetization;
 using UnityEngine;
 using UnityEngine.UI;
@@ -64,14 +65,28 @@ namespace TraidingIDLE.Integrations
             if (_waitingForAd || YG.YG2.nowAdsShow || YG.YG2.isPauseGame)
                 return;
 
-            if (Time.unscaledTime >= _nextInterstitialTime)
-                StartCoroutine(ShowInterstitialWithCountdown());
+            if (Time.unscaledTime < _nextInterstitialTime)
+                return;
+
+            if (!CanShowInterstitialNow())
+            {
+                ScheduleNextInterstitial(_settings.BlockedRetrySeconds);
+                return;
+            }
+
+            StartCoroutine(ShowInterstitialWithCountdown());
         }
 
         private IEnumerator ShowInterstitialWithCountdown()
         {
             if (MonetizationState.NoAdsPurchased)
                 yield break;
+
+            if (!CanShowInterstitialNow())
+            {
+                ScheduleNextInterstitial(_settings.BlockedRetrySeconds);
+                yield break;
+            }
 
             _waitingForAd = true;
             _pausedByController = true;
@@ -125,6 +140,44 @@ namespace TraidingIDLE.Integrations
         private void ApplyPluginInterstitialInterval()
         {
             YG.YG2.infoYG.InterstitialAdv.interAdvInterval = Mathf.Max(1, Mathf.FloorToInt(_settings.RepeatInterstitialDelaySeconds));
+        }
+
+        private bool CanShowInterstitialNow()
+        {
+            if (_settings == null || _settings.blockedActiveRootNames == null || _settings.blockedActiveRootNames.Length == 0)
+                return true;
+
+            var roots = FindObjectsByType<Transform>(FindObjectsInactive.Include, FindObjectsSortMode.None);
+            for (var i = 0; i < roots.Length; i++)
+            {
+                var root = roots[i];
+                if (root == null || !root.gameObject.activeInHierarchy)
+                    continue;
+
+                if (IsBlockedRootName(root.name))
+                    return false;
+            }
+
+            return true;
+        }
+
+        private bool IsBlockedRootName(string rootName)
+        {
+            if (string.IsNullOrWhiteSpace(rootName))
+                return false;
+
+            var blockedNames = _settings.blockedActiveRootNames;
+            for (var i = 0; i < blockedNames.Length; i++)
+            {
+                var blockedName = blockedNames[i];
+                if (string.IsNullOrWhiteSpace(blockedName))
+                    continue;
+
+                if (string.Equals(rootName, blockedName.Trim(), System.StringComparison.OrdinalIgnoreCase))
+                    return true;
+            }
+
+            return false;
         }
 
         private void CreateOverlay()
@@ -225,7 +278,10 @@ namespace TraidingIDLE.Integrations
             if (_messageText == null)
                 return;
 
-            _messageText.text = $"Игра приостановлена. Реклама через {secondsLeft} сек";
+            _messageText.text = LocalizationManager.Format(
+                "ad.interstitial_pause_countdown",
+                "Игра приостановлена. Реклама через {0} сек",
+                secondsLeft);
         }
     }
 }
